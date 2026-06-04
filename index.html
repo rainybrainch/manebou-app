@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#080b14">
+<link rel="manifest" href="manifest.json">
+<title>マネぼうアプリ</title>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+/* ━━ Reset & Variables ━━ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#080b14;--sf:#0f1321;--sf2:#161b2e;--bd:#252d4a;--bd2:#1a2240;
+  --gold:#ffd700;--goldd:#b8900a;--goldbg:rgba(255,215,0,.1);
+  --sky:#58c8e8;--skyd:#2a9ab8;
+  --grn:#58cc02;--grnd:#3a8a00;
+  --red:#ff4b4b;--pur:#7c3aed;--pur2:#a855f7;--ora:#ff9600;
+  --text:#f0f0fa;--tx2:#6878a8;--tx3:#1e2a4a;
+  --r:16px;--rsm:10px;--nav:64px;--top:56px;
+  font-family:'Zen Maru Gothic',sans-serif;
+}
+html,body{width:100%;height:100%;background:#000;overflow:hidden}
+#app{width:100%;max-width:430px;height:100dvh;margin:0 auto;background:var(--bg);display:flex;flex-direction:column;overflow:hidden;position:relative}
+
+/* ━━ TopBar ━━ */
+#topBar{height:var(--top);background:var(--sf);display:flex;align-items:center;justify-content:space-between;padding:0 14px;flex-shrink:0;border-bottom:2px solid var(--bd);position:relative;z-index:10}
+#topBar::after{content:'';position:absolute;bottom:-2px;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--gold),var(--sky),var(--grn),var(--pur2))}
+.top-brand{font-size:.78rem;font-weight:900;color:var(--gold);letter-spacing:.06em}
+.top-streak{display:flex;align-items:center;gap:3px;background:rgba(255,150,0,.1);border:1.5px solid rgba(255,150,0,.28);border-radius:99px;padding:4px 10px;font-size:.76rem;font-weight:900;color:var(--ora)}
+.streak-fire{display:inline-block;animation:fireFlicker 1.3s ease-in-out infinite}
+.top-coins{display:flex;align-items:center;gap:4px;background:var(--goldbg);border:1.5px solid rgba(255,215,0,.28);border-radius:99px;padding:4px 11px;font-size:.76rem;font-weight:900;color:var(--gold);transition:transform .2s}
+.top-coins.pop{animation:coinPop .28s ease}
+
+/* ━━ Screens ━━ */
+#screenArea{flex:1;overflow:hidden;position:relative}
+.screen{position:absolute;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;display:none;flex-direction:column}
+.screen.active{display:flex;animation:screenIn .22s cubic-bezier(.34,1.56,.64,1)}
+.screen::-webkit-scrollbar{width:0}
+.screen-inner{padding:14px 14px 84px}
+
+/* ━━ BottomNav ━━ */
+#bottomNav{height:var(--nav);background:var(--sf);border-top:2px solid var(--bd);display:flex;flex-shrink:0;z-index:10;padding-bottom:env(safe-area-inset-bottom,0px)}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;background:none;border:none;color:var(--tx2);font-size:.5rem;font-weight:900;font-family:inherit;cursor:pointer;transition:color .15s;padding:4px 2px;position:relative}
+.nav-btn::before{content:'';position:absolute;top:3px;left:50%;transform:translateX(-50%);width:0;height:3px;background:var(--gold);border-radius:99px;transition:width .2s}
+.nav-btn.active{color:var(--gold)}
+.nav-btn.active::before{width:26px}
+.nav-btn .ni{font-size:1.3rem;line-height:1;transition:transform .2s}
+.nav-btn.active .ni{transform:scale(1.15) translateY(-1px)}
+
+/* ━━ Shared ━━ */
+.sec-label{font-size:.58rem;font-weight:900;color:var(--tx2);letter-spacing:.12em;text-transform:uppercase;margin-bottom:8px}
+.divider{height:1px;background:var(--bd);margin:12px 0}
+.card{background:var(--sf);border-radius:var(--r);border:1.5px solid var(--bd);padding:14px}
+.btn-primary{width:100%;padding:13px;background:linear-gradient(135deg,var(--gold),var(--goldd));border:none;border-radius:var(--r);font-size:.9rem;font-weight:900;color:#000;font-family:inherit;cursor:pointer;box-shadow:0 4px 0 #6b5000;transition:transform .1s,box-shadow .1s}
+.btn-primary:active{transform:translateY(3px);box-shadow:0 1px 0 #6b5000}
+.placeholder-card{background:var(--sf2);border:1px dashed var(--bd);border-radius:var(--r);padding:20px 14px;text-align:center;color:var(--tx2);font-size:.68rem;font-weight:700;line-height:1.7}
+.placeholder-card .pc-ico{font-size:1.7rem;margin-bottom:7px;display:block;opacity:.35}
+
+/* ━━ Character Bubble ━━ */
+.char-bubble-wrap{display:flex;align-items:flex-start;gap:10px;margin-bottom:14px}
+.char-avatar{width:52px;height:52px;object-fit:cover;border-radius:50%;border:2.5px solid var(--bd);flex-shrink:0;background:var(--sf2)}
+.char-avatar.enda{border-color:var(--sky)}
+.char-avatar.fukurou{border-color:var(--gold)}
+.char-bubble{flex:1;background:var(--sf);border:1.5px solid var(--bd);border-radius:4px 14px 14px 14px;padding:10px 13px;font-size:.76rem;font-weight:700;color:var(--text);line-height:1.55;position:relative}
+.char-bubble::before{content:'';position:absolute;left:-7px;top:12px;border:6px solid transparent;border-right-color:var(--bd)}
+.char-bubble::after{content:'';position:absolute;left:-4.5px;top:13px;border:5px solid transparent;border-right-color:var(--sf)}
+.char-nametag{font-size:.56rem;font-weight:900;color:var(--tx2);margin-bottom:3px;letter-spacing:.04em}
+
+/* ━━ Home ━━ */
+.home-hero{background:linear-gradient(135deg,#140f00,#001414 70%,#0d0022);border-bottom:2px solid var(--bd);padding:16px 16px;display:flex;align-items:center;gap:0;flex-shrink:0;position:relative;overflow:hidden}
+.home-hero::before{content:'💰';position:absolute;right:-12px;top:-10px;font-size:7.5rem;opacity:.04;line-height:1;pointer-events:none}
+.hero-coins-wrap{flex:1}
+.hero-coins-label{font-size:.58rem;color:var(--tx2);margin-bottom:3px}
+.hero-coins-val{font-size:1.9rem;font-weight:900;color:var(--gold);line-height:1;font-variant-numeric:tabular-nums}
+.hero-streak-wrap{text-align:right}
+.hero-streak-label{font-size:.56rem;color:var(--tx2);margin-bottom:2px}
+.hero-streak-val{font-size:1.5rem;font-weight:900;color:var(--ora);line-height:1}
+.home-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-bottom:12px}
+.qs-card{background:var(--sf);border-radius:12px;padding:10px 6px;text-align:center;border:1.5px solid var(--bd)}
+.qs-val{font-size:1rem;font-weight:900;color:var(--text);font-variant-numeric:tabular-nums}
+.qs-lbl{font-size:.52rem;color:var(--tx2);margin-top:2px;line-height:1.3}
+.today-list{display:flex;flex-direction:column;gap:6px}
+.today-item{display:flex;align-items:center;gap:9px;padding:10px 12px;background:var(--sf);border-radius:12px;border:1.5px solid var(--bd);cursor:pointer;transition:border-color .15s}
+.today-item.done{opacity:.4;cursor:default}
+.today-item:active:not(.done){border-color:var(--gold)}
+.ti-ico{font-size:1.05rem;flex-shrink:0}
+.ti-text{flex:1;font-size:.74rem;font-weight:700;color:var(--text)}
+.ti-tag{font-size:.55rem;font-weight:900;border-radius:99px;padding:2px 8px;border:1.5px solid;white-space:nowrap;flex-shrink:0}
+.ti-check{font-size:.85rem;color:var(--grn);flex-shrink:0}
+
+/* ━━ Study ━━ */
+.game-card{background:var(--sf);border-radius:var(--r);border:2px solid var(--bd);overflow:hidden;margin-bottom:9px;transition:border-color .15s}
+.game-card.ready{cursor:pointer}
+.game-card.ready:active{border-color:var(--gold)}
+.game-card.expanded{border-color:var(--gold)}
+.gc-head{display:flex;align-items:center;gap:12px;padding:13px}
+.gc-ico{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.6rem;flex-shrink:0}
+.gc-info{flex:1;min-width:0}
+.gc-name{font-size:.86rem;font-weight:900;color:var(--text)}
+.gc-meta{font-size:.6rem;color:var(--tx2);margin-top:2px}
+.gc-progress{font-size:.58rem;font-weight:900;color:var(--grn);margin-top:2px}
+.gc-arrow{color:var(--tx2);font-size:.7rem;flex-shrink:0;transition:transform .2s}
+.game-card.expanded .gc-arrow{transform:rotate(90deg)}
+.gc-body{display:none;padding:0 13px 13px;border-top:1px solid var(--bd)}
+.game-card.expanded .gc-body{display:block}
+.lesson-list{display:flex;flex-direction:column;gap:4px;margin-top:10px}
+.lesson-item{display:flex;align-items:center;gap:9px;padding:9px 11px;background:var(--sf2);border-radius:10px;border:1.5px solid var(--bd);cursor:pointer;transition:all .12s}
+.lesson-item:active{transform:scale(.97)}
+.lesson-item.done{border-color:var(--grn);background:rgba(88,204,2,.06)}
+.lesson-item.done .li-title{color:var(--tx2)}
+.li-num{font-size:.6rem;font-weight:900;color:var(--tx2);min-width:22px;flex-shrink:0}
+.li-title{flex:1;font-size:.74rem;font-weight:700;color:var(--text)}
+.li-status{font-size:.9rem;flex-shrink:0}
+.coming-tag{display:inline-flex;align-items:center;gap:4px;background:rgba(255,150,0,.08);border:1px solid rgba(255,150,0,.2);border-radius:99px;padding:4px 10px;font-size:.58rem;font-weight:900;color:var(--ora);margin-top:8px}
+
+/* ━━ Habits ━━ */
+.habit-card{display:flex;align-items:center;gap:11px;padding:13px;background:var(--sf);border-radius:var(--r);border:2px solid var(--bd);margin-bottom:8px;transition:border-color .15s}
+.habit-card.done{border-color:var(--grn)}
+.habit-card.disabled{opacity:.3}
+.hc-ico{width:42px;height:42px;border-radius:12px;background:var(--sf2);border:1.5px solid var(--bd);display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0}
+.hc-info{flex:1;min-width:0}
+.hc-name{font-size:.8rem;font-weight:900;color:var(--text)}
+.hc-reward{font-size:.58rem;color:var(--gold);font-weight:900;margin-top:2px}
+.hc-streak{font-size:.56rem;color:var(--ora);margin-top:1px}
+.hc-desc{font-size:.6rem;color:var(--tx2);margin-top:2px;line-height:1.4}
+.hc-btn{width:38px;height:38px;border-radius:50%;border:2.5px solid var(--bd);background:var(--sf2);font-size:1rem;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:all .15s;color:transparent}
+.hc-btn.done{background:var(--grn);border-color:var(--grnd);box-shadow:0 3px 0 var(--grnd);color:#fff;animation:checkPop .3s ease}
+
+/* ━━ Homework ━━ */
+.hw-add-box{background:var(--sf);border-radius:var(--r);border:1.5px solid var(--bd);padding:13px;margin-bottom:12px}
+.hw-input{width:100%;background:var(--sf2);border:1.5px solid var(--bd);border-radius:10px;padding:10px 12px;font-size:.8rem;font-weight:700;color:var(--text);font-family:inherit;outline:none;margin-bottom:8px;transition:border-color .15s}
+.hw-input::placeholder{color:var(--tx2)}
+.hw-input:focus{border-color:var(--sky)}
+.hw-row{display:flex;gap:7px;align-items:center}
+.hw-date{flex:1;background:var(--sf2);border:1.5px solid var(--bd);border-radius:10px;padding:9px 11px;font-size:.76rem;font-weight:700;color:var(--tx2);font-family:inherit;outline:none;transition:border-color .15s}
+.hw-date:focus{border-color:var(--sky);color:var(--text)}
+.hw-add-btn{flex:0 0 auto;padding:9px 16px;background:linear-gradient(135deg,var(--gold),var(--goldd));border:none;border-radius:10px;font-size:.78rem;font-weight:900;color:#000;font-family:inherit;cursor:pointer;box-shadow:0 3px 0 #6b5000;transition:transform .1s,box-shadow .1s;white-space:nowrap}
+.hw-add-btn:active{transform:translateY(2px);box-shadow:0 1px 0 #6b5000}
+.hw-item{display:flex;align-items:flex-start;gap:9px;padding:11px;background:var(--sf);border-radius:13px;border:2px solid var(--bd);margin-bottom:6px;transition:border-color .15s}
+.hw-item.done{border-color:var(--grn);opacity:.5}
+.hw-chk{width:28px;height:28px;border-radius:8px;border:2.5px solid var(--bd);background:var(--sf2);font-size:.9rem;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;margin-top:1px;transition:all .15s;color:transparent}
+.hw-chk.done{background:var(--grn);border-color:var(--grnd);color:#fff}
+.hw-body{flex:1;min-width:0}
+.hw-title{font-size:.78rem;font-weight:900;color:var(--text);line-height:1.3}
+.hw-due{font-size:.58rem;color:var(--tx2);margin-top:3px}
+.hw-due.overdue{color:var(--red)}
+.hw-del{background:none;border:none;color:var(--tx2);font-size:.85rem;cursor:pointer;padding:3px;flex-shrink:0;opacity:.45;transition:opacity .15s}
+.hw-del:active{opacity:1}
+.empty-state{text-align:center;padding:28px 0;color:var(--tx2);font-size:.72rem;font-weight:700;line-height:2}
+.empty-state .es-ico{font-size:2rem;display:block;margin-bottom:6px;opacity:.35}
+
+/* ━━ Market ━━ */
+.mkt-balance{background:linear-gradient(135deg,#140f00,#0a1400);border:2px solid rgba(255,215,0,.3);border-radius:var(--r);padding:20px;margin-bottom:12px;text-align:center}
+.mkt-balance-label{font-size:.6rem;color:var(--tx2);margin-bottom:5px}
+.mkt-balance-val{font-size:2.2rem;font-weight:900;color:var(--gold);font-variant-numeric:tabular-nums;line-height:1}
+.asset-box{background:var(--sf);border-radius:var(--r);border:1.5px solid var(--bd);overflow:hidden;margin-bottom:9px}
+.asset-box-head{padding:11px 14px;border-bottom:1px solid var(--bd);font-size:.7rem;font-weight:900;color:var(--text);display:flex;align-items:center;gap:7px}
+.asset-box-empty{padding:14px;text-align:center;color:var(--tx2);font-size:.7rem;font-style:italic}
+.mkt-shop-stub{background:var(--sf2);border:1px dashed rgba(255,215,0,.18);border-radius:var(--r);padding:22px 14px;text-align:center}
+.mkt-shop-stub-title{font-size:.82rem;font-weight:900;color:var(--gold);margin-bottom:7px}
+.mkt-shop-stub-sub{font-size:.68rem;color:var(--tx2);line-height:1.8}
+
+/* ━━ Characters ━━ */
+.char-card-full{background:var(--sf);border-radius:var(--r);border:2px solid var(--gold);overflow:hidden;margin-bottom:12px}
+.ccf-hero{padding:18px 16px;display:flex;align-items:center;gap:14px;background:linear-gradient(135deg,#140f00,#001020)}
+.ccf-avatar{width:70px;height:70px;object-fit:cover;border-radius:50%;border:3px solid;flex-shrink:0}
+.ccf-avatar.enda{border-color:var(--sky)}
+.ccf-avatar.fukurou{border-color:var(--gold)}
+.ccf-role{font-size:.56rem;font-weight:900;letter-spacing:.1em;color:var(--tx2);text-transform:uppercase;margin-bottom:3px}
+.ccf-name{font-size:.98rem;font-weight:900;color:var(--text)}
+.ccf-realname{font-size:.6rem;color:var(--tx2);margin-top:2px}
+.ccf-body{padding:0 14px 14px}
+.ccf-quote{background:var(--sf2);border-radius:10px;padding:11px 13px;font-size:.72rem;color:var(--tx2);line-height:1.65;font-style:italic;border-left:3px solid var(--gold)}
+.char-locked-slot{background:var(--sf);border-radius:var(--r);border:1.5px dashed var(--bd);padding:16px;display:flex;align-items:center;gap:12px;margin-bottom:8px;opacity:.35}
+.cls-ico{font-size:1.8rem;filter:grayscale(1) brightness(.4)}
+.cls-text{font-size:.74rem;font-weight:900;color:var(--tx2)}
+
+/* ━━ Toast ━━ */
+#toast{position:fixed;top:calc(var(--top)+10px);left:50%;transform:translateX(-50%);background:var(--sf);border:2px solid var(--bd);border-radius:99px;padding:8px 20px;font-size:.78rem;font-weight:900;color:var(--text);z-index:500;display:none;white-space:nowrap;box-shadow:0 6px 20px rgba(0,0,0,.6)}
+#toast.show{display:block;animation:toastAnim 2.3s forwards}
+#toast.coin{background:var(--gold);border-color:var(--goldd);color:#000}
+#toast.good{background:var(--grn);border-color:var(--grnd);color:#fff}
+
+/* ━━ Splash ━━ */
+#splash{position:fixed;inset:0;background:var(--bg);z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;transition:opacity .5s .1s}
+#splash.fade{opacity:0;pointer-events:none}
+.spl-ico{font-size:5rem;filter:drop-shadow(0 4px 22px rgba(255,215,0,.5))}
+.spl-title{font-size:1.65rem;font-weight:900;color:var(--gold);letter-spacing:.04em}
+.spl-sub{font-size:.7rem;color:var(--tx2)}
+.spl-bar{width:120px;height:4px;background:var(--bd);border-radius:99px;overflow:hidden;margin-top:6px}
+.spl-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--sky));border-radius:99px;animation:splLoad 1.3s ease forwards}
+
+/* ━━ Animations ━━ */
+@keyframes screenIn{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
+@keyframes fireFlicker{0%,100%{transform:scaleY(1) rotate(-1deg)}50%{transform:scaleY(1.12) rotate(2deg)}}
+@keyframes toastAnim{0%{opacity:0;transform:translateX(-50%) translateY(-8px)}12%{opacity:1;transform:translateX(-50%) translateY(0)}80%{opacity:1}100%{opacity:0;transform:translateX(-50%) translateY(-5px)}}
+@keyframes splLoad{from{width:0}to{width:100%}}
+@keyframes coinPop{0%,100%{transform:scale(1)}50%{transform:scale(1.25)}}
+@keyframes checkPop{0%{transform:scale(.7)}60%{transform:scale(1.15)}100%{transform:scale(1)}}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ━━ TopBar ━━ -->
+<div id="topBar">
+  <div class="top-streak"><span class="streak-fire">🔥</span><span id="tStreak">0</span></div>
+  <div class="top-brand">マネぼう</div>
+  <div class="top-coins" id="tCoins">🪙 <span id="tCoinsNum">0</span></div>
+</div>
+
+<!-- ━━ Screen Area ━━ -->
+<div id="screenArea">
+
+<!-- ── ホーム ── -->
+<div class="screen active" id="homeScreen">
+  <div class="home-hero">
+    <div class="hero-coins-wrap">
+      <div class="hero-coins-label">ゲーム内コイン</div>
+      <div class="hero-coins-val">🪙 <span id="heroCoins">0</span></div>
+    </div>
+    <div class="hero-streak-wrap">
+      <div class="hero-streak-label">連続ログイン</div>
+      <div class="hero-streak-val"><span id="heroStreak">0</span>日 🔥</div>
+    </div>
+  </div>
+  <div class="screen-inner">
+    <div id="homeCharBubble" class="char-bubble-wrap"></div>
+    <div class="sec-label">今日のやること</div>
+    <div id="todayList" class="today-list"></div>
+    <div class="divider"></div>
+    <div class="sec-label" style="margin-bottom:10px">サマリー</div>
+    <div class="home-stats" id="homeStats"></div>
+    <div class="divider"></div>
+    <!-- 将来ウィジェット枠 -->
+    <div class="sec-label" style="color:var(--tx3)">今後追加予定</div>
+    <div class="placeholder-card">
+      <span class="pc-ico">📊</span>
+      進捗レポート・ランキング・週間サマリーなど<br>ウィジェットが入ります
+    </div>
+  </div>
+</div>
+
+<!-- ── 学習 ── -->
+<div class="screen" id="studyScreen">
+  <div class="screen-inner">
+    <div class="sec-label">ゲーム × カリキュラム</div>
+    <div id="gameList"></div>
+    <div class="divider"></div>
+    <div class="placeholder-card">
+      <span class="pc-ico">🎯</span>
+      レッスン詳細・ミニクイズ・修了証機能は<br>今後追加予定
+    </div>
+  </div>
+</div>
+
+<!-- ── 習慣 ── -->
+<div class="screen" id="habitsScreen">
+  <div class="screen-inner">
+    <div id="habitCharBubble" class="char-bubble-wrap"></div>
+    <div class="sec-label">今日の習慣</div>
+    <div id="habitList"></div>
+    <div class="divider"></div>
+    <div class="placeholder-card">
+      <span class="pc-ico">📅</span>
+      習慣カレンダー・連続記録グラフは今後追加予定
+    </div>
+  </div>
+</div>
+
+<!-- ── 宿題 ── -->
+<div class="screen" id="hwScreen">
+  <div class="screen-inner">
+    <div class="hw-add-box">
+      <div class="sec-label" style="margin-bottom:10px">宿題を追加</div>
+      <input class="hw-input" id="hwTitleInput" type="text" placeholder="宿題の内容を入力…" maxlength="60"
+        onkeydown="if(event.key==='Enter')addHomework()">
+      <div class="hw-row">
+        <input class="hw-date" id="hwDateInput" type="date">
+        <button class="hw-add-btn" onclick="addHomework()">追加 ＋</button>
+      </div>
+    </div>
+    <div class="sec-label">宿題リスト</div>
+    <div id="hwList"></div>
+  </div>
+</div>
+
+<!-- ── 市場 ── -->
+<div class="screen" id="marketScreen">
+  <div class="screen-inner">
+    <div class="mkt-balance">
+      <div class="mkt-balance-label">保有コイン</div>
+      <div class="mkt-balance-val">🪙 <span id="mktCoins">0</span></div>
+    </div>
+    <div class="asset-box">
+      <div class="asset-box-head">📈 保有株式</div>
+      <div class="asset-box-empty" id="stockList">まだ株式を保有していません</div>
+    </div>
+    <div class="asset-box">
+      <div class="asset-box-head">🏘️ 保有不動産</div>
+      <div class="asset-box-empty" id="propList">まだ不動産を保有していません</div>
+    </div>
+    <div class="divider"></div>
+    <div class="mkt-shop-stub">
+      <div class="mkt-shop-stub-title">🏪 マーケット</div>
+      <div class="mkt-shop-stub-sub">
+        株式・不動産の購入機能は今後実装予定です。<br>
+        習慣・宿題・レッスンをこなしてコインを貯めよう！
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── キャラ ── -->
+<div class="screen" id="charScreen">
+  <div class="screen-inner">
+    <div class="sec-label">塾のガイドキャラクター</div>
+    <div id="charList"></div>
+    <div class="divider"></div>
+    <div class="sec-label" style="color:var(--tx3)">今後追加予定</div>
+    <div class="char-locked-slot">
+      <div class="cls-ico">👤</div><div class="cls-text">近日公開 ― キャラクター #3</div>
+    </div>
+    <div class="char-locked-slot">
+      <div class="cls-ico">👤</div><div class="cls-text">近日公開 ― キャラクター #4</div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /screenArea -->
+
+<!-- ━━ BottomNav ━━ -->
+<div id="bottomNav">
+  <button class="nav-btn active" id="nb-home"
+    onclick="nav('homeScreen','nb-home');renderHome()">
+    <div class="ni">🏠</div>ホーム
+  </button>
+  <button class="nav-btn" id="nb-study"
+    onclick="nav('studyScreen','nb-study');renderStudy()">
+    <div class="ni">📚</div>学習
+  </button>
+  <button class="nav-btn" id="nb-habits"
+    onclick="nav('habitsScreen','nb-habits');renderHabits()">
+    <div class="ni">📅</div>習慣
+  </button>
+  <button class="nav-btn" id="nb-hw"
+    onclick="nav('hwScreen','nb-hw');renderHomework()">
+    <div class="ni">📝</div>宿題
+  </button>
+  <button class="nav-btn" id="nb-market"
+    onclick="nav('marketScreen','nb-market');renderMarket()">
+    <div class="ni">📈</div>市場
+  </button>
+  <button class="nav-btn" id="nb-chars"
+    onclick="nav('charScreen','nb-chars');renderChars()">
+    <div class="ni">👥</div>キャラ
+  </button>
+</div>
+
+</div><!-- /app -->
+
+<!-- ━━ Splash ━━ -->
+<div id="splash">
+  <div class="spl-ico">💰</div>
+  <div class="spl-title">マネぼうアプリ</div>
+  <div class="spl-sub">Money Bo Academy</div>
+  <div class="spl-bar"><div class="spl-fill"></div></div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ━━ マスターデータ ━━
+// ゲームとレッスンは今後変更可能な構造にしている
+// レッスン数・タイトルは GAMES 配列を直接編集すれば反映される
+
+const GAMES = [
+  {
+    id: 'itadaki',
+    name: 'いただきストリート',
+    emoji: '🏙️',
+    color: '#f59e0b',
+    ready: true,
+    // ▼ レッスン一覧（タイトル・数は変更可）
+    lessons: [
+      {id:'l01', title:'お金とは何か'},
+      {id:'l02', title:'働く・稼ぐとは'},
+      {id:'l03', title:'家計管理'},
+      {id:'l04', title:'貯める'},
+      {id:'l05', title:'欲しいと必要の違い'},
+      {id:'l06', title:'投資の基本'},
+      {id:'l07', title:'リスク管理'},
+      {id:'l08', title:'企業の仕組み'},
+      {id:'l09', title:'借金・ローン'},
+      {id:'l10', title:'人生設計'},
+      {id:'l11', title:'経済の流れ'},
+      {id:'l12', title:'お金と時間'},
+    ]
+  },
+  {id:'jinsei',     name:'人生ゲーム',           emoji:'🎡', color:'#3b82f6', ready:false, lessons:[]},
+  {id:'momotetsu',  name:'桃鉄教育版',           emoji:'🚅', color:'#ef4444', ready:false, lessons:[]},
+  {id:'zai',        name:'ZAi（株式投資ゲーム）', emoji:'📊', color:'#8b5cf6', ready:false, lessons:[]},
+  {id:'monopoly',   name:'モノポリー（不動産）',  emoji:'🏘️', color:'#10b981', ready:false, lessons:[]},
+];
+
+const HABITS = [
+  {id:'nikkei', name:'日経平均チェック',  emoji:'📈', coins:10, desc:'今日の日経平均を確認する'},
+  {id:'h2',     name:'（近日追加予定）',  emoji:'📚', coins:10, desc:'', disabled:true},
+  {id:'h3',     name:'（近日追加予定）',  emoji:'✍️', coins:10, desc:'', disabled:true},
+];
+
+const CHARS = [
+  {
+    id: 'enda', name: 'えんだ / 円舵', realName: '阿部優貴',
+    role: '塾長・投資教育講師', cls: 'enda',
+    img: '../マネぼうHP/images/img6.webp',
+    quote: '投資で大切なのはテクニックより、歴史を知ること。55年の経済史がそれを証明しています。',
+    msgs: [
+      '今日も一緒に学ぼう！',
+      '習慣を守ることが最大の投資だよ。',
+      '小さな積み重ねが大きな差になる！',
+    ]
+  },
+  {
+    id: 'fukurou', name: 'ふくろう / 服牢', realName: '福井紫耀',
+    role: 'CCO・ゲーム開発者', cls: 'fukurou',
+    img: '../マネぼうHP/images/img5.webp',
+    quote: '初心者だからこそわかる、初心者が本当に欲しかった教材を作りました。',
+    msgs: [
+      '今日の宿題はもう終わった？',
+      '日経平均、チェックしたよね？',
+      'コツコツが一番強い。',
+    ]
+  },
+];
+
+const REWARDS = {login:5, habit:10, homework:50, lesson:30};
+const SAVE_KEY = 'manebo_app_v1';
+
+// ━━ 状態管理 ━━
+let S = {
+  coins: 0,
+  streak: 0,
+  lastLogin: '',
+  habitLogs: {},    // {habitId: ['YYYY-MM-DD', ...]}
+  lessonDone: {},   // {'gameId_lessonId': true}
+  homework: [],     // [{id, title, dueDate, done, doneAt}]
+  assets: {stocks: [], properties: []}, // 将来の市場機能用
+};
+
+function load() {
+  try {
+    const d = localStorage.getItem(SAVE_KEY);
+    if (d) S = Object.assign(S, JSON.parse(d));
+  } catch(e) {}
+}
+function save() {
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch(e) {}
+}
+
+// ━━ ユーティリティ ━━
+const today = () => new Date().toISOString().slice(0, 10);
+const fmt   = n   => Number(n).toLocaleString();
+const uid   = ()  => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'show' + (type ? ' ' + type : '');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => { t.className = ''; }, 2400);
+}
+
+function addCoins(n, label = '') {
+  S.coins += n; save(); syncCoins();
+  showToast((label ? label + ' ' : '') + '🪙 +' + n, 'coin');
+  const el = document.getElementById('tCoins');
+  if (el) { el.classList.add('pop'); setTimeout(() => el.classList.remove('pop'), 300); }
+}
+
+function syncCoins() {
+  ['tCoinsNum','heroCoins','mktCoins'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = fmt(S.coins);
+  });
+  ['tStreak','heroStreak'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = S.streak;
+  });
+}
+
+// ━━ ナビゲーション ━━
+function nav(screenId, navId) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(screenId).classList.add('active');
+  document.getElementById(navId).classList.add('active');
+}
+
+// ━━ デイリーログイン ━━
+function checkLogin() {
+  const td = today();
+  if (S.lastLogin === td) return;
+  const prev = S.lastLogin;
+  S.lastLogin = td;
+  if (prev) {
+    const diff = (new Date(td) - new Date(prev)) / 86400000;
+    S.streak = diff <= 1.5 ? S.streak + 1 : 1;
+  } else {
+    S.streak = 1;
+  }
+  S.coins += REWARDS.login;
+  save();
+  setTimeout(() => showToast('ログイン！🪙 +' + REWARDS.login, 'coin'), 1700);
+}
+
+// ━━ キャラバブル ━━
+function renderCharBubble(containerId, charId) {
+  const ch = CHARS.find(c => c.id === charId) || CHARS[0];
+  const msg = ch.msgs[Math.floor(Date.now() / 86400000) % ch.msgs.length];
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  el.innerHTML = `
+    <img class="char-avatar ${ch.cls}" src="${ch.img}" alt="${ch.name}"
+      onerror="this.style.opacity='.2'">
+    <div class="char-bubble">
+      <div class="char-nametag">${ch.name}</div>
+      ${msg}
+    </div>`;
+}
+
+// ━━ ホーム ━━
+function renderHome() {
+  syncCoins();
+  const dayIdx = Math.floor(Date.now() / 86400000);
+  renderCharBubble('homeCharBubble', dayIdx % 2 === 0 ? 'enda' : 'fukurou');
+
+  const td = today();
+  const lessonCount  = Object.keys(S.lessonDone).length;
+  const hwPending    = S.homework.filter(h => !h.done).length;
+  const habitsActive = HABITS.filter(h => !h.disabled);
+  const habitsDone   = habitsActive.filter(h => (S.habitLogs[h.id] || []).includes(td)).length;
+
+  // サマリー
+  document.getElementById('homeStats').innerHTML = `
+    <div class="qs-card">
+      <div class="qs-val" style="color:var(--grn)">${lessonCount}</div>
+      <div class="qs-lbl">📚 レッスン完了</div>
+    </div>
+    <div class="qs-card">
+      <div class="qs-val" style="color:var(--sky)">${hwPending}</div>
+      <div class="qs-lbl">📝 宿題残り</div>
+    </div>
+    <div class="qs-card">
+      <div class="qs-val" style="color:var(--ora)">${habitsDone}/${habitsActive.length}</div>
+      <div class="qs-lbl">📅 習慣今日</div>
+    </div>`;
+
+  // 今日のやること
+  const items = [];
+  habitsActive.forEach(h => {
+    const done = (S.habitLogs[h.id] || []).includes(td);
+    items.push({
+      ico: h.emoji, text: h.name, tag: '習慣',
+      tagColor: 'var(--sky)', done,
+      action: done ? null : `checkHabit('${h.id}');renderHome()`
+    });
+  });
+  S.homework.filter(h => !h.done).slice(0, 3).forEach(h => {
+    items.push({
+      ico: '📝', text: h.title, tag: '宿題',
+      tagColor: 'var(--pur2)', done: false,
+      action: `completeHW('${h.id}');renderHome()`
+    });
+  });
+
+  document.getElementById('todayList').innerHTML = items.length
+    ? items.map(i => `
+        <div class="today-item${i.done ? ' done' : ''}"
+          ${i.action ? `onclick="${i.action}"` : ''}>
+          <span class="ti-ico">${i.ico}</span>
+          <span class="ti-text">${i.text}</span>
+          <span class="ti-tag" style="color:${i.tagColor};border-color:${i.tagColor}44">${i.tag}</span>
+          ${i.done ? '<span class="ti-check">✓</span>' : ''}
+        </div>`).join('')
+    : '<div class="empty-state"><span class="es-ico">🎉</span>今日のやることは全部完了！</div>';
+}
+
+// ━━ 学習 ━━
+function renderStudy() {
+  document.getElementById('gameList').innerHTML = GAMES.map(g => {
+    const doneCnt = Object.keys(S.lessonDone).filter(k => k.startsWith(g.id + '_')).length;
+    return `
+      <div class="game-card${g.ready ? ' ready' : ''}" id="gc-${g.id}"
+        ${g.ready ? `onclick="toggleGame('${g.id}')"` : ''}>
+        <div class="gc-head">
+          <div class="gc-ico" style="background:${g.color}22">${g.emoji}</div>
+          <div class="gc-info">
+            <div class="gc-name">${g.name}</div>
+            <div class="gc-meta">${g.ready
+              ? g.lessons.length + ' レッスン'
+              : '準備中 ― 近日公開'}</div>
+            ${g.ready && g.lessons.length > 0
+              ? `<div class="gc-progress">✓ ${doneCnt} / ${g.lessons.length} 完了</div>`
+              : ''}
+          </div>
+          ${g.ready ? '<span class="gc-arrow">▶</span>' : ''}
+        </div>
+        <div class="gc-body">
+          ${g.lessons.length > 0
+            ? `<div class="lesson-list">${g.lessons.map((l, i) => {
+                const key  = g.id + '_' + l.id;
+                const done = !!S.lessonDone[key];
+                return `
+                  <div class="lesson-item${done ? ' done' : ''}"
+                    onclick="event.stopPropagation();toggleLesson('${g.id}','${l.id}')">
+                    <span class="li-num">L${String(i + 1).padStart(2, '0')}</span>
+                    <span class="li-title">${l.title}</span>
+                    <span class="li-status">${done ? '✅' : '⬜'}</span>
+                  </div>`;
+              }).join('')}</div>`
+            : '<span class="coming-tag">🔒 レッスン準備中</span>'}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function toggleGame(id) {
+  document.getElementById('gc-' + id).classList.toggle('expanded');
+}
+
+function toggleLesson(gameId, lessonId) {
+  const key = gameId + '_' + lessonId;
+  if (S.lessonDone[key]) {
+    // 完了済みはもう一度押すと取り消し
+    delete S.lessonDone[key]; save();
+  } else {
+    S.lessonDone[key] = true; save();
+    addCoins(REWARDS.lesson, 'レッスン完了！');
+  }
+  renderStudy();
+}
+
+// ━━ 習慣 ━━
+function renderHabits() {
+  const dayIdx = Math.floor(Date.now() / 86400000);
+  renderCharBubble('habitCharBubble', dayIdx % 2 === 0 ? 'fukurou' : 'enda');
+
+  const td = today();
+  document.getElementById('habitList').innerHTML = HABITS.map(h => {
+    if (h.disabled) return `
+      <div class="habit-card disabled">
+        <div class="hc-ico">${h.emoji}</div>
+        <div class="hc-info">
+          <div class="hc-name">${h.name}</div>
+          <div class="hc-desc">近日追加予定</div>
+        </div>
+        <div class="hc-btn"></div>
+      </div>`;
+
+    const logs   = S.habitLogs[h.id] || [];
+    const done   = logs.includes(td);
+    const streak = calcStreak(logs);
+    return `
+      <div class="habit-card${done ? ' done' : ''}">
+        <div class="hc-ico">${h.emoji}</div>
+        <div class="hc-info">
+          <div class="hc-name">${h.name}</div>
+          <div class="hc-reward">+${h.coins} コイン</div>
+          ${h.desc ? `<div class="hc-desc">${h.desc}</div>` : ''}
+          ${streak > 0 ? `<div class="hc-streak">🔥 ${streak}日連続</div>` : ''}
+        </div>
+        <button class="hc-btn${done ? ' done' : ''}"
+          onclick="${done ? '' : `checkHabit('${h.id}');renderHabits()`}">
+          ${done ? '✓' : ''}
+        </button>
+      </div>`;
+  }).join('');
+}
+
+function calcStreak(logs) {
+  const sorted = [...logs].sort().reverse();
+  let streak = 0;
+  const d = new Date(today());
+  for (let i = 0; i < 60; i++) {
+    if (sorted.includes(d.toISOString().slice(0, 10))) { streak++; }
+    else { break; }
+    d.setDate(d.getDate() - 1);
+  }
+  return streak;
+}
+
+function checkHabit(id) {
+  const td = today();
+  if (!S.habitLogs[id]) S.habitLogs[id] = [];
+  if (S.habitLogs[id].includes(td)) return;
+  S.habitLogs[id].push(td); save();
+  const h = HABITS.find(x => x.id === id);
+  addCoins(h ? h.coins : REWARDS.habit, '習慣チェック！');
+}
+
+// ━━ 宿題 ━━
+function renderHomework() {
+  const td      = today();
+  const pending = S.homework.filter(h => !h.done);
+  const done    = S.homework.filter(h =>  h.done);
+
+  const hwHtml = (h) => {
+    const overdue = !h.done && h.dueDate && h.dueDate < td;
+    return `
+      <div class="hw-item${h.done ? ' done' : ''}">
+        <button class="hw-chk${h.done ? ' done' : ''}"
+          onclick="${h.done ? '' : `completeHW('${h.id}');renderHomework()`}">
+          ${h.done ? '✓' : ''}
+        </button>
+        <div class="hw-body">
+          <div class="hw-title">${h.title}</div>
+          ${h.dueDate
+            ? `<div class="hw-due${overdue ? ' overdue' : ''}">
+                期限：${h.dueDate}${overdue ? ' ⚠️ 超過' : ''}
+               </div>`
+            : ''}
+        </div>
+        <button class="hw-del" onclick="deleteHW('${h.id}')">🗑</button>
+      </div>`;
+  };
+
+  const isEmpty = pending.length === 0 && done.length === 0;
+  document.getElementById('hwList').innerHTML = isEmpty
+    ? '<div class="empty-state"><span class="es-ico">📭</span>宿題なし！よかった！</div>'
+    : [
+        ...pending.map(hwHtml),
+        done.length
+          ? '<div class="divider"></div><div class="sec-label" style="color:var(--tx3)">完了済み</div>'
+          : '',
+        ...done.map(hwHtml),
+      ].join('');
+}
+
+function addHomework() {
+  const title = document.getElementById('hwTitleInput').value.trim();
+  if (!title) return;
+  const dueDate = document.getElementById('hwDateInput').value || '';
+  S.homework.unshift({id: uid(), title, dueDate, done: false, doneAt: null});
+  save(); renderHomework();
+  document.getElementById('hwTitleInput').value = '';
+  showToast('宿題を追加しました！', 'good');
+}
+
+function completeHW(id) {
+  const h = S.homework.find(x => x.id === id);
+  if (!h || h.done) return;
+  h.done = true; h.doneAt = today(); save();
+  addCoins(REWARDS.homework, '宿題完了！🎉');
+  renderHomework();
+}
+
+function deleteHW(id) {
+  S.homework = S.homework.filter(x => x.id !== id);
+  save(); renderHomework();
+}
+
+// ━━ 市場 ━━
+function renderMarket() { syncCoins(); }
+
+// ━━ キャラ ━━
+function renderChars() {
+  document.getElementById('charList').innerHTML = CHARS.map(ch => `
+    <div class="char-card-full">
+      <div class="ccf-hero">
+        <img class="ccf-avatar ${ch.cls}" src="${ch.img}" alt="${ch.name}"
+          onerror="this.style.opacity='.15'">
+        <div>
+          <div class="ccf-role">${ch.role}</div>
+          <div class="ccf-name">${ch.name}</div>
+          <div class="ccf-realname">${ch.realName}</div>
+        </div>
+      </div>
+      <div class="ccf-body">
+        <div class="ccf-quote">${ch.quote}</div>
+      </div>
+    </div>`).join('');
+}
+
+// ━━ 初期化 ━━
+function init() {
+  load();
+  checkLogin();
+  syncCoins();
+  renderHome();
+  // デフォルトで今日の日付をセット
+  const dateInput = document.getElementById('hwDateInput');
+  if (dateInput) dateInput.value = today();
+
+  setTimeout(() => {
+    document.getElementById('splash').classList.add('fade');
+    setTimeout(() => {
+      const sp = document.getElementById('splash');
+      if (sp) sp.remove();
+    }, 600);
+  }, 1500);
+}
+
+init();
+</script>
+</body>
+</html>
