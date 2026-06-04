@@ -60,9 +60,9 @@ html,body{width:100%;height:100%;background:#000;overflow:hidden}
 
 /* ━━ Character Bubble ━━ */
 .char-bubble-wrap{display:flex;align-items:flex-start;gap:10px;margin-bottom:14px}
-.char-avatar{width:52px;height:52px;object-fit:cover;border-radius:50%;border:2.5px solid var(--bd);flex-shrink:0;background:var(--sf2)}
-.char-avatar.enda{border-color:var(--sky)}
-.char-avatar.fukurou{border-color:var(--gold)}
+.char-avatar{width:52px;height:52px;object-fit:cover;border-radius:50%;border:2.5px solid var(--bd);flex-shrink:0;background:var(--sf2);filter:drop-shadow(0 3px 10px rgba(0,0,0,.5))}
+.char-avatar.enda{border-color:var(--sky);filter:drop-shadow(0 3px 10px rgba(88,200,232,.35))}
+.char-avatar.fukurou{border-color:var(--gold);filter:drop-shadow(0 3px 10px rgba(255,215,0,.35))}
 .char-bubble{flex:1;background:var(--sf);border:1.5px solid var(--bd);border-radius:4px 14px 14px 14px;padding:10px 13px;font-size:.76rem;font-weight:700;color:var(--text);line-height:1.55;position:relative}
 .char-bubble::before{content:'';position:absolute;left:-7px;top:12px;border:6px solid transparent;border-right-color:var(--bd)}
 .char-bubble::after{content:'';position:absolute;left:-4.5px;top:13px;border:5px solid transparent;border-right-color:var(--sf)}
@@ -166,8 +166,8 @@ html,body{width:100%;height:100%;background:#000;overflow:hidden}
 .char-card-full{background:var(--sf);border-radius:var(--r);border:2px solid var(--gold);overflow:hidden;margin-bottom:12px}
 .ccf-hero{padding:18px 16px;display:flex;align-items:center;gap:14px;background:linear-gradient(135deg,#140f00,#001020)}
 .ccf-avatar{width:70px;height:70px;object-fit:cover;border-radius:50%;border:3px solid;flex-shrink:0}
-.ccf-avatar.enda{border-color:var(--sky)}
-.ccf-avatar.fukurou{border-color:var(--gold)}
+.ccf-avatar.enda{border-color:var(--sky);filter:drop-shadow(0 4px 14px rgba(88,200,232,.5))}
+.ccf-avatar.fukurou{border-color:var(--gold);filter:drop-shadow(0 4px 14px rgba(255,215,0,.5))}
 .ccf-role{font-size:.56rem;font-weight:900;letter-spacing:.1em;color:var(--tx2);text-transform:uppercase;margin-bottom:3px}
 .ccf-name{font-size:.98rem;font-weight:900;color:var(--text)}
 .ccf-realname{font-size:.6rem;color:var(--tx2);margin-top:2px}
@@ -192,6 +192,25 @@ html,body{width:100%;height:100%;background:#000;overflow:hidden}
 .spl-bar{width:120px;height:4px;background:var(--bd);border-radius:99px;overflow:hidden;margin-top:6px}
 .spl-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--sky));border-radius:99px;animation:splLoad 1.3s ease forwards}
 
+/* ━━ Confetti ━━ */
+.confetti-wrap{position:fixed;inset:0;pointer-events:none;z-index:400;overflow:hidden}
+.cp{position:absolute;opacity:0;animation:confettiFloat var(--d,1.2s) var(--del,0s) ease-in forwards}
+@keyframes confettiFloat{0%{opacity:1;transform:translate(0,0) rotate(0deg)}100%{opacity:0;transform:translate(var(--dx,0px),220px) rotate(720deg)}}
+
+/* ━━ Feedback Bar ━━ */
+#feedbackBar{position:fixed;bottom:calc(var(--nav) - 4px);left:50%;transform:translateX(-50%);width:calc(min(430px,100vw));padding:16px 18px 20px;border-radius:20px 20px 0 0;z-index:200;transition:bottom .35s cubic-bezier(.34,1.56,.64,1);display:none;border-top:2px solid rgba(255,255,255,.2)}
+#feedbackBar.show{display:block;animation:fbSlideUp .35s cubic-bezier(.34,1.56,.64,1)}
+#feedbackBar.good-fb{background:var(--grn);box-shadow:0 -6px 28px rgba(88,204,2,.45)}
+#feedbackBar.bad-fb{background:var(--red);box-shadow:0 -6px 28px rgba(255,75,75,.45)}
+.fb-inner{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.fb-ico{font-size:2rem;flex-shrink:0}
+.fb-text{flex:1}
+.fb-title{font-size:.95rem;font-weight:900;color:#fff;line-height:1.2}
+.fb-sub{font-size:.72rem;color:rgba(255,255,255,.82);margin-top:2px}
+.fb-close{width:100%;padding:11px;background:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.45);border-radius:12px;font-size:.88rem;font-weight:900;color:#fff;font-family:inherit;cursor:pointer;transition:background .15s}
+.fb-close:active{background:rgba(255,255,255,.35)}
+@keyframes fbSlideUp{from{opacity:0;transform:translateX(-50%) translateY(40px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+
 /* ━━ Animations ━━ */
 @keyframes screenIn{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
 @keyframes fireFlicker{0%,100%{transform:scaleY(1) rotate(-1deg)}50%{transform:scaleY(1.12) rotate(2deg)}}
@@ -199,6 +218,8 @@ html,body{width:100%;height:100%;background:#000;overflow:hidden}
 @keyframes splLoad{from{width:0}to{width:100%}}
 @keyframes coinPop{0%,100%{transform:scale(1)}50%{transform:scale(1.25)}}
 @keyframes checkPop{0%{transform:scale(.7)}60%{transform:scale(1.15)}100%{transform:scale(1)}}
+@keyframes nodePulse{0%,100%{box-shadow:0 0 0 0 rgba(255,215,0,.7)}70%{box-shadow:0 0 0 10px rgba(255,215,0,0)}}
+@keyframes xpPop{0%,100%{transform:scale(1)}40%{transform:scale(1.18)}}
 </style>
 </head>
 <body>
@@ -369,6 +390,21 @@ html,body{width:100%;height:100%;background:#000;overflow:hidden}
   <div class="spl-bar"><div class="spl-fill"></div></div>
 </div>
 
+<!-- ━━ Feedback Bar ━━ -->
+<div id="feedbackBar">
+  <div class="fb-inner">
+    <div class="fb-ico" id="fbIco">✅</div>
+    <div class="fb-text">
+      <div class="fb-title" id="fbTitle">達成！</div>
+      <div class="fb-sub" id="fbSub"></div>
+    </div>
+  </div>
+  <button class="fb-close" onclick="closeFeedback()">つぎへ →</button>
+</div>
+
+<!-- ━━ Confetti ━━ -->
+<div id="confettiWrap" class="confetti-wrap"></div>
+
 <div id="toast"></div>
 
 <script>
@@ -460,6 +496,65 @@ function save() {
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch(e) {}
 }
 
+// ━━ コンフェッティ ━━
+function launchConfetti() {
+  const wrap = document.getElementById('confettiWrap');
+  wrap.innerHTML = '';
+  const cols = ['#ffd700','#58cc02','#a855f7','#58c8e8','#ff9600','#ff4b4b','#fff','#f0f0fa'];
+  for (let i = 0; i < 48; i++) {
+    const el = document.createElement('div');
+    el.className = 'cp';
+    const x   = Math.random() * 100;
+    const dx  = (Math.random() - .5) * 130;
+    const dur = (.9 + Math.random() * 1.1).toFixed(2);
+    const del = (Math.random() * .55).toFixed(2);
+    const sz  = 6 + Math.random() * 7;
+    const br  = Math.random() > .5 ? '50%' : '2px';
+    el.style.cssText = `left:${x}%;top:-14px;background:${cols[i%cols.length]};width:${sz}px;height:${sz}px;border-radius:${br};--dx:${dx}px;--d:${dur}s;--del:${del}s`;
+    wrap.appendChild(el);
+  }
+  setTimeout(() => { wrap.innerHTML = ''; }, 2800);
+}
+
+// ━━ サウンド ━━
+let _AC = null;
+function getAC() {
+  if (!_AC) _AC = new (window.AudioContext || window.webkitAudioContext)();
+  return _AC;
+}
+function playSound(type) {
+  try {
+    const ac = getAC(), t = ac.currentTime;
+    const beep = (freq, start, dur, vol=.22, wave='sine') => {
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.type = wave; o.frequency.value = freq;
+      g.gain.setValueAtTime(vol, t + start);
+      g.gain.exponentialRampToValueAtTime(.001, t + start + dur);
+      o.connect(g); g.connect(ac.destination);
+      o.start(t + start); o.stop(t + start + dur);
+    };
+    if (type === 'coin')   { beep(880,.0,.1); beep(1100,.08,.12); }
+    if (type === 'check')  { beep(523,.0,.1); beep(659,.09,.14); }
+    if (type === 'done')   { [523,659,784,1047].forEach((f,i)=>beep(f,i*.09,.22)); }
+    if (type === 'delete') { beep(280,.0,.18,'sawtooth',.15); }
+  } catch(e) {}
+}
+
+// ━━ フィードバックバー ━━
+let _fbTimer = null;
+function showFeedback(good, title, sub = '') {
+  const bar = document.getElementById('feedbackBar');
+  document.getElementById('fbIco').textContent  = good ? '✅' : '💪';
+  document.getElementById('fbTitle').textContent = title;
+  document.getElementById('fbSub').textContent   = sub;
+  bar.className = good ? 'show good-fb' : 'show bad-fb';
+  clearTimeout(_fbTimer);
+  _fbTimer = setTimeout(closeFeedback, 3500);
+}
+function closeFeedback() {
+  document.getElementById('feedbackBar').className = '';
+}
+
 // ━━ ユーティリティ ━━
 const today = () => new Date().toISOString().slice(0, 10);
 const fmt   = n   => Number(n).toLocaleString();
@@ -473,11 +568,13 @@ function showToast(msg, type = '') {
   t._timer = setTimeout(() => { t.className = ''; }, 2400);
 }
 
-function addCoins(n, label = '') {
+function addCoins(n, label = '', withConfetti = false) {
   S.coins += n; save(); syncCoins();
   showToast((label ? label + ' ' : '') + '🪙 +' + n, 'coin');
+  playSound('coin');
   const el = document.getElementById('tCoins');
   if (el) { el.classList.add('pop'); setTimeout(() => el.classList.remove('pop'), 300); }
+  if (withConfetti) launchConfetti();
 }
 
 function syncCoins() {
@@ -634,11 +731,14 @@ function toggleGame(id) {
 function toggleLesson(gameId, lessonId) {
   const key = gameId + '_' + lessonId;
   if (S.lessonDone[key]) {
-    // 完了済みはもう一度押すと取り消し
     delete S.lessonDone[key]; save();
   } else {
     S.lessonDone[key] = true; save();
-    addCoins(REWARDS.lesson, 'レッスン完了！');
+    playSound('check');
+    addCoins(REWARDS.lesson, 'レッスン完了！', false);
+    const g = GAMES.find(x => x.id === gameId);
+    const l = g?.lessons.find(x => x.id === lessonId);
+    showFeedback(true, 'レッスン完了！ 📚', (l?.title || '') + ' +' + REWARDS.lesson + 'コイン');
   }
   renderStudy();
 }
@@ -698,7 +798,10 @@ function checkHabit(id) {
   if (S.habitLogs[id].includes(td)) return;
   S.habitLogs[id].push(td); save();
   const h = HABITS.find(x => x.id === id);
-  addCoins(h ? h.coins : REWARDS.habit, '習慣チェック！');
+  const coins = h ? h.coins : REWARDS.habit;
+  playSound('check');
+  addCoins(coins, '習慣チェック！', false);
+  showFeedback(true, '習慣チェック！ ✅', h.name + ' +' + coins + 'コイン獲得');
 }
 
 // ━━ 宿題 ━━
@@ -753,7 +856,10 @@ function completeHW(id) {
   const h = S.homework.find(x => x.id === id);
   if (!h || h.done) return;
   h.done = true; h.doneAt = today(); save();
-  addCoins(REWARDS.homework, '宿題完了！🎉');
+  launchConfetti();
+  playSound('done');
+  addCoins(REWARDS.homework, '宿題完了！🎉', false);
+  showFeedback(true, '宿題完了！ 🎉', h.title + ' +' + REWARDS.homework + 'コイン獲得');
   renderHomework();
 }
 
