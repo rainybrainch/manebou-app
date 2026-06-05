@@ -776,6 +776,25 @@ body.light #toast{background:#fff;color:var(--text)}
 .ct-info{flex:1}
 .ct-title{font-size:.74rem;font-weight:900;color:var(--text)}
 .ct-sub{font-size:.6rem;color:var(--muted);margin-top:2px;line-height:1.5}
+/* ━━ Donut chart ━━ */
+.donut-wrap{display:flex;align-items:center;gap:16px;margin-top:10px}
+.donut-legend{display:flex;flex-direction:column;gap:5px;flex:1}
+.donut-leg-item{display:flex;align-items:center;gap:7px;font-size:.64rem;color:var(--muted)}
+.donut-leg-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.donut-leg-val{margin-left:auto;font-family:var(--serif);font-weight:700;color:var(--text)}
+/* ━━ Empty state art ━━ */
+.empty-art{text-align:center;padding:32px 20px}
+.empty-art-ico{font-size:3rem;display:block;margin-bottom:10px;opacity:.5;animation:gcBounce 2s ease infinite}
+.empty-art-title{font-family:var(--serif);font-size:.9rem;font-weight:700;color:var(--text);margin-bottom:6px}
+.empty-art-sub{font-size:.68rem;color:var(--muted);line-height:1.8}
+/* ━━ Today earned chip ━━ */
+.today-earned{
+  font-size:.54rem;font-weight:900;color:var(--grn);
+  border:1px solid rgba(87,200,124,.25);border-radius:999px;
+  padding:2px 7px;background:rgba(87,200,124,.06);
+  display:none;margin-left:4px;
+}
+.today-earned.show{display:inline-flex;align-items:center}
 /* ━━ Gear icon ━━ */
 .top-gear{
   background:none;border:none;color:var(--muted);font-size:.9rem;
@@ -902,7 +921,7 @@ body.light #toast{background:#fff;color:var(--text)}
   <div class="top-streak"><span class="streak-fire">🔥</span><span id="tStreak">0</span></div>
   <div class="top-brand">マネぼう</div>
   <div style="display:flex;align-items:center;gap:6px">
-    <div class="top-coins" id="tCoins">🪙 <span id="tCoinsNum">0</span></div>
+    <div class="top-coins" id="tCoins">🪙 <span id="tCoinsNum">0</span><span class="today-earned" id="todayEarned"></span></div>
     <button class="top-gear" onclick="openSettings()" title="設定">⚙️</button>
   </div>
 </div>
@@ -1097,6 +1116,10 @@ body.light #toast{background:#fff;color:var(--text)}
         <span style="font-size:.64rem;color:var(--muted)">%/年</span>
       </div>
       <div class="tsum-results" id="tsumResults"></div>
+      <div class="donut-wrap">
+        <canvas id="tsumDonut" width="80" height="80"></canvas>
+        <div class="donut-legend" id="tsumLegend"></div>
+      </div>
     </div>
     <!-- コイン獲得ログ -->
     <div class="slabel">コイン獲得履歴</div>
@@ -1461,7 +1484,7 @@ function syncCoins(){
   });
   const te=document.getElementById('heroTotalEarned');
   if(te)te.textContent=fmt(S.totalEarned||0)+' 🪙';
-  updateNavBadges();
+  updateNavBadges();updateTodayEarned();
 }
 
 // ━━ Nav badges ━━
@@ -1851,7 +1874,7 @@ function renderHomework(){
   };
   const isEmpty=pending.length===0&&done.length===0;
   document.getElementById('hwList').innerHTML=isEmpty
-    ?'<div class="empty-state"><span class="es-ico">📭</span>宿題なし！よかった！</div>'
+    ?`<div class="empty-art"><span class="empty-art-ico">📭</span><div class="empty-art-title">宿題なし！</div><div class="empty-art-sub">すべての宿題が完了しています。<br>この調子で頑張ろう！</div></div>`
     :[...pending.map(toHtml),
        done.length?'<div class="divider"></div><div class="slabel" style="color:var(--faint)">完了済み</div>':'',
        ...done.map(toHtml)].join('');
@@ -1964,8 +1987,17 @@ function calcTsum(){
   const calc=(days)=>{let tot=0;for(let i=0;i<days;i++)tot=(tot+daily)*(1+r);return Math.round(tot);};
   const y1=calc(365),y3=calc(365*3),y5=calc(365*5),y10=calc(365*10);
   const el=document.getElementById('tsumResults');if(!el)return;
-  el.innerHTML=[{label:'1年後',val:y1},{label:'3年後',val:y3},{label:'5年後',val:y5},{label:'10年後',val:y10}]
-    .map(x=>`<div class="tsum-cell"><div class="tsum-val">${fmt(x.val)}🪙</div><div class="tsum-sub">${x.label}</div></div>`).join('');
+  const items=[{label:'1年後',val:y1},{label:'3年後',val:y3},{label:'5年後',val:y5},{label:'10年後',val:y10}];
+  el.innerHTML=items.map(x=>`<div class="tsum-cell"><div class="tsum-val">${fmt(x.val)}🪙</div><div class="tsum-sub">${x.label}</div></div>`).join('');
+  // ドーナツ: 元本 vs 利益
+  const principal10=daily*365*10;const profit10=y10-principal10;
+  const cols=['rgba(201,168,76,.8)','rgba(87,200,124,.8)'];
+  setTimeout(()=>drawDonut('tsumDonut',[principal10,Math.max(profit10,0)],cols),50);
+  const leg=document.getElementById('tsumLegend');
+  if(leg)leg.innerHTML=`
+    <div class="donut-leg-item"><div class="donut-leg-dot" style="background:${cols[0]}"></div>元本<span class="donut-leg-val">${fmt(principal10)}</span></div>
+    <div class="donut-leg-item"><div class="donut-leg-dot" style="background:${cols[1]}"></div>利益<span class="donut-leg-val">${fmt(Math.round(profit10))}</span></div>
+  `;
 }
 
 // ━━ Coin log ━━
@@ -2007,6 +2039,36 @@ function renderWeekCoinWidget(){
       </div>
       <div class="wc-bar-label" style="color:${d.isToday?'var(--acc)':'var(--faint)'}">${d.day}</div>
     </div>`).join('')}</div>`;
+}
+
+// ━━ Today earned display ━━
+function updateTodayEarned(){
+  const history=S.coinHistory||{};
+  const td=today();
+  const prev=history[new Date(new Date(td).getTime()-86400000).toISOString().slice(0,10)]||0;
+  const earned=Math.max(0,(history[td]||S.coins)-prev);
+  const el=document.getElementById('todayEarned');
+  if(!el)return;
+  if(earned>0){el.textContent='+'+earned;el.className='today-earned show';}
+  else el.className='today-earned';
+}
+
+// ━━ Donut chart ━━
+function drawDonut(canvasId, segments, colors){
+  const cv=document.getElementById(canvasId);if(!cv)return;
+  const ctx=cv.getContext('2d');
+  const W=cv.width,H=cv.height,cx=W/2,cy=H/2,r=Math.min(W,H)/2-4,ir=r*.55;
+  ctx.clearRect(0,0,W,H);
+  const total=segments.reduce((s,x)=>s+x,0)||1;
+  let angle=-Math.PI/2;
+  segments.forEach((v,i)=>{
+    const sweep=v/total*Math.PI*2;
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,angle,angle+sweep);ctx.closePath();
+    ctx.fillStyle=colors[i];ctx.fill();
+    angle+=sweep;
+  });
+  // inner circle
+  ctx.beginPath();ctx.arc(cx,cy,ir,0,Math.PI*2);ctx.fillStyle='var(--bg2)';ctx.fill();
 }
 
 // ━━ HW difficulty ━━
