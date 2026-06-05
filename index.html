@@ -755,6 +755,27 @@ body.light #toast{background:#fff;color:var(--text)}
 .a2hs-sub{font-size:.6rem;color:var(--muted);margin-top:2px}
 .a2hs-btn{padding:6px 12px;border-radius:7px;border:1px solid rgba(201,168,76,.35);background:rgba(201,168,76,.1);color:var(--acc);font-size:.72rem;font-weight:900;font-family:inherit;cursor:pointer;white-space:nowrap;flex-shrink:0}
 .a2hs-close{background:none;border:none;color:var(--muted);font-size:.9rem;cursor:pointer;flex-shrink:0}
+/* ━━ Lesson memo ━━ */
+.lesson-memo-wrap{margin-top:6px;border-top:1px solid var(--line);padding-top:8px}
+.lesson-memo-input{width:100%;background:rgba(0,0,0,.25);border:1px solid var(--line);border-radius:7px;padding:7px 10px;font-size:.7rem;color:var(--text);font-family:inherit;outline:none;resize:none;min-height:52px;line-height:1.5;transition:border-color .15s}
+.lesson-memo-input::placeholder{color:var(--faint)}
+.lesson-memo-input:focus{border-color:rgba(201,168,76,.35)}
+.lesson-memo-save{margin-top:5px;padding:5px 12px;border-radius:6px;border:1px solid rgba(201,168,76,.28);background:rgba(201,168,76,.08);color:var(--acc);font-size:.62rem;font-weight:900;font-family:inherit;cursor:pointer;transition:all .15s}
+.lesson-memo-save:hover{background:rgba(201,168,76,.18)}
+.lesson-memo-text{font-size:.66rem;color:var(--muted);line-height:1.6;font-style:italic;padding:5px 8px;background:rgba(255,255,255,.02);border-radius:6px;border-left:2px solid rgba(201,168,76,.3)}
+/* ━━ HW difficulty ━━ */
+.hw-diff-badge{display:inline-flex;align-items:center;padding:1px 6px;border-radius:999px;font-size:.5rem;font-weight:900;border:1px solid;margin-top:2px}
+.hw-diff-easy  {color:#57c87c;border-color:rgba(87,200,124,.3)}
+.hw-diff-normal{color:var(--acc);border-color:rgba(201,168,76,.3)}
+.hw-diff-hard  {color:var(--red);border-color:rgba(224,85,85,.3)}
+/* ━━ Coin tips ━━ */
+.coin-tips{display:flex;flex-direction:column;gap:6px}
+.coin-tip{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:var(--sf);border:1px solid var(--line);border-radius:9px;transition:all .15s}
+.coin-tip:hover{background:var(--sf2);transform:translateX(2px)}
+.ct-ico{font-size:1.2rem;flex-shrink:0;width:32px;text-align:center}
+.ct-info{flex:1}
+.ct-title{font-size:.74rem;font-weight:900;color:var(--text)}
+.ct-sub{font-size:.6rem;color:var(--muted);margin-top:2px;line-height:1.5}
 /* ━━ Gear icon ━━ */
 .top-gear{
   background:none;border:none;color:var(--muted);font-size:.9rem;
@@ -1006,6 +1027,12 @@ body.light #toast{background:#fff;color:var(--text)}
         </select>
         <input class="hw-date" id="hwDateInput" type="date" style="flex:1">
       </div>
+      <div class="hw-row" style="gap:5px;margin-bottom:8px">
+        <span style="font-size:.6rem;color:var(--muted);flex-shrink:0">難易度：</span>
+        <button class="hw-filter-btn active" id="hwd-easy"   onclick="setHwDiff('easy')">易</button>
+        <button class="hw-filter-btn"        id="hwd-normal" onclick="setHwDiff('normal')">普</button>
+        <button class="hw-filter-btn"        id="hwd-hard"   onclick="setHwDiff('hard')">難</button>
+      </div>
       <button class="btn-acc" onclick="addHomework()" style="width:100%;padding:11px;font-size:.85rem">追加 ＋</button>
     </div>
     <div class="hw-filter-row">
@@ -1075,9 +1102,12 @@ body.light #toast{background:#fff;color:var(--text)}
     <div class="slabel">コイン獲得履歴</div>
     <div class="coin-log-list" id="coinLogList"></div>
     <div class="divider"></div>
+    <div class="slabel">💡 コインの使い道アイデア</div>
+    <div class="coin-tips" id="coinTipsList"></div>
+    <div class="divider"></div>
     <div class="mkt-shop">
-      <div class="mkt-shop-title">🏪 マーケット</div>
-      <div class="mkt-shop-sub">株式・不動産の購入機能は今後実装予定。<br>日々の習慣・宿題・レッスンでコインを貯めよう。</div>
+      <div class="mkt-shop-title">🏪 マーケット（準備中）</div>
+      <div class="mkt-shop-sub">株式・不動産の購入機能は今後実装予定。<br>コインを貯めて将来の投資に備えよう！</div>
     </div>
   </div>
 </div>
@@ -1615,10 +1645,16 @@ function renderStudy(){
           ${g.lessons.length
             ?`<div class="lesson-list">${g.lessons.map((l,i)=>{
                 const key=g.id+'_'+l.id, done=!!S.lessonDone[key];
-                return`<div class="lesson-row${done?' done':''}" onclick="event.stopPropagation();toggleLesson('${g.id}','${l.id}')">
-                  <span class="lr-num">L${String(i+1).padStart(2,'0')}</span>
-                  <span class="lr-title">${l.title}</span>
-                  <span class="lr-status">${done?'✅':'⬜'}</span>
+                const memoKey=g.id+'_'+l.id+'_memo';
+                const memo=S.lessonMemos?.[memoKey]||'';
+                return`<div class="lesson-row${done?' done':''}">
+                  <span class="lr-num" onclick="event.stopPropagation();toggleLesson('${g.id}','${l.id}')">L${String(i+1).padStart(2,'0')}</span>
+                  <span class="lr-title" onclick="event.stopPropagation();toggleLesson('${g.id}','${l.id}')">${l.title}</span>
+                  <span class="lr-status" onclick="event.stopPropagation();toggleLesson('${g.id}','${l.id}')">${done?'✅':'⬜'}</span>
+                  <button onclick="event.stopPropagation();toggleMemo('${g.id}_${l.id}')" style="background:none;border:none;font-size:.7rem;cursor:pointer;color:${memo?'var(--acc)':'var(--faint)'};padding:2px" title="メモ">📝</button>
+                </div>
+                <div id="memo_${g.id}_${l.id}" style="display:none" class="lesson-memo-wrap">
+                  ${memo?`<div class="lesson-memo-text">${memo}</div><button class="lesson-memo-save" onclick="clearMemo('${g.id}_${l.id}')">削除</button>`:`<textarea class="lesson-memo-input" id="memoInput_${g.id}_${l.id}" placeholder="このレッスンのメモを書く…" rows="2">${memo}</textarea><button class="lesson-memo-save" onclick="saveMemo('${g.id}_${l.id}')">保存</button>`}
                 </div>`;
               }).join('')}</div>`
             :`<span class="coming-pill">🔒 レッスン準備中</span>`}
@@ -1801,6 +1837,7 @@ function renderHomework(){
       <button class="hw-chk${h.done?' done':''}" onclick="${h.done?'':` completeHW('${h.id}');renderHomework()`}">${h.done?'✓':''}</button>
       <div class="hw-body">
         <div class="hw-title">${h.title}</div>
+        ${h.difficulty?`<span class="hw-diff-badge hw-diff-${h.difficulty}">${h.difficulty==='easy'?'易':h.difficulty==='normal'?'普':'難'}</span>`:''}
         ${h.gameTag?(()=>{const g=GAMES.find(x=>x.id===h.gameTag);return g?`<span class="hw-tag" style="color:${g.color};border-color:${g.color}44">${g.emoji} ${g.name}</span>`:`<span class="hw-tag" style="color:var(--muted);border-color:var(--line)">📌 その他</span>`;})():''}
         ${dueToday?'<span class="hw-today-tag">TODAY</span>':''}
         ${dueSoon?'<span class="hw-due-soon-tag">⏰ 明日まで</span>':''}
@@ -1823,7 +1860,7 @@ function addHomework(){
   const title=document.getElementById('hwTitleInput').value.trim();if(!title)return;
   const gameTag=document.getElementById('hwGameTag')?.value||'';
   const gameInfo=gameTag?GAMES.find(g=>g.id===gameTag):null;
-  S.homework.unshift({id:uid(),title,dueDate:document.getElementById('hwDateInput').value||'',gameTag,done:false,doneAt:null});
+  S.homework.unshift({id:uid(),title,dueDate:document.getElementById('hwDateInput').value||'',gameTag,difficulty:_hwDiff,done:false,doneAt:null});
   save();renderHomework();
   document.getElementById('hwTitleInput').value='';
   showToast('宿題を追加しました','good');
@@ -1885,7 +1922,7 @@ function drawCoinHistory(){
 
 // ━━ Market ━━
 function renderMarket(){
-  syncCoins();snapCoinHistory();renderCoinLog();renderMktAdvice();
+  syncCoins();snapCoinHistory();renderCoinLog();renderMktAdvice();renderCoinTips();
   setTimeout(()=>{drawCoinHistory();calcTsum();},50);
   // コイン配当シミュレーション（仮定: 年利3%・5%・8%）
   const c=S.coins;
@@ -1970,6 +2007,50 @@ function renderWeekCoinWidget(){
       </div>
       <div class="wc-bar-label" style="color:${d.isToday?'var(--acc)':'var(--faint)'}">${d.day}</div>
     </div>`).join('')}</div>`;
+}
+
+// ━━ HW difficulty ━━
+let _hwDiff='normal';
+function setHwDiff(d){
+  _hwDiff=d;
+  ['easy','normal','hard'].forEach(x=>{
+    const el=document.getElementById('hwd-'+x);
+    if(el)el.className='hw-filter-btn'+(x===d?' active':'');
+  });
+}
+
+// ━━ Lesson memo ━━
+function toggleMemo(key){
+  const el=document.getElementById('memo_'+key);
+  if(el)el.style.display=el.style.display==='none'?'block':'none';
+}
+function saveMemo(key){
+  const inp=document.getElementById('memoInput_'+key);if(!inp)return;
+  if(!S.lessonMemos)S.lessonMemos={};
+  S.lessonMemos[key+'_memo']=inp.value.trim();
+  save();renderStudy();showToast('メモを保存しました','good');
+}
+function clearMemo(key){
+  if(!S.lessonMemos)return;
+  delete S.lessonMemos[key+'_memo'];
+  save();renderStudy();
+}
+
+// ━━ Coin tips ━━
+const COIN_TIPS=[
+  {ico:'📚',t:'レッスン完了でコイン獲得',s:'各レッスンをクリアすると+30コイン。全レッスン制覇でボーナス+100コイン！'},
+  {ico:'📅',t:'毎日の習慣チェック',s:'日経平均チェック等の習慣を毎日続けると+10コイン/日。連続記録でストリークを伸ばそう。'},
+  {ico:'📝',t:'宿題を期限内に完了',s:'宿題1件完了で+50コイン。期限内に終わらせてコインを稼ごう。'},
+  {ico:'🔥',t:'ログインボーナス',s:'毎日アプリを開くと+5コイン。連続ログインでマイルストーンボーナスも！'},
+  {ico:'🏪',t:'将来：マーケットで使う',s:'貯めたコインで（準備中の）株式・不動産をゲーム内で購入予定。今から貯めておこう！'},
+];
+function renderCoinTips(){
+  const el=document.getElementById('coinTipsList');if(!el)return;
+  el.innerHTML=COIN_TIPS.map(t=>`
+    <div class="coin-tip">
+      <div class="ct-ico">${t.ico}</div>
+      <div class="ct-info"><div class="ct-title">${t.t}</div><div class="ct-sub">${t.s}</div></div>
+    </div>`).join('');
 }
 
 // ━━ Encouragement messages ━━
