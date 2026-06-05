@@ -492,6 +492,25 @@ html,body{width:100%;height:100%;background:#000;overflow:hidden}
 @keyframes coinPop{0%,100%{transform:scale(1)}50%{transform:scale(1.2)}}
 @keyframes checkPop{0%{transform:scale(.7)}60%{transform:scale(1.15)}100%{transform:scale(1)}}
 @keyframes confettiFloat{0%{opacity:1;transform:translate(0,0) rotate(0deg)}100%{opacity:0;transform:translate(var(--dx,0px),220px) rotate(720deg)}}
+/* ━━ Ripple ━━ */
+.ripple-wrap{position:relative;overflow:hidden}
+.ripple{position:absolute;border-radius:50%;background:rgba(87,200,124,.35);transform:scale(0);animation:rippleAnim .5s ease-out forwards;pointer-events:none}
+@keyframes rippleAnim{to{transform:scale(4);opacity:0}}
+/* ━━ Sound toggle ━━ */
+.sound-toggle{display:flex;align-items:center;gap:8px}
+.toggle-track{width:36px;height:20px;border-radius:99px;border:1px solid var(--line);background:rgba(255,255,255,.06);position:relative;cursor:pointer;transition:background .2s}
+.toggle-track.on{background:rgba(87,200,124,.4);border-color:rgba(87,200,124,.5)}
+.toggle-thumb{width:14px;height:14px;border-radius:50%;background:var(--muted);position:absolute;top:2px;left:2px;transition:all .2s;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+.toggle-track.on .toggle-thumb{left:18px;background:#fff}
+/* ━━ Achievement badges ━━ */
+.badge-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:4px}
+.ach-badge{background:var(--sf);border:1px solid var(--line);border-radius:10px;padding:10px 4px;text-align:center;transition:all .15s}
+.ach-badge.unlocked{border-color:rgba(201,168,76,.4);background:rgba(201,168,76,.06)}
+.ach-badge:hover{transform:translateY(-2px)}
+.ach-ico{font-size:1.3rem;display:block;margin-bottom:4px;filter:grayscale(1) brightness(.3)}
+.ach-badge.unlocked .ach-ico{filter:none}
+.ach-name{font-size:.46rem;color:var(--muted);font-weight:900;letter-spacing:.04em;line-height:1.3}
+.ach-badge.unlocked .ach-name{color:var(--acc)}
 /* ━━ Nav badge ━━ */
 .nav-badge{
   position:absolute;top:5px;right:calc(50% - 16px);
@@ -665,11 +684,11 @@ html,body{width:100%;height:100%;background:#000;overflow:hidden}
     <div class="slabel">今週の成果</div>
     <div id="weeklyWidget"></div>
     <div class="divider"></div>
+    <div class="slabel">達成バッジ</div>
+    <div id="achBadgeGrid" class="badge-grid"></div>
+    <div class="divider"></div>
     <div class="slabel" style="color:var(--faint)">今後追加予定</div>
-    <div class="ph-card">
-      <span class="ph-ico">📊</span>
-      詳細レポート・ランキングなど
-    </div>
+    <div class="ph-card"><span class="ph-ico">📊</span>詳細レポート・ランキングなど</div>
   </div>
 </div>
 
@@ -811,11 +830,17 @@ html,body{width:100%;height:100%;background:#000;overflow:hidden}
     <div class="settings-handle"></div>
     <div class="settings-title">設定</div>
     <div class="settings-item">
+      <div><div class="si-label">サウンドエフェクト</div><div class="si-sub">コイン獲得・完了音</div></div>
+      <div class="sound-toggle" onclick="toggleSound()">
+        <div class="toggle-track" id="soundTrack"><div class="toggle-thumb"></div></div>
+      </div>
+    </div>
+    <div class="settings-item">
       <div><div class="si-label">データをリセット</div><div class="si-sub">コイン・習慣・宿題・レッスンを全て削除</div></div>
       <button class="si-btn danger" onclick="confirmReset()">リセット</button>
     </div>
     <div class="settings-item">
-      <div><div class="si-label">バージョン</div><div class="si-sub">マネぼうアプリ v0.3</div></div>
+      <div><div class="si-label">バージョン</div><div class="si-sub">マネぼうアプリ v0.4</div></div>
       <span style="font-size:.64rem;color:var(--faint)">Money Bo App</span>
     </div>
     <div class="settings-item">
@@ -938,6 +963,7 @@ function launchConfetti(){
 let _AC=null;
 function getAC(){if(!_AC)_AC=new(window.AudioContext||window.webkitAudioContext)();return _AC;}
 function playSound(type){
+  if(!isSoundOn())return;
   try{
     const ac=getAC(),t=ac.currentTime;
     const beep=(freq,start,dur,vol=.2,wave='sine')=>{
@@ -989,13 +1015,17 @@ function spawnCoinFloat(n){
 
 // ━━ Coins ━━
 function addCoins(n,label='',withConfetti=false){
-  S.coins+=n;save();syncCoins();
+  S.coins+=n;
+  if(!S.totalEarned)S.totalEarned=0;
+  S.totalEarned+=n;
+  save();syncCoins();
   showToast((label?label+' ':'')+'+'+n,'coin');
   playSound('coin');
   spawnCoinFloat(n);
   const el=document.getElementById('tCoins');
   if(el){el.classList.add('pop');setTimeout(()=>el.classList.remove('pop'),300);}
   if(withConfetti)launchConfetti();
+  checkAchievements();
 }
 
 function syncCoins(){
@@ -1056,16 +1086,26 @@ function checkLogin(){
 }
 
 // ━━ Char bubble ━━
+const _charIdx={};
 function renderCharBubble(containerId,charId){
-  const ch=CHARS.find(c=>c.id===charId)||CHARS[0];
-  const msg=ch.msgs[Math.floor(Date.now()/86400000)%ch.msgs.length];
+  if(!_charIdx[containerId])_charIdx[containerId]=CHARS.findIndex(c=>c.id===charId)||0;
+  const idx=_charIdx[containerId];
+  const ch=CHARS[idx]||CHARS[0];
+  const msg=ch.msgs[Math.floor(Date.now()/3600000)%ch.msgs.length];
   const el=document.getElementById(containerId);if(!el)return;
   el.innerHTML=`
-    <img class="char-avatar ${ch.cls}" src="${ch.img}" alt="${ch.name}" onerror="this.style.opacity='.15'">
+    <img class="char-avatar ${ch.cls}" src="${ch.img}" alt="${ch.name}"
+      onerror="this.style.opacity='.15'"
+      onclick="cycleChar('${containerId}')" style="cursor:pointer;transition:transform .15s"
+      title="タップでキャラ切替">
     <div class="char-bubble">
-      <div class="char-nametag">${ch.name}</div>
+      <div class="char-nametag">${ch.name} <span style="color:var(--faint);font-size:.48rem">▷ タップで切替</span></div>
       <div class="char-msg">${msg}</div>
     </div>`;
+}
+function cycleChar(containerId){
+  _charIdx[containerId]=((_charIdx[containerId]||0)+1)%CHARS.length;
+  renderCharBubble(containerId,CHARS[_charIdx[containerId]].id);
 }
 
 // ━━ Weekly widget ━━
@@ -1131,7 +1171,7 @@ function renderHome(){
     items.push({ico:'📝',text:h.title,tag:'宿題',tagC:'rgba(167,139,250,.6)',done:false,action:`completeHW('${h.id}');renderHome()`});
   });
 
-  renderWeekly();
+  renderWeekly();renderAchBadges();checkAchievements();
   document.getElementById('todayList').innerHTML=items.length
     ?items.map(i=>`
       <div class="today-item${i.done?' done':''}" ${i.action?`onclick="${i.action}"`:''}">
@@ -1259,8 +1299,9 @@ function renderHabits(){
           ${h.desc?`<div class="hr-desc">${h.desc}</div>`:''}
           ${streak>0?`<div class="hr-streak">🔥 ${streak}日連続</div>`:''}
         </div>
-        <button class="hr-btn${done?' done':''}"
-          onclick="${done?'':` checkHabit('${h.id}');renderHabits()`}">
+        <button class="hr-btn ripple-wrap${done?' done':''}"
+          onclick="${done?'':` checkHabit('${h.id}');renderHabits()`}"
+          ${!done?`onpointerdown="addRipple(this,event)"`:''}>
           ${done?'✓':''}
         </button>
       </div>`;
@@ -1411,6 +1452,61 @@ function renderChars(){
     </div>`).join('');
 }
 
+// ━━ Sound toggle ━━
+function isSoundOn(){return S.soundOn!==false;}
+function toggleSound(){
+  S.soundOn=!isSoundOn();save();
+  const t=document.getElementById('soundTrack');
+  if(t)t.className='toggle-track'+(S.soundOn?' on':'');
+}
+function updateSoundUI(){
+  const t=document.getElementById('soundTrack');
+  if(t)t.className='toggle-track'+(isSoundOn()?' on':'');
+}
+
+// ━━ Ripple effect ━━
+function addRipple(el,e){
+  const r=el.getBoundingClientRect();
+  const size=Math.max(r.width,r.height)*2;
+  const x=(e.clientX-r.left)-size/2, y=(e.clientY-r.top)-size/2;
+  const rip=document.createElement('span');
+  rip.className='ripple';
+  rip.style.cssText=`width:${size}px;height:${size}px;left:${x}px;top:${y}px`;
+  el.appendChild(rip);
+  setTimeout(()=>rip.remove(),550);
+}
+
+// ━━ Achievement badges ━━
+const ACHIEVEMENTS=[
+  {id:'first_lesson',ico:'📚',name:'初レッスン',   check:()=>Object.keys(S.lessonDone).length>=1},
+  {id:'first_hw',    ico:'📝',name:'初宿題完了',   check:()=>S.homework.some(h=>h.done)},
+  {id:'first_habit', ico:'📅',name:'初習慣',       check:()=>Object.values(S.habitLogs).some(l=>l.length>0)},
+  {id:'streak3',     ico:'🔥',name:'3日連続',      check:()=>S.streak>=3},
+  {id:'streak7',     ico:'⚡',name:'7日連続',      check:()=>S.streak>=7},
+  {id:'coins100',    ico:'🪙',name:'100コイン',    check:()=>S.totalEarned>=100},
+  {id:'coins500',    ico:'💰',name:'500コイン',    check:()=>S.totalEarned>=500},
+  {id:'all_lessons', ico:'🏆',name:'全レッスン',   check:()=>GAMES.filter(g=>g.ready).every(g=>g.lessons.every(l=>S.lessonDone[g.id+'_'+l.id]))},
+];
+function checkAchievements(){
+  if(!S.achievements)S.achievements=[];
+  ACHIEVEMENTS.forEach(a=>{
+    if(!S.achievements.includes(a.id)&&a.check()){
+      S.achievements.push(a.id);save();
+      setTimeout(()=>showToast(a.ico+' バッジ獲得: '+a.name,'good'),300);
+    }
+  });
+}
+function renderAchBadges(){
+  const el=document.getElementById('achBadgeGrid');if(!el)return;
+  el.innerHTML=ACHIEVEMENTS.map(a=>{
+    const ul=S.achievements&&S.achievements.includes(a.id);
+    return`<div class="ach-badge${ul?' unlocked':''}">
+      <span class="ach-ico">${a.ico}</span>
+      <div class="ach-name">${a.name}</div>
+    </div>`;
+  }).join('');
+}
+
 // ━━ Welcome / Settings ━━
 function startApp(){
   S.welcomed=true;save();
@@ -1432,7 +1528,7 @@ if('serviceWorker' in navigator){
 
 // ━━ Init ━━
 function init(){
-  load();checkLogin();syncCoins();snapCoinHistory();renderHome();
+  load();checkLogin();syncCoins();snapCoinHistory();updateSoundUI();renderHome();checkAchievements();
   // 初回のみウェルカム表示（スプラッシュ後）
   if(!S.welcomed){setTimeout(()=>{document.getElementById('welcomeOver').className='welcome-over show';},1700);}
   const di=document.getElementById('hwDateInput');
