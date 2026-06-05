@@ -734,6 +734,38 @@ body.light #toast{background:#fff;color:var(--text)}
   border:1px solid;font-weight:900;font-size:.8rem;
   letter-spacing:.06em;margin-top:10px;
 }
+/* ━━ Virtual shop ━━ */
+.vshop-grid{display:flex;flex-direction:column;gap:7px;margin-bottom:10px}
+.vshop-item{
+  display:flex;align-items:center;gap:11px;
+  padding:12px 13px;background:var(--sf);border:1px solid var(--line);
+  border-radius:10px;transition:all .15s;
+}
+.vshop-item:hover{background:var(--sf2)}
+.vshop-item.owned{border-color:rgba(87,200,124,.3);background:rgba(87,200,124,.04)}
+.vs-ico{font-size:1.4rem;flex-shrink:0}
+.vs-info{flex:1}
+.vs-name{font-size:.8rem;font-weight:900;color:var(--text)}
+.vs-desc{font-size:.6rem;color:var(--muted);margin-top:2px}
+.vs-price{font-family:var(--serif);font-size:.78rem;font-weight:700;color:var(--acc);white-space:nowrap;flex-shrink:0}
+.vs-btn{padding:6px 12px;border-radius:7px;font-size:.68rem;font-weight:900;font-family:inherit;cursor:pointer;transition:all .15s;flex-shrink:0}
+.vs-btn.buy{border:1px solid rgba(201,168,76,.35);background:rgba(201,168,76,.1);color:var(--acc)}
+.vs-btn.buy:hover{background:rgba(201,168,76,.22)}
+.vs-btn.owned{border:1px solid rgba(87,200,124,.3);background:rgba(87,200,124,.08);color:var(--grn)}
+/* ━━ HW progress ring ━━ */
+.hw-progress-section{
+  display:flex;align-items:center;gap:12px;padding:10px 13px;
+  background:var(--sf);border:1px solid var(--line);border-radius:10px;
+  margin-bottom:10px;
+}
+.hw-ring{flex-shrink:0}
+.hw-progress-info{flex:1}
+.hw-progress-label{font-size:.62rem;color:var(--muted);margin-bottom:3px;letter-spacing:.06em}
+.hw-progress-pct{font-family:var(--serif);font-size:1.1rem;font-weight:700;color:var(--grn)}
+/* ━━ Coin shower ━━ */
+.coin-shower-wrap{position:fixed;inset:0;pointer-events:none;z-index:401;overflow:hidden}
+.cs-coin{position:absolute;font-size:1.2rem;animation:coinShower var(--d,1s) var(--del,0s) ease-in forwards}
+@keyframes coinShower{0%{opacity:1;transform:translate(0,0) rotate(0)}100%{opacity:0;transform:translate(var(--dx,0px),80vh) rotate(360deg)}}
 /* ━━ Week score ━━ */
 .week-score-card{
   background:linear-gradient(135deg,rgba(167,139,250,.08),rgba(167,139,250,.02));
@@ -1323,6 +1355,18 @@ body.light #toast{background:#fff;color:var(--text)}
       </div>
       <button class="btn-acc" onclick="addHomework()" style="width:100%;padding:11px;font-size:.85rem">追加 ＋</button>
     </div>
+    <div class="hw-progress-section">
+      <svg class="hw-ring" width="48" height="48" viewBox="0 0 48 48">
+        <circle cx="24" cy="24" r="20" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="5"/>
+        <circle id="hwRing" cx="24" cy="24" r="20" fill="none" stroke="var(--grn)" stroke-width="5"
+          stroke-dasharray="126" stroke-dashoffset="126" stroke-linecap="round"
+          transform="rotate(-90 24 24)" style="transition:stroke-dashoffset .6s cubic-bezier(.34,1.2,.64,1)"/>
+      </svg>
+      <div class="hw-progress-info">
+        <div class="hw-progress-label">宿題完了率</div>
+        <div class="hw-progress-pct" id="hwProgressPct">0%</div>
+      </div>
+    </div>
     <div class="week-hw-row">
       <span class="wh-label">📝 今週の完了数</span>
       <span class="wh-val" id="weekHwCount">0件</span>
@@ -1410,6 +1454,9 @@ body.light #toast{background:#fff;color:var(--text)}
     <!-- コイン獲得ログ -->
     <div class="slabel">コイン獲得履歴</div>
     <div class="coin-log-list" id="coinLogList"></div>
+    <div class="divider"></div>
+    <div class="slabel">🏪 学習教材ショップ</div>
+    <div class="vshop-grid" id="vshopGrid"></div>
     <div class="divider"></div>
     <div class="slabel">💡 コインの使い道アイデア</div>
     <div class="coin-tips" id="coinTipsList"></div>
@@ -1670,6 +1717,7 @@ body.light #toast{background:#fff;color:var(--text)}
 </div>
 
 <div id="confettiWrap" class="confetti-wrap"></div>
+<div id="coinShowerWrap" class="coin-shower-wrap"></div>
 <div id="streakToast" class="streak-toast">
   <span class="streak-toast-ico" id="stIco">🔥</span>
   <div class="streak-toast-title" id="stTitle"></div>
@@ -2252,7 +2300,7 @@ function checkHabit(id){
 }
 
 // ━━ Homework ━━
-function renderHomework(){updateWeekHwCount();renderDiffStats();
+function renderHomework(){updateWeekHwCount();renderDiffStats();setTimeout(updateHwProgressRing,100);
   const td=today();
   // 期限順ソート（期限なし→末尾、期限あり→昇順）
   const sortByDue=(a,b)=>{
@@ -2365,7 +2413,7 @@ function drawCoinHistory(){
 
 // ━━ Market ━━
 function renderMarket(){
-  syncCoins();snapCoinHistory();renderCoinLog();renderMktAdvice();renderCoinTips();renderCoinRank();renderMilestoneBar();renderCoinPace();
+  syncCoins();snapCoinHistory();renderCoinLog();renderMktAdvice();renderCoinTips();renderCoinRank();renderMilestoneBar();renderCoinPace();renderVShop();
   setTimeout(()=>{drawCoinHistory();calcTsum();},50);
   // コイン配当シミュレーション（仮定: 年利3%・5%・8%）
   const c=S.coins;
@@ -2607,6 +2655,63 @@ function toggleFlatView(){
   const el=document.getElementById('flatView');
   if(el)el.className='sort-btn'+(_flatView?' active':'');
   renderStudy();
+}
+
+// ━━ Virtual shop ━━
+const VSHOP=[
+  {id:'book1',ico:'📖',name:'投資入門テキスト',desc:'バフェットから学ぶ長期投資の基本',price:100},
+  {id:'book2',ico:'📊',name:'経済史チートシート',desc:'1970〜2025年の重要事件まとめ',price:150},
+  {id:'card1',ico:'🎴',name:'経済用語カード',desc:'株・債券・為替の基礎用語集',price:80},
+  {id:'quiz1',ico:'🧠',name:'上級クイズパック',desc:'難易度★★★の経済クイズ30問',price:200},
+  {id:'hint1',ico:'💡',name:'投資ヒント集',desc:'プロが教える分散投資のコツ10選',price:120},
+];
+function renderVShop(){
+  const el=document.getElementById('vshopGrid');if(!el)return;
+  if(!S.shopOwned)S.shopOwned=[];
+  el.innerHTML=VSHOP.map(item=>{
+    const owned=S.shopOwned.includes(item.id);
+    return`<div class="vshop-item${owned?' owned':''}">
+      <div class="vs-ico">${item.ico}</div>
+      <div class="vs-info"><div class="vs-name">${item.name}</div><div class="vs-desc">${item.desc}</div></div>
+      ${owned
+        ?'<button class="vs-btn owned">所有済 ✓</button>'
+        :`<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+            <div class="vs-price">🪙 ${item.price}</div>
+            <button class="vs-btn buy" onclick="buyShopItem('${item.id}',${item.price})">${S.coins>=item.price?'購入':'不足'}</button>
+          </div>`}
+    </div>`;
+  }).join('');
+}
+function buyShopItem(id,price){
+  if(!S.shopOwned)S.shopOwned=[];
+  if(S.shopOwned.includes(id)){showToast('すでに所有しています','');return;}
+  if(S.coins<price){showToast('コインが足りません！','');return;}
+  S.coins-=price;S.shopOwned.push(id);save();
+  launchCoinShower();syncCoins();renderVShop();
+  showToast('購入しました！','good');checkAchievements();
+}
+
+// ━━ Coin shower ━━
+function launchCoinShower(){
+  const wrap=document.getElementById('coinShowerWrap');if(!wrap)return;
+  for(let i=0;i<20;i++){
+    const el=document.createElement('div');el.className='cs-coin';
+    el.textContent='🪙';
+    const x=Math.random()*100, dx=(Math.random()-.5)*80;
+    el.style.cssText=`left:${x}%;top:-5%;--dx:${dx}px;--d:${(.8+Math.random()*.8).toFixed(2)}s;--del:${(Math.random()*.4).toFixed(2)}s`;
+    wrap.appendChild(el);
+  }
+  setTimeout(()=>{wrap.innerHTML='';},1500);
+}
+
+// ━━ HW progress ring ━━
+function updateHwProgressRing(){
+  const total=S.homework.length,done=S.homework.filter(h=>h.done).length;
+  const pct=total?Math.round(done/total*100):0;
+  const ring=document.getElementById('hwRing');
+  const pctEl=document.getElementById('hwProgressPct');
+  if(ring)ring.style.strokeDashoffset=126-(126*pct/100);
+  if(pctEl)pctEl.textContent=pct+'%';
 }
 
 // ━━ Week score ━━
@@ -3273,6 +3378,9 @@ const ACHIEVEMENTS=[
   {id:'coins500',    ico:'💰',name:'500コイン',    check:()=>S.totalEarned>=500},
   {id:'coins1000',   ico:'👑',name:'1000コイン',   check:()=>S.totalEarned>=1000},
   {id:'all_lessons', ico:'🏆',name:'全レッスン',   check:()=>GAMES.filter(g=>g.ready).every(g=>g.lessons.every(l=>S.lessonDone[g.id+'_'+l.id]))},
+  {id:'first_skip',  ico:'😴',name:'初スキップ',   check:()=>S.habitSkips&&Object.values(S.habitSkips).some(v=>v.length>0)},
+  {id:'repeat_done', ico:'🔁',name:'繰り返し達成', check:()=>S.homework.some(h=>h.repeat&&h.done)},
+  {id:'shop_buy',    ico:'🛒',name:'初購入',       check:()=>S.shopOwned&&S.shopOwned.length>0},
 ];
 function checkAchievements(){
   if(!S.achievements)S.achievements=[];
