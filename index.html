@@ -776,6 +776,47 @@ body.light #toast{background:#fff;color:var(--text)}
 .ct-info{flex:1}
 .ct-title{font-size:.74rem;font-weight:900;color:var(--text)}
 .ct-sub{font-size:.6rem;color:var(--muted);margin-top:2px;line-height:1.5}
+/* ━━ Progress bar under TopBar ━━ */
+#topProgress{
+  height:2px;background:var(--bg);flex-shrink:0;position:relative;z-index:9;
+}
+#topProgressFill{
+  height:100%;background:linear-gradient(90deg,var(--acc),var(--grn));
+  border-radius:99px;transition:width .6s cubic-bezier(.34,1.2,.64,1);
+  box-shadow:0 0 6px rgba(201,168,76,.4);
+}
+/* ━━ Streak popup ━━ */
+.streak-popup{
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);
+  z-index:600;background:linear-gradient(135deg,rgba(249,115,22,.95),rgba(201,168,76,.9));
+  border-radius:20px;padding:20px 28px;text-align:center;
+  box-shadow:0 20px 60px rgba(249,115,22,.4);
+  transition:transform .35s cubic-bezier(.34,1.56,.64,1);pointer-events:none;
+}
+.streak-popup.show{transform:translate(-50%,-50%) scale(1)}
+.sp-ico{font-size:2.5rem;display:block;animation:fireFlicker 1s infinite}
+.sp-num{font-family:var(--serif);font-size:2.2rem;font-weight:700;color:#fff;line-height:1}
+.sp-lbl{font-size:.7rem;color:rgba(255,255,255,.85);margin-top:4px;letter-spacing:.08em}
+/* ━━ User name ━━ */
+.si-input{
+  flex:1;background:rgba(0,0,0,.3);border:1px solid var(--line);
+  border-radius:7px;padding:6px 10px;font-size:.8rem;font-weight:700;
+  color:var(--text);font-family:inherit;outline:none;transition:border-color .15s;
+  min-width:0;
+}
+.si-input:focus{border-color:rgba(201,168,76,.4)}
+/* ━━ Bulk complete ━━ */
+.hw-bulk-btn{
+  width:100%;padding:10px;border-radius:9px;margin-bottom:10px;
+  border:1px solid rgba(87,200,124,.3);background:rgba(87,200,124,.06);
+  color:var(--grn);font-size:.78rem;font-weight:900;font-family:inherit;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:6px;transition:all .15s;
+}
+.hw-bulk-btn:hover{background:rgba(87,200,124,.16)}
+.hw-bulk-btn:active{transform:scale(.97)}
+/* ━━ Rich splash ━━ */
+.spl-chars{display:flex;gap:12px;justify-content:center;margin-top:8px}
+.spl-char{width:40px;height:40px;object-fit:cover;border-radius:50%;border:1.5px solid rgba(201,168,76,.4);opacity:.7}
 /* ━━ Donut chart ━━ */
 .donut-wrap{display:flex;align-items:center;gap:16px;margin-top:10px}
 .donut-legend{display:flex;flex-direction:column;gap:5px;flex:1}
@@ -926,6 +967,9 @@ body.light #toast{background:#fff;color:var(--text)}
   </div>
 </div>
 
+<!-- ━━ TopBar Progress ━━ -->
+<div id="topProgress"><div id="topProgressFill" style="width:0%"></div></div>
+
 <!-- ━━ Screens ━━ -->
 <div id="screenArea">
 
@@ -1060,7 +1104,10 @@ body.light #toast{background:#fff;color:var(--text)}
       <button class="hw-filter-btn"        id="hwf-done" onclick="setHwFilter('done')">完了済み</button>
       <button class="hw-filter-btn"        id="hwf-star" onclick="setHwFilter('star')">⭐ 重要</button>
     </div>
-    <div class="slabel">宿題リスト</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <div class="slabel" style="margin-bottom:0">宿題リスト</div>
+      <button class="hw-bulk-btn" id="hwBulkBtn" style="width:auto;padding:5px 12px;margin-bottom:0;font-size:.62rem" onclick="bulkCompleteHW()">✓ 全て完了</button>
+    </div>
     <div id="hwList"></div>
   </div>
 </div>
@@ -1197,6 +1244,10 @@ body.light #toast{background:#fff;color:var(--text)}
     <div class="settings-handle"></div>
     <div class="settings-title">設定</div>
     <div class="settings-item">
+      <div><div class="si-label">ユーザー名</div><div class="si-sub">グリーティングに表示</div></div>
+      <input class="si-input" id="userNameInput" type="text" placeholder="名前を入力…" maxlength="12" oninput="saveUserName(this.value)">
+    </div>
+    <div class="settings-item">
       <div><div class="si-label">ライトモード</div><div class="si-sub">明るい色テーマに切替</div></div>
       <div class="sound-toggle" onclick="toggleLightMode()">
         <div class="toggle-track" id="lightModeTrack"><div class="toggle-thumb"></div></div>
@@ -1274,6 +1325,13 @@ body.light #toast{background:#fff;color:var(--text)}
   </div>
 </div>
 
+<!-- ━━ Streak Popup ━━ -->
+<div class="streak-popup" id="streakPopup">
+  <span class="sp-ico">🔥</span>
+  <div class="sp-num" id="spNum">1</div>
+  <div class="sp-lbl">日連続チェック！</div>
+</div>
+
 <!-- ━━ Offline Banner ━━ -->
 <div id="offlineBanner">📡 オフライン ― キャッシュデータで動作中</div>
 
@@ -1308,6 +1366,10 @@ body.light #toast{background:#fff;color:var(--text)}
   <div class="spl-ico">💰</div>
   <div class="spl-title">マネぼう</div>
   <div class="spl-sub">Money Bo Academy</div>
+  <div class="spl-chars">
+    <img class="spl-char" src="../マネぼうHP/images/img6.webp" alt="えんだ" onerror="this.style.display='none'">
+    <img class="spl-char" src="../マネぼうHP/images/img5.webp" alt="ふくろう" onerror="this.style.display='none'">
+  </div>
   <div class="spl-bar"><div class="spl-fill"></div></div>
 </div>
 
@@ -1484,7 +1546,7 @@ function syncCoins(){
   });
   const te=document.getElementById('heroTotalEarned');
   if(te)te.textContent=fmt(S.totalEarned||0)+' 🪙';
-  updateNavBadges();updateTodayEarned();
+  updateNavBadges();updateTodayEarned();updateTopProgress();
 }
 
 // ━━ Nav badges ━━
@@ -1834,6 +1896,9 @@ function checkHabit(id){
   playSound('check');
   addCoins(h?h.coins:REWARDS.habit,'習慣チェック！',false);
   showFeedback(true,'習慣チェック！ ✅',(h?.name||'習慣')+' +'+(h?.coins||10)+' コイン獲得');
+  // ストリーク強調
+  const streak=calcStreak([...(S.habitLogs[id]||[])]);
+  if(streak>=2)setTimeout(()=>showStreakPopup(streak),400);
 }
 
 // ━━ Homework ━━
@@ -2041,6 +2106,51 @@ function renderWeekCoinWidget(){
     </div>`).join('')}</div>`;
 }
 
+// ━━ User name ━━
+function saveUserName(v){S.userName=v.trim();save();}
+function loadUserNameUI(){
+  const el=document.getElementById('userNameInput');
+  if(el&&S.userName)el.value=S.userName;
+}
+
+// ━━ Top progress bar ━━
+function updateTopProgress(){
+  const td=today();
+  const habitsActive=allHabits().filter(h=>!h.disabled);
+  const habitsDone=habitsActive.filter(h=>(S.habitLogs[h.id]||[]).includes(td)).length;
+  const hwToday=S.homework.filter(h=>h.dueDate===td).length;
+  const hwDoneToday=S.homework.filter(h=>h.dueDate===td&&h.done).length;
+  const total=habitsActive.length+(hwToday||0);
+  const done=habitsDone+(hwDoneToday||0);
+  const pct=total>0?Math.round(done/total*100):0;
+  const el=document.getElementById('topProgressFill');
+  if(el)el.style.width=pct+'%';
+}
+
+// ━━ Streak popup ━━
+let _spTimer=null;
+function showStreakPopup(n){
+  const el=document.getElementById('streakPopup');
+  const num=document.getElementById('spNum');
+  if(!el)return;
+  if(num)num.textContent=n;
+  el.className='streak-popup show';
+  clearTimeout(_spTimer);
+  _spTimer=setTimeout(()=>{el.className='streak-popup';},1800);
+}
+
+// ━━ Bulk complete HW ━━
+function bulkCompleteHW(){
+  const pending=S.homework.filter(h=>!h.done);
+  if(!pending.length)return;
+  if(!confirm(`未完了の宿題${pending.length}件を全て完了にしますか？`))return;
+  const earned=pending.length*REWARDS.homework;
+  pending.forEach(h=>{h.done=true;h.doneAt=today();});
+  save();launchConfetti();playSound('done');
+  addCoins(earned,'まとめて完了！',false);
+  renderHomework();showToast(`${pending.length}件完了！+${earned}コイン`,'good');
+}
+
 // ━━ Today earned display ━━
 function updateTodayEarned(){
   const history=S.coinHistory||{};
@@ -2146,8 +2256,9 @@ function exportData(){
 // ━━ Greeting ━━
 function renderGreeting(){
   const h=new Date().getHours();
-  const greet=h<5?'深夜もお疲れさま！':h<10?'おはようございます！':h<17?'こんにちは！':h<21?'こんばんは！':'お疲れさまです！';
-  const el=document.getElementById('greetingText');if(el)el.textContent=greet;
+  const base=h<5?'深夜もお疲れさま':h<10?'おはようございます':h<17?'こんにちは':h<21?'こんばんは':'お疲れさまです';
+  const name=S.userName?`、${S.userName}さん`:'';
+  const el=document.getElementById('greetingText');if(el)el.textContent=base+name+'！';
 }
 
 // ━━ HW filter ━━
@@ -2434,7 +2545,7 @@ if('serviceWorker' in navigator){
 
 // ━━ Init ━━
 function init(){
-  load();checkLogin();syncCoins();snapCoinHistory();updateSoundUI();applyLightMode();setupOffline();renderHome();checkAchievements();
+  load();checkLogin();syncCoins();snapCoinHistory();updateSoundUI();applyLightMode();setupOffline();loadUserNameUI();renderHome();checkAchievements();
   // 初回のみウェルカム表示（スプラッシュ後）
   if(!S.welcomed){setTimeout(()=>{document.getElementById('welcomeOver').className='welcome-over show';},1700);}
   const di=document.getElementById('hwDateInput');
