@@ -502,6 +502,21 @@ html,body{width:100%;height:100%;background:#000;overflow:hidden}
 .toggle-track.on{background:rgba(87,200,124,.4);border-color:rgba(87,200,124,.5)}
 .toggle-thumb{width:14px;height:14px;border-radius:50%;background:var(--muted);position:absolute;top:2px;left:2px;transition:all .2s;box-shadow:0 1px 4px rgba(0,0,0,.4)}
 .toggle-track.on .toggle-thumb{left:18px;background:#fff}
+/* ━━ Study filter ━━ */
+.study-filter-btn{
+  padding:4px 10px;border-radius:999px;border:1px solid var(--line);
+  background:var(--sf);font-size:.56rem;font-weight:900;color:var(--muted);
+  font-family:inherit;cursor:pointer;transition:all .15s;letter-spacing:.06em;
+}
+.study-filter-btn.active{border-color:rgba(201,168,76,.4);background:rgba(201,168,76,.1);color:var(--acc)}
+/* ━━ Total earned display ━━ */
+.total-earned-row{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 12px;background:rgba(201,168,76,.04);
+  border:1px solid rgba(201,168,76,.12);border-radius:8px;margin-top:8px;
+}
+.te-label{font-size:.58rem;color:var(--muted);letter-spacing:.08em}
+.te-val{font-family:var(--serif);font-size:.9rem;font-weight:700;color:var(--acc)}
 /* ━━ Tsumitate sim ━━ */
 .tsum-wrap{background:var(--sf);border:1px solid rgba(201,168,76,.15);border-radius:10px;padding:13px;margin-bottom:10px}
 .tsum-title{font-size:.58rem;font-weight:900;color:var(--acc);letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px}
@@ -690,6 +705,10 @@ html,body{width:100%;height:100%;background:#000;overflow:hidden}
       <div>
         <div class="coin-banner-sub">ゲーム内コイン</div>
         <div class="coin-banner-val">🪙 <span id="heroCoins">0</span></div>
+        <div class="total-earned-row">
+          <span class="te-label">累計獲得</span>
+          <span class="te-val" id="heroTotalEarned">0 🪙</span>
+        </div>
       </div>
       <div class="coin-banner-right">
         <div class="coin-banner-sub">連続ログイン</div>
@@ -720,7 +739,14 @@ html,body{width:100%;height:100%;background:#000;overflow:hidden}
 <!-- ── 学習 ── -->
 <div class="screen" id="studyScreen">
   <div class="inner">
-    <div class="slabel">ゲーム × カリキュラム</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div class="slabel" style="margin-bottom:0">ゲーム × カリキュラム</div>
+      <div style="display:flex;gap:5px">
+        <button class="study-filter-btn active" id="sf-all"  onclick="setStudyFilter('all')">全て</button>
+        <button class="study-filter-btn"        id="sf-todo" onclick="setStudyFilter('todo')">未完了</button>
+        <button class="study-filter-btn"        id="sf-done" onclick="setStudyFilter('done')">完了</button>
+      </div>
+    </div>
     <div id="gameList"></div>
     <div class="divider"></div>
     <div class="ph-card">
@@ -1089,6 +1115,8 @@ function syncCoins(){
   ['tStreak','heroStreak'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.textContent=S.streak;
   });
+  const te=document.getElementById('heroTotalEarned');
+  if(te)te.textContent=fmt(S.totalEarned||0)+' 🪙';
   updateNavBadges();
 }
 
@@ -1237,9 +1265,26 @@ function renderHome(){
     :'<div class="empty-state"><span class="es-ico">🎉</span>今日のやることは全部完了！</div>';
 }
 
+// ━━ Study filter ━━
+let _studyFilter='all';
+function setStudyFilter(f){
+  _studyFilter=f;
+  ['all','todo','done'].forEach(x=>{
+    const el=document.getElementById('sf-'+x);
+    if(el)el.className='study-filter-btn'+(x===f?' active':'');
+  });
+  renderStudy();
+}
+
 // ━━ Study ━━
 function renderStudy(){
-  document.getElementById('gameList').innerHTML=GAMES.map(g=>{
+  const filteredGames=GAMES.filter(g=>{
+    if(_studyFilter==='all')return true;
+    if(_studyFilter==='done')return g.ready&&g.lessons.every(l=>S.lessonDone[g.id+'_'+l.id]);
+    if(_studyFilter==='todo')return !g.ready||!g.lessons.every(l=>S.lessonDone[g.id+'_'+l.id]);
+    return true;
+  });
+  document.getElementById('gameList').innerHTML=filteredGames.map(g=>{
     const doneCnt=Object.keys(S.lessonDone).filter(k=>k.startsWith(g.id+'_')).length;
     return`
       <div class="game-block${g.ready?' ready':''}" id="gc-${g.id}">
