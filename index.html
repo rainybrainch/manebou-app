@@ -727,6 +727,50 @@ body.light #toast{background:#fff;color:var(--text)}
 .hw-star.on{filter:none;animation:starPop .3s ease}
 @keyframes starPop{0%{transform:scale(0)}60%{transform:scale(1.3)}100%{transform:scale(1)}}
 .hw-item.priority{border-color:rgba(201,168,76,.35);background:rgba(201,168,76,.03)}
+/* ━━ Coin rank ━━ */
+.coin-rank-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:8px 16px;border-radius:99px;
+  border:1px solid;font-weight:900;font-size:.8rem;
+  letter-spacing:.06em;margin-top:10px;
+}
+/* ━━ Streak ranking ━━ */
+.streak-rank-list{display:flex;flex-direction:column;gap:5px;margin-top:8px}
+.streak-rank-item{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 12px;background:var(--sf);border:1px solid var(--line);border-radius:9px;
+}
+.sr-rank{font-family:var(--serif);font-size:.9rem;font-weight:700;color:var(--muted);min-width:20px}
+.sr-rank.gold{color:#ffd700}.sr-rank.silver{color:#c0c0c0}.sr-rank.bronze{color:#cd7f32}
+.sr-ico{font-size:1.1rem;flex-shrink:0}
+.sr-name{flex:1;font-size:.74rem;font-weight:900;color:var(--text)}
+.sr-streak{font-family:var(--serif);font-size:.82rem;font-weight:700;color:var(--ora)}
+/* ━━ News ticker ━━ */
+.news-ticker{
+  background:rgba(107,182,255,.05);border:1px solid rgba(107,182,255,.12);
+  border-radius:8px;padding:7px 12px;margin-bottom:12px;
+  display:flex;align-items:center;gap:8px;overflow:hidden;
+}
+.ticker-label{font-size:.52rem;font-weight:900;color:var(--blue);letter-spacing:.1em;white-space:nowrap;flex-shrink:0}
+.ticker-text{font-size:.68rem;color:var(--muted);white-space:nowrap;overflow:hidden;
+  animation:tickerScroll 18s linear infinite}
+@keyframes tickerScroll{0%{transform:translateX(100%)}100%{transform:translateX(-100%)}}
+/* ━━ Guide modal ━━ */
+.guide-over{
+  position:fixed;inset:0;z-index:800;background:rgba(7,8,13,.94);backdrop-filter:blur(14px);
+  display:none;flex-direction:column;
+}
+.guide-over.show{display:flex;animation:fadeScaleIn .3s ease}
+.guide-panel{flex:1;overflow-y:auto;padding:20px 18px 40px}
+.guide-section{margin-bottom:20px}
+.guide-title{font-family:var(--serif);font-size:1.1rem;font-weight:700;color:var(--acc);margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid rgba(201,168,76,.2)}
+.guide-item{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+.guide-item:last-child{border-bottom:none}
+.guide-ico{font-size:1.2rem;flex-shrink:0;width:28px;text-align:center}
+.guide-text{flex:1}
+.guide-name{font-size:.76rem;font-weight:900;color:var(--text);margin-bottom:2px}
+.guide-desc{font-size:.64rem;color:var(--muted);line-height:1.55}
+.guide-close-btn{padding:12px;text-align:center;flex-shrink:0;border-top:1px solid var(--line);background:rgba(7,8,13,.96)}
 /* ━━ Custom habit form ━━ */
 .custom-habit-form{
   background:var(--sf);border:1px solid var(--line);border-radius:10px;
@@ -1034,6 +1078,7 @@ body.light #toast{background:#fff;color:var(--text)}
 <!-- ── ホーム ── -->
 <div class="screen active" id="homeScreen">
   <div class="inner">
+    <div class="news-ticker"><span class="ticker-label">📰 TODAY</span><span class="ticker-text" id="newsTicker"></span></div>
     <div class="greeting-row">
       <div>
         <div class="greeting-text" id="greetingText">こんにちは！</div>
@@ -1128,6 +1173,9 @@ body.light #toast{background:#fff;color:var(--text)}
       </div>
     </div>
     <div class="divider"></div>
+    <div class="slabel">連続記録ランキング</div>
+    <div id="streakRankList" class="streak-rank-list"></div>
+    <div class="divider"></div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0">
       <div class="slabel" style="margin-bottom:0">習慣記録</div>
       <div style="display:flex;align-items:center;gap:6px">
@@ -1192,6 +1240,7 @@ body.light #toast{background:#fff;color:var(--text)}
       <div>
         <div class="mkt-coin-lbl">保有コイン</div>
         <div class="mkt-coin-val">🪙 <span id="mktCoins">0</span></div>
+        <div id="coinRankBadge" class="coin-rank-badge"></div>
       </div>
       <button class="share-btn" onclick="shareProgress()">📤 シェア</button>
     </div>
@@ -1346,6 +1395,18 @@ body.light #toast{background:#fff;color:var(--text)}
       <button class="si-btn neutral" onclick="exportData()">保存 ↓</button>
     </div>
     <div class="settings-item">
+      <div><div class="si-label">サウンドプレビュー</div><div class="si-sub">通知音を確認する</div></div>
+      <div style="display:flex;gap:5px">
+        <button class="si-btn neutral" onclick="playSound('coin')">🪙</button>
+        <button class="si-btn neutral" onclick="playSound('check')">✅</button>
+        <button class="si-btn neutral" onclick="playSound('done')">🎉</button>
+      </div>
+    </div>
+    <div class="settings-item">
+      <div><div class="si-label">使い方ガイド</div><div class="si-sub">アプリの機能を確認</div></div>
+      <button class="si-btn neutral" onclick="openGuide()">開く</button>
+    </div>
+    <div class="settings-item">
       <div><div class="si-label">フィードバック</div><div class="si-sub">改善要望・バグ報告</div></div>
       <a href="mailto:fukuisho0603@gmail.com?subject=マネぼうアプリ フィードバック" class="si-btn neutral" style="text-decoration:none;display:inline-block">送る ↗</a>
     </div>
@@ -1366,6 +1427,39 @@ body.light #toast{background:#fff;color:var(--text)}
   <div class="enc-title" id="encTitle">すごい！</div>
   <div class="enc-msg"   id="encMsg"></div>
   <button class="btn-grn" style="margin-top:8px;padding:11px 24px" onclick="closeEnc()">やったー！</button>
+</div>
+
+<!-- ━━ Guide ━━ -->
+<div class="guide-over" id="guideOver">
+  <div style="padding:16px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;background:rgba(7,8,13,.96);flex-shrink:0">
+    <span style="font-family:var(--serif);font-size:1rem;font-weight:700;color:var(--acc)">📖 使い方ガイド</span>
+    <button onclick="closeGuide()" style="margin-left:auto;background:none;border:1px solid var(--line);border-radius:6px;padding:4px 10px;font-size:.7rem;color:var(--muted);cursor:pointer">閉じる</button>
+  </div>
+  <div class="guide-panel">
+    <div class="guide-section">
+      <div class="guide-title">🪙 コインの稼ぎ方</div>
+      <div class="guide-item"><div class="guide-ico">🔥</div><div class="guide-text"><div class="guide-name">ログインボーナス</div><div class="guide-desc">毎日アプリを開くと +5コイン。連続記録でマイルストーンボーナスも！</div></div></div>
+      <div class="guide-item"><div class="guide-ico">📅</div><div class="guide-text"><div class="guide-name">習慣チェック</div><div class="guide-desc">各習慣をチェックするたびに +10コイン。毎日続けよう。</div></div></div>
+      <div class="guide-item"><div class="guide-ico">📝</div><div class="guide-text"><div class="guide-name">宿題完了</div><div class="guide-desc">宿題を1件完了するたびに +50コイン。難しい宿題ほどやりがいあり！</div></div></div>
+      <div class="guide-item"><div class="guide-ico">📚</div><div class="guide-text"><div class="guide-name">レッスン完了</div><div class="guide-desc">各レッスンを初めてクリアすると +30コイン。全完了で +100コインボーナス！</div></div></div>
+    </div>
+    <div class="guide-section">
+      <div class="guide-title">📱 基本操作</div>
+      <div class="guide-item"><div class="guide-ico">🏠</div><div class="guide-text"><div class="guide-name">ホーム画面</div><div class="guide-desc">サマリーカードをタップすると各画面へ移動。キャラをタップで切替。</div></div></div>
+      <div class="guide-item"><div class="guide-ico">📅</div><div class="guide-text"><div class="guide-name">習慣タブ</div><div class="guide-desc">チェックすると連続記録が積み上がる。オリジナル習慣も追加できる。</div></div></div>
+      <div class="guide-item"><div class="guide-ico">📝</div><div class="guide-text"><div class="guide-name">宿題タブ</div><div class="guide-desc">期限・ゲームタグ・難易度を設定できる。⭐で重要マーク、✏️で編集。</div></div></div>
+      <div class="guide-item"><div class="guide-ico">📈</div><div class="guide-text"><div class="guide-name">市場タブ</div><div class="guide-desc">コインの推移グラフ・積立シミュレーション・配当シミュレーションを確認。</div></div></div>
+    </div>
+    <div class="guide-section">
+      <div class="guide-title">⚙️ カスタマイズ</div>
+      <div class="guide-item"><div class="guide-ico">🎨</div><div class="guide-text"><div class="guide-name">テーマカラー</div><div class="guide-desc">設定からアクセントカラーを6色から選択できる。</div></div></div>
+      <div class="guide-item"><div class="guide-ico">🌙</div><div class="guide-text"><div class="guide-name">ライトモード</div><div class="guide-desc">設定から明るいテーマに切り替えられる。</div></div></div>
+      <div class="guide-item"><div class="guide-ico">👤</div><div class="guide-text"><div class="guide-name">ユーザー名</div><div class="guide-desc">設定に名前を入力するとグリーティングに表示される。</div></div></div>
+    </div>
+  </div>
+  <div class="guide-close-btn">
+    <button class="btn-acc" style="width:100%;max-width:300px;padding:12px" onclick="closeGuide()">閉じる</button>
+  </div>
 </div>
 
 <!-- ━━ All Badges Cleared ━━ -->
@@ -1736,7 +1830,7 @@ function renderWeekly(){
 
 // ━━ Home ━━
 function renderHome(){
-  syncCoins();updateNavBadges();renderDateChip();renderGreeting();renderQuote();
+  syncCoins();updateNavBadges();renderDateChip();renderGreeting();renderQuote();renderTicker();
   const dayIdx=Math.floor(Date.now()/86400000);
   renderCharBubble('homeCharBubble',dayIdx%2===0?'enda':'fukurou');
 
@@ -1933,7 +2027,7 @@ function renderHeatmap(){
 function renderHabits(){
   const dayIdx=Math.floor(Date.now()/86400000);
   renderCharBubble('habitCharBubble',dayIdx%2===0?'fukurou':'enda');
-  renderHeatmap();renderHabitEmojiRow();renderHabitMonthBadge();
+  renderHeatmap();renderHabitEmojiRow();renderHabitMonthBadge();renderStreakRanking();
   const td=today();
   // チェック済みを下部に移動
   const habitsAll=[
@@ -2097,7 +2191,7 @@ function drawCoinHistory(){
 
 // ━━ Market ━━
 function renderMarket(){
-  syncCoins();snapCoinHistory();renderCoinLog();renderMktAdvice();renderCoinTips();
+  syncCoins();snapCoinHistory();renderCoinLog();renderMktAdvice();renderCoinTips();renderCoinRank();
   setTimeout(()=>{drawCoinHistory();calcTsum();},50);
   // コイン配当シミュレーション（仮定: 年利3%・5%・8%）
   const c=S.coins;
@@ -2192,6 +2286,77 @@ function renderWeekCoinWidget(){
       <div class="wc-bar-label" style="color:${d.isToday?'var(--acc)':'var(--faint)'}">${d.day}</div>
     </div>`).join('')}</div>`;
 }
+
+// ━━ News ticker ━━
+const NEWS_ITEMS=[
+  '日経平均株価は長期的に見て右肩上がりの傾向があります',
+  '複利効果：毎日10コイン積み立てで10年後に驚きの結果に',
+  '分散投資の基本：株・債券・不動産・金を組み合わせよう',
+  'オイルショック（1973年）→ 日本経済が省エネ技術で復活',
+  'バブル崩壊（1990年）→ 失われた30年の始まりを学ぼう',
+  'リーマンショック（2008年）→ 世界同時不況から何を学ぶ？',
+  'アベノミクス（2012年）→ 3本の矢で日本株が急騰',
+  'コロナショック（2020年）→ 最大の暴落から最速回復へ',
+  '今日の習慣チェックは完了しましたか？ +10コイン待ってます',
+  '宿題を期限内に完了すると +50コイン！忘れずに',
+];
+function renderTicker(){
+  const el=document.getElementById('newsTicker');if(!el)return;
+  const idx=Math.floor(Date.now()/3600000)%NEWS_ITEMS.length;
+  el.textContent=NEWS_ITEMS[idx]+' ・ '+NEWS_ITEMS[(idx+1)%NEWS_ITEMS.length];
+}
+
+// ━━ Coin rank ━━
+const COIN_RANKS=[
+  {min:0,   label:'🥉 ブロンズ', c:'#cd7f32', bc:'rgba(205,127,50,.2)'},
+  {min:100, label:'🥈 シルバー', c:'#c0c0c0', bc:'rgba(192,192,192,.2)'},
+  {min:500, label:'🥇 ゴールド', c:'#ffd700', bc:'rgba(255,215,0,.2)'},
+  {min:1000,label:'💎 プラチナ', c:'#a78bfa', bc:'rgba(167,139,250,.2)'},
+  {min:3000,label:'👑 ダイヤモンド',c:'#6bb6ff',bc:'rgba(107,182,255,.2)'},
+];
+function renderCoinRank(){
+  const el=document.getElementById('coinRankBadge');if(!el)return;
+  const rank=[...COIN_RANKS].reverse().find(r=>S.coins>=r.min)||COIN_RANKS[0];
+  const next=COIN_RANKS[COIN_RANKS.findIndex(r=>r===rank)+1];
+  el.textContent=rank.label;
+  el.style.cssText=`color:${rank.c};border-color:${rank.bc};background:${rank.bc};display:inline-flex`;
+  // 次のランクまでの進捗
+  if(next){const pct=Math.min(100,Math.round((S.coins-rank.min)/(next.min-rank.min)*100));el.title=`次のランクまで${next.min-S.coins}コイン (${pct}%)`;}
+}
+
+// ━━ Streak ranking ━━
+function renderStreakRanking(){
+  const el=document.getElementById('streakRankList');if(!el)return;
+  const habits=allHabits().filter(h=>!h.disabled);
+  const ranked=habits.map(h=>{
+    const logs=S.habitLogs[h.id]||[];
+    // 最長連続記録を計算
+    const sorted=[...new Set(logs)].sort();
+    let maxStreak=0,cur=0,prev=null;
+    sorted.forEach(d=>{
+      if(prev){const diff=(new Date(d)-new Date(prev))/86400000;cur=diff<=1.5?cur+1:1;}
+      else cur=1;
+      if(cur>maxStreak)maxStreak=cur;
+      prev=d;
+    });
+    return{...h,maxStreak,curStreak:calcStreak(logs)};
+  }).sort((a,b)=>b.maxStreak-a.maxStreak).slice(0,5);
+  const medals=['🥇','🥈','🥉','4','5'];
+  const medalCls=['gold','silver','bronze','',''];
+  el.innerHTML=ranked.length
+    ?ranked.map((h,i)=>`
+      <div class="streak-rank-item">
+        <span class="sr-rank ${medalCls[i]}">${medals[i]}</span>
+        <span class="sr-ico">${h.emoji}</span>
+        <span class="sr-name">${h.name}</span>
+        <span class="sr-streak">🔥 最長${h.maxStreak}日 / 現在${h.curStreak}日</span>
+      </div>`).join('')
+    :'<div style="font-size:.7rem;color:var(--faint);padding:10px;text-align:center">習慣を追加してチェックすると記録が積まれます</div>';
+}
+
+// ━━ Guide ━━
+function openGuide(){document.getElementById('guideOver').className='guide-over show';closeSettings();}
+function closeGuide(){document.getElementById('guideOver').className='guide-over';}
 
 // ━━ Theme colors ━━
 const THEMES=[
