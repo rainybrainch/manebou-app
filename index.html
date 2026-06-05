@@ -601,6 +601,47 @@ html,body{width:100%;height:100%;background:#000;overflow:hidden}
 .si-btn.danger:hover{background:rgba(224,85,85,.18)}
 .si-btn.neutral{border:1px solid var(--line);background:var(--sf);color:var(--muted)}
 @keyframes settingsIn{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:translateY(0)}}
+/* ━━ Edit modal ━━ */
+.edit-modal{
+  position:fixed;inset:0;z-index:800;
+  background:rgba(7,8,13,.9);backdrop-filter:blur(14px);
+  display:none;align-items:center;justify-content:center;padding:20px;
+}
+.edit-modal.show{display:flex;animation:fadeScaleIn .3s ease}
+.edit-panel{
+  width:100%;max-width:380px;background:var(--bg2);
+  border:1px solid var(--line);border-radius:16px;padding:20px;
+}
+.edit-title{font-family:var(--serif);font-size:1rem;font-weight:700;color:var(--text);margin-bottom:14px}
+/* ━━ Game popup ━━ */
+.game-popup{
+  position:fixed;inset:0;z-index:750;
+  background:rgba(7,8,13,.88);backdrop-filter:blur(12px);
+  display:none;align-items:flex-end;justify-content:center;
+}
+.game-popup.show{display:flex;animation:fbSlideUp .3s ease}
+.game-popup-panel{
+  width:100%;max-width:430px;background:var(--bg2);
+  border-radius:18px 18px 0 0;border:1px solid var(--line);
+  padding:20px 18px 40px;
+}
+.gpp-handle{width:36px;height:3px;background:var(--line2);border-radius:99px;margin:0 auto 16px}
+.gpp-head{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.gpp-ico{width:48px;height:48px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.6rem;flex-shrink:0}
+.gpp-name{font-family:var(--serif);font-size:1.05rem;font-weight:700;color:var(--text)}
+.gpp-meta{font-size:.6rem;color:var(--muted);margin-top:3px;letter-spacing:.06em}
+.gpp-desc{font-size:.76rem;color:var(--muted);line-height:1.8;margin-bottom:14px}
+.gpp-lessons{display:flex;flex-direction:column;gap:3px;max-height:200px;overflow-y:auto}
+/* ━━ Light mode ━━ */
+body.light{
+  --bg:#f5f5f0;--bg2:#ebebea;--sf:rgba(0,0,0,.04);--sf2:rgba(0,0,0,.07);
+  --line:rgba(0,0,0,.1);--line2:rgba(0,0,0,.18);
+  --text:#1a1a2a;--muted:rgba(26,26,42,.5);--faint:rgba(26,26,42,.2);
+  --acc:#9a7c28;--grn:#2d9e55;--red:#c43030;--ora:#c45c10;
+}
+body.light #app,body.light #splash{background:var(--bg)}
+body.light #topBar,body.light #bottomNav{background:rgba(245,245,240,.97)}
+body.light #toast{background:#fff;color:var(--text)}
 /* ━━ Offline banner ━━ */
 #offlineBanner{
   position:fixed;top:var(--top);left:50%;transform:translateX(-50%);
@@ -980,6 +1021,12 @@ html,body{width:100%;height:100%;background:#000;overflow:hidden}
     <div class="settings-handle"></div>
     <div class="settings-title">設定</div>
     <div class="settings-item">
+      <div><div class="si-label">ライトモード</div><div class="si-sub">明るい色テーマに切替</div></div>
+      <div class="sound-toggle" onclick="toggleLightMode()">
+        <div class="toggle-track" id="lightModeTrack"><div class="toggle-thumb"></div></div>
+      </div>
+    </div>
+    <div class="settings-item">
       <div><div class="si-label">サウンドエフェクト</div><div class="si-sub">コイン獲得・完了音</div></div>
       <div class="sound-toggle" onclick="toggleSound()">
         <div class="toggle-track" id="soundTrack"><div class="toggle-thumb"></div></div>
@@ -997,6 +1044,33 @@ html,body{width:100%;height:100%;background:#000;overflow:hidden}
       <div><div class="si-label">閉じる</div></div>
       <button class="si-btn neutral" onclick="closeSettings()">✕ 閉じる</button>
     </div>
+  </div>
+</div>
+
+<!-- ━━ HW Edit Modal ━━ -->
+<div class="edit-modal" id="hwEditModal" onclick="if(event.target===this)closeHwEdit()">
+  <div class="edit-panel">
+    <div class="edit-title">✏️ 宿題を編集</div>
+    <input class="hw-input" id="hwEditInput" type="text" placeholder="宿題の内容" maxlength="60" style="margin-bottom:12px">
+    <div style="display:flex;gap:8px">
+      <button class="btn-grn" style="flex:1" onclick="saveHwEdit()">保存</button>
+      <button onclick="closeHwEdit()" style="flex:1;padding:9px;border-radius:8px;border:1px solid var(--line);background:var(--sf);color:var(--muted);font-family:inherit;font-size:.82rem;font-weight:900;cursor:pointer">キャンセル</button>
+    </div>
+  </div>
+</div>
+
+<!-- ━━ Game Popup ━━ -->
+<div class="game-popup" id="gamePopup" onclick="if(event.target===this)closeGamePopup()">
+  <div class="game-popup-panel">
+    <div class="gpp-handle"></div>
+    <div class="gpp-head">
+      <div class="gpp-ico" id="gppIco"></div>
+      <div><div class="gpp-name" id="gppName"></div><div class="gpp-meta" id="gppMeta"></div></div>
+    </div>
+    <div class="gpp-desc" id="gppDesc"></div>
+    <div class="slabel">レッスン一覧</div>
+    <div class="gpp-lessons" id="gppLessons"></div>
+    <button class="btn-acc" style="width:100%;margin-top:14px;padding:12px" onclick="closeGamePopup()">閉じる</button>
   </div>
 </div>
 
@@ -1378,9 +1452,9 @@ function renderStudy(){
           <div class="gb-info">
             <div class="gb-name">${g.name}</div>
             <div class="gb-meta">${g.ready?g.lessons.length+' レッスン':'準備中 ― 近日公開'}</div>
-            ${g.ready&&g.lessons.length?`<div class="gb-prog">✓ ${doneCnt} / ${g.lessons.length} 完了</div><div class="game-prog-bar"><div class="game-prog-fill" style="width:${Math.round(doneCnt/g.lessons.length*100)}%;background:${g.color}99"></div></div>`:''}
+            ${g.ready&&g.lessons.length?`<div class="gb-prog">✓ ${doneCnt} / ${g.lessons.length} 完了 ${doneCnt===g.lessons.length?'👑':''}</div><div class="game-prog-bar"><div class="game-prog-fill" style="width:${Math.round(doneCnt/g.lessons.length*100)}%;background:${g.color}99"></div></div>`:''}
           </div>
-          ${g.ready?`<span class="gb-arrow" style="color:${g.color}aa">▶</span>`:''}
+          ${g.ready?`<button onclick="event.stopPropagation();openGamePopup('${g.id}')" style="background:none;border:1px solid ${g.color}44;border-radius:6px;padding:4px 8px;font-size:.56rem;font-weight:900;color:${g.color};cursor:pointer;flex-shrink:0;margin-right:5px">詳細</button><span class="gb-arrow" style="color:${g.color}aa">▶</span>`:''}
         </div>
         <div class="game-block-body">
           ${g.lessons.length
@@ -1535,6 +1609,7 @@ function renderHomework(){
         ${h.dueDate&&!dueToday?`<div class="hw-due${overdue?' overdue':''}">期限：${h.dueDate}${overdue?' ⚠️':''}</div>`:''}
       </div>
       <button class="hw-star${h.priority?' on':''}" onclick="togglePriority('${h.id}')">⭐</button>
+      ${!h.done?`<button onclick="openHwEdit('${h.id}')" style="background:none;border:none;color:var(--muted);font-size:.75rem;cursor:pointer;padding:2px;flex-shrink:0;transition:color .15s" onmouseover="this.style.color='var(--acc)'" onmouseout="this.style.color='var(--muted)'">✏️</button>`:''}
       <button class="hw-del" onclick="deleteHW('${h.id}')">✕</button>
     </div>`;
   };
@@ -1817,6 +1892,65 @@ function renderAchBadges(){
   }).join('');
 }
 
+// ━━ HW edit ━━
+let _editingHwId=null;
+function openHwEdit(id){
+  const h=S.homework.find(x=>x.id===id);if(!h)return;
+  _editingHwId=id;
+  document.getElementById('hwEditInput').value=h.title;
+  document.getElementById('hwEditModal').className='edit-modal show';
+}
+function closeHwEdit(){document.getElementById('hwEditModal').className='edit-modal';_editingHwId=null;}
+function saveHwEdit(){
+  const h=S.homework.find(x=>x.id===_editingHwId);if(!h)return;
+  const v=document.getElementById('hwEditInput').value.trim();if(!v)return;
+  h.title=v;save();closeHwEdit();renderHomework();
+  showToast('宿題を更新しました','good');
+}
+
+// ━━ Game popup ━━
+const GAME_DESCS={
+  itadaki:'ボードゲーム「いただきストリート」を使って投資・経済を体験。物件購入・配当・売買のリアルな感覚を身につける。',
+  jinsei:'人生ゲームを使ってライフプランと家計管理を学ぶ。収入・支出・貯蓄のバランスを体験する。',
+  momotetsu:'桃鉄教育版で全国の産業・地理・経済を学ぶ。地域経済と投資の関係を理解する。',
+  zai:'株式投資ゲームZAiで相場の読み方・リスク管理・企業分析を実践的に学ぶ。',
+  monopoly:'モノポリーで不動産投資・ローン・資産形成の基礎を体験する。交渉力も鍛える。',
+};
+function openGamePopup(gameId){
+  const g=GAMES.find(x=>x.id===gameId);if(!g)return;
+  const doneCnt=Object.keys(S.lessonDone).filter(k=>k.startsWith(g.id+'_')).length;
+  document.getElementById('gppIco').style.cssText=`background:${g.color}18;border:1px solid ${g.color}30`;
+  document.getElementById('gppIco').textContent=g.emoji;
+  document.getElementById('gppName').textContent=g.name;
+  document.getElementById('gppMeta').textContent=g.ready?`${doneCnt}/${g.lessons.length} レッスン完了`:'準備中';
+  document.getElementById('gppDesc').textContent=GAME_DESCS[g.id]||'詳細は近日公開予定。';
+  document.getElementById('gppLessons').innerHTML=g.lessons.length
+    ?g.lessons.map((l,i)=>{
+        const done=S.lessonDone[g.id+'_'+l.id];
+        return`<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;background:${done?`rgba(87,200,124,.06)`:'rgba(255,255,255,.02)'};border:1px solid ${done?'rgba(87,200,124,.2)':'var(--line)'};margin-bottom:3px">
+          <span style="font-size:.58rem;font-weight:900;color:var(--muted);min-width:22px">L${String(i+1).padStart(2,'0')}</span>
+          <span style="flex:1;font-size:.72rem;color:var(--text)">${l.title}</span>
+          <span>${done?'✅':'⬜'}</span>
+        </div>`;
+      }).join('')
+    :'<div style="font-size:.7rem;color:var(--faint);text-align:center;padding:12px">レッスン準備中</div>';
+  document.getElementById('gamePopup').className='game-popup show';
+}
+function closeGamePopup(){document.getElementById('gamePopup').className='game-popup';}
+
+// ━━ Light mode ━━
+function toggleLightMode(){
+  S.lightMode=!S.lightMode;save();
+  applyLightMode();
+  const t=document.getElementById('lightModeTrack');
+  if(t)t.className='toggle-track'+(S.lightMode?' on':'');
+}
+function applyLightMode(){
+  document.body.className=S.lightMode?'light':'';
+  const t=document.getElementById('lightModeTrack');
+  if(t)t.className='toggle-track'+(S.lightMode?' on':'');
+}
+
 // ━━ Welcome / Settings ━━
 function startApp(){
   S.welcomed=true;save();
@@ -1838,7 +1972,7 @@ if('serviceWorker' in navigator){
 
 // ━━ Init ━━
 function init(){
-  load();checkLogin();syncCoins();snapCoinHistory();updateSoundUI();setupOffline();renderHome();checkAchievements();
+  load();checkLogin();syncCoins();snapCoinHistory();updateSoundUI();applyLightMode();setupOffline();renderHome();checkAchievements();
   // 初回のみウェルカム表示（スプラッシュ後）
   if(!S.welcomed){setTimeout(()=>{document.getElementById('welcomeOver').className='welcome-over show';},1700);}
   const di=document.getElementById('hwDateInput');
