@@ -734,6 +734,49 @@ body.light #toast{background:#fff;color:var(--text)}
   border:1px solid;font-weight:900;font-size:.8rem;
   letter-spacing:.06em;margin-top:10px;
 }
+/* ━━ Week score ━━ */
+.week-score-card{
+  background:linear-gradient(135deg,rgba(167,139,250,.08),rgba(167,139,250,.02));
+  border:1px solid rgba(167,139,250,.2);border-radius:12px;
+  padding:14px 16px;margin-bottom:14px;
+}
+.ws-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.ws-title{font-size:.58rem;font-weight:900;color:var(--pur);letter-spacing:.12em;text-transform:uppercase}
+.ws-score{font-family:var(--serif);font-size:1.8rem;font-weight:700;color:var(--pur);line-height:1}
+.ws-max{font-size:.58rem;color:var(--muted)}
+.ws-bars{display:flex;flex-direction:column;gap:5px}
+.ws-bar-row{display:flex;align-items:center;gap:8px}
+.ws-bar-label{font-size:.58rem;color:var(--muted);width:44px;text-align:right;flex-shrink:0}
+.ws-bar-bg{flex:1;height:4px;background:rgba(255,255,255,.06);border-radius:99px;overflow:hidden}
+.ws-bar-fill{height:100%;border-radius:99px;transition:width .5s cubic-bezier(.34,1.2,.64,1)}
+.ws-bar-num{font-size:.56rem;font-weight:900;width:24px;text-align:right;flex-shrink:0}
+/* ━━ Habit week summary ━━ */
+.habit-week-summary{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px;
+}
+.hws-cell{background:var(--sf);border:1px solid var(--line);border-radius:9px;padding:8px 6px;text-align:center}
+.hws-val{font-family:var(--serif);font-size:1.1rem;font-weight:700;color:var(--grn)}
+.hws-lbl{font-size:.5rem;color:var(--muted);margin-top:2px;letter-spacing:.06em}
+/* ━━ Char zoom ━━ */
+.char-zoom-over{
+  position:fixed;inset:0;z-index:850;background:rgba(7,8,13,.94);backdrop-filter:blur(16px);
+  display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px;
+}
+.char-zoom-over.show{display:flex;animation:fadeScaleIn .3s ease}
+.char-zoom-img{width:160px;height:160px;object-fit:cover;border-radius:50%;border:3px solid;box-shadow:0 8px 40px rgba(0,0,0,.5)}
+.char-zoom-img.enda{border-color:var(--blue);box-shadow:0 8px 40px rgba(107,182,255,.3)}
+.char-zoom-img.fukurou{border-color:var(--acc);box-shadow:0 8px 40px rgba(201,168,76,.3)}
+.char-zoom-name{font-family:var(--serif);font-size:1.2rem;font-weight:700;color:var(--text)}
+.char-zoom-quote{font-size:.76rem;color:var(--muted);max-width:280px;text-align:center;line-height:1.7;font-style:italic}
+/* ━━ Notification setting ━━ */
+.notif-status{font-size:.6rem;padding:4px 10px;border-radius:999px;border:1px solid;white-space:nowrap}
+.notif-status.granted{color:var(--grn);border-color:rgba(87,200,124,.3)}
+.notif-status.denied{color:var(--red);border-color:rgba(224,85,85,.3)}
+.notif-status.default{color:var(--muted);border-color:var(--line)}
+/* ━━ Partial reset ━━ */
+.partial-reset-row{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}
+.pr-btn{padding:4px 9px;border-radius:6px;border:1px solid rgba(224,85,85,.25);background:rgba(224,85,85,.06);color:var(--red);font-size:.6rem;font-weight:900;font-family:inherit;cursor:pointer;transition:all .15s}
+.pr-btn:hover{background:rgba(224,85,85,.16)}
 /* ━━ Milestone progress ━━ */
 .milestone-bar-wrap{margin-top:10px}
 .milestone-bar-label{display:flex;justify-content:space-between;font-size:.58rem;color:var(--muted);margin-bottom:4px}
@@ -1139,7 +1182,8 @@ body.light #toast{background:#fff;color:var(--text)}
         <div class="greeting-sub" id="homeDateChip">📅 ―</div>
       </div>
     </div>
-    <div id="homeCharBubble" class="char-bubble-wrap"></div>
+    <div id="homeCharBubble" class="char-bubble-wrap" id="homeCharSwipe"></div>
+    <div class="week-score-card" id="weekScoreCard"></div>
     <div class="quote-card" id="quoteCard"><div class="quote-text" id="quoteText"></div><div class="quote-author" id="quoteAuthor"></div></div>
 
     <!-- コイン + ストリーク バナー -->
@@ -1218,6 +1262,8 @@ body.light #toast{background:#fff;color:var(--text)}
 <div class="screen" id="habitsScreen">
   <div class="inner">
     <div id="habitCharBubble" class="char-bubble-wrap"></div>
+    <div class="slabel">今週の達成サマリー</div>
+    <div class="habit-week-summary" id="habitWeekSummary"></div>
     <div class="slabel">今日の習慣</div>
     <div id="habitList"></div>
     <div class="custom-habit-form">
@@ -1453,8 +1499,24 @@ body.light #toast{background:#fff;color:var(--text)}
       </div>
     </div>
     <div class="settings-item">
-      <div><div class="si-label">データをリセット</div><div class="si-sub">コイン・習慣・宿題・レッスンを全て削除</div></div>
-      <button class="si-btn danger" onclick="confirmReset()">リセット</button>
+      <div><div class="si-label">ブラウザ通知</div><div class="si-sub">習慣リマインダー通知</div></div>
+      <div style="display:flex;align-items:center;gap:7px">
+        <span class="notif-status" id="notifStatus">確認中</span>
+        <button class="si-btn neutral" id="notifBtn" onclick="requestNotification()">許可</button>
+      </div>
+    </div>
+    <div class="settings-item">
+      <div>
+        <div class="si-label">データをリセット</div>
+        <div class="si-sub">全て削除 または 部分削除</div>
+        <div class="partial-reset-row">
+          <button class="pr-btn" onclick="partialReset('homework')">宿題のみ</button>
+          <button class="pr-btn" onclick="partialReset('habits')">習慣のみ</button>
+          <button class="pr-btn" onclick="partialReset('lessons')">学習のみ</button>
+          <button class="pr-btn" onclick="partialReset('coins')">コインのみ</button>
+        </div>
+      </div>
+      <button class="si-btn danger" onclick="confirmReset()">全削除</button>
     </div>
     <div class="settings-item">
       <div><div class="si-label">テーマカラー</div><div class="si-sub">アクセントカラーを変更</div></div>
@@ -1565,6 +1627,14 @@ body.light #toast{background:#fff;color:var(--text)}
     <div class="gpp-lessons" id="gppLessons"></div>
     <button class="btn-acc" style="width:100%;margin-top:14px;padding:12px" onclick="closeGamePopup()">閉じる</button>
   </div>
+</div>
+
+<!-- ━━ Char Zoom ━━ -->
+<div class="char-zoom-over" id="charZoomOver" onclick="closeCharZoom()">
+  <img class="char-zoom-img" id="czImg" src="" alt="">
+  <div class="char-zoom-name" id="czName"></div>
+  <div class="char-zoom-quote" id="czQuote"></div>
+  <button class="btn-acc" style="margin-top:4px;padding:10px 24px" onclick="closeCharZoom()">閉じる</button>
 </div>
 
 <!-- ━━ Char Reaction ━━ -->
@@ -1904,7 +1974,7 @@ function renderWeekly(){
 
 // ━━ Home ━━
 function renderHome(){
-  syncCoins();updateNavBadges();renderDateChip();renderGreeting();renderQuote();renderTicker();
+  syncCoins();updateNavBadges();renderDateChip();renderGreeting();renderQuote();renderTicker();renderWeekScore();
   const dayIdx=Math.floor(Date.now()/86400000);
   renderCharBubble('homeCharBubble',dayIdx%2===0?'enda':'fukurou');
 
@@ -2125,7 +2195,7 @@ function renderHeatmap(){
 function renderHabits(){
   const dayIdx=Math.floor(Date.now()/86400000);
   renderCharBubble('habitCharBubble',dayIdx%2===0?'fukurou':'enda');
-  renderHeatmap();renderHabitEmojiRow();renderHabitMonthBadge();renderStreakRanking();
+  renderHeatmap();renderHabitEmojiRow();renderHabitMonthBadge();renderStreakRanking();renderHabitWeekSummary();
   const td=today();
   // チェック済みを下部に移動
   const habitsAll=[
@@ -2242,6 +2312,10 @@ function completeHW(id){
   showFeedback(true,'宿題完了！ 🎉',h.title+' +'+REWARDS.homework+' コイン獲得');
   setTimeout(showEncouragement,600);
   renderHomework();
+  // ホーム画面から完了した場合は宿題タブに移動
+  if(document.getElementById('homeScreen').classList.contains('active')){
+    setTimeout(()=>{nav('hwScreen','nb-hw');renderHomework();},700);
+  }
 }
 function deleteHW(id){
   S.homework=S.homework.filter(x=>x.id!==id);save();renderHomework();
@@ -2318,6 +2392,7 @@ function renderChars(){
         </div>
       </div>
       <div class="ccf-body">
+        <button onclick="openCharZoom('${ch.id}')" style="width:100%;margin-bottom:10px;padding:7px;border-radius:8px;border:1px solid var(--line);background:var(--sf);font-size:.7rem;font-weight:900;color:var(--muted);cursor:pointer;transition:all .15s" onmouseover="this.style.background='var(--sf2)'" onmouseout="this.style.background='var(--sf)'">🔍 拡大表示</button>
         <div class="ccf-quote">${ch.quote}</div>
         <div class="char-today-msg">
           <div class="ctm-label">💬 今日のメッセージ</div>
@@ -2532,6 +2607,117 @@ function toggleFlatView(){
   const el=document.getElementById('flatView');
   if(el)el.className='sort-btn'+(_flatView?' active':'');
   renderStudy();
+}
+
+// ━━ Week score ━━
+function renderWeekScore(){
+  const el=document.getElementById('weekScoreCard');if(!el)return;
+  const now=new Date(today());
+  const mon=new Date(now);mon.setDate(now.getDate()-((now.getDay()+6)%7));
+  const dates=[];for(let d=new Date(mon);d<=now;d.setDate(d.getDate()+1))dates.push(d.toISOString().slice(0,10));
+  const habitsActive=allHabits().filter(h=>!h.disabled);
+  let habitChecks=0,maxHabit=habitsActive.length*dates.length;
+  habitsActive.forEach(h=>{habitChecks+=(S.habitLogs[h.id]||[]).filter(d=>dates.includes(d)).length;});
+  const hwDone=S.homework.filter(h=>h.done&&dates.includes(h.doneAt)).length;
+  const hwTotal=S.homework.filter(h=>dates.includes(h.dueDate)||dates.includes(h.doneAt)).length;
+  const lessons=Object.keys(S.lessonDone).length;
+  const totalLessons=GAMES.filter(g=>g.ready).reduce((s,g)=>s+g.lessons.length,0)||1;
+  // スコア計算（習慣50点・宿題30点・レッスン20点）
+  const hScore=maxHabit?Math.round(habitChecks/maxHabit*50):0;
+  const hwScore=hwTotal?Math.round(hwDone/hwTotal*30):0;
+  const lScore=Math.round(Math.min(lessons/totalLessons,1)*20);
+  const total=hScore+hwScore+lScore;
+  const grade=total>=90?'S':total>=70?'A':total>=50?'B':total>=30?'C':'D';
+  const gradeC={S:'var(--gold)',A:'var(--grn)',B:'var(--sky)',C:'var(--acc)',D:'var(--muted)'}[grade];
+  el.innerHTML=`
+    <div class="ws-top">
+      <div>
+        <div class="ws-title">今週のスコア</div>
+        <div style="display:flex;align-items:baseline;gap:6px;margin-top:3px">
+          <div class="ws-score">${total}</div>
+          <div class="ws-max">/ 100</div>
+          <div style="font-family:var(--serif);font-size:1.5rem;font-weight:700;color:${gradeC};margin-left:4px">${grade}</div>
+        </div>
+      </div>
+    </div>
+    <div class="ws-bars">
+      <div class="ws-bar-row"><span class="ws-bar-label">習慣</span><div class="ws-bar-bg"><div class="ws-bar-fill" style="width:${maxHabit?habitChecks/maxHabit*100:0}%;background:var(--grn)"></div></div><span class="ws-bar-num" style="color:var(--grn)">${hScore}</span></div>
+      <div class="ws-bar-row"><span class="ws-bar-label">宿題</span><div class="ws-bar-bg"><div class="ws-bar-fill" style="width:${hwTotal?hwDone/hwTotal*100:0}%;background:var(--acc)"></div></div><span class="ws-bar-num" style="color:var(--acc)">${hwScore}</span></div>
+      <div class="ws-bar-row"><span class="ws-bar-label">学習</span><div class="ws-bar-bg"><div class="ws-bar-fill" style="width:${lessons/totalLessons*100}%;background:var(--pur)"></div></div><span class="ws-bar-num" style="color:var(--pur)">${lScore}</span></div>
+    </div>`;
+}
+
+// ━━ Habit week summary ━━
+function renderHabitWeekSummary(){
+  const el=document.getElementById('habitWeekSummary');if(!el)return;
+  const now=new Date(today());
+  const mon=new Date(now);mon.setDate(now.getDate()-((now.getDay()+6)%7));
+  const dates=[];for(let d=new Date(mon);d<=now;d.setDate(d.getDate()+1))dates.push(d.toISOString().slice(0,10));
+  const habitsActive=allHabits().filter(h=>!h.disabled);
+  let total=0,done=0;
+  habitsActive.forEach(h=>{
+    total+=dates.length;
+    done+=(S.habitLogs[h.id]||[]).filter(d=>dates.includes(d)).length;
+  });
+  const best=habitsActive.reduce((mx,h)=>{const s=calcStreak(S.habitLogs[h.id]||[]);return s>mx?s:mx;},0);
+  const pct=total?Math.round(done/total*100):0;
+  el.innerHTML=`
+    <div class="hws-cell"><div class="hws-val">${done}</div><div class="hws-lbl">今週チェック</div></div>
+    <div class="hws-cell"><div class="hws-val" style="color:var(--acc)">${pct}%</div><div class="hws-lbl">達成率</div></div>
+    <div class="hws-cell"><div class="hws-val" style="color:var(--ora)">${best}日</div><div class="hws-lbl">最長連続</div></div>`;
+}
+
+// ━━ Char zoom ━━
+function openCharZoom(charId){
+  const ch=CHARS.find(c=>c.id===charId);if(!ch)return;
+  document.getElementById('czImg').src=ch.img;
+  document.getElementById('czImg').className=`char-zoom-img ${ch.cls}`;
+  document.getElementById('czName').textContent=ch.name;
+  document.getElementById('czQuote').textContent=ch.quote;
+  document.getElementById('charZoomOver').className='char-zoom-over show';
+}
+function closeCharZoom(){document.getElementById('charZoomOver').className='char-zoom-over';}
+
+// ━━ Swipe char bubble ━━
+function setupCharSwipe(containerId){
+  const el=document.getElementById(containerId);if(!el)return;
+  let startX=0;
+  el.addEventListener('touchstart',e=>{startX=e.touches[0].clientX;},{passive:true});
+  el.addEventListener('touchend',e=>{
+    const dx=e.changedTouches[0].clientX-startX;
+    if(Math.abs(dx)>40){
+      const dir=dx>0?-1:1;
+      _charIdx[containerId]=((_charIdx[containerId]||0)+dir+CHARS.length)%CHARS.length;
+      renderCharBubble(containerId,CHARS[_charIdx[containerId]].id);
+    }
+  },{passive:true});
+}
+
+// ━━ Browser notification ━━
+function updateNotifUI(){
+  const status=Notification?.permission||'default';
+  const el=document.getElementById('notifStatus');
+  const btn=document.getElementById('notifBtn');
+  if(el){el.textContent={granted:'通知ON',denied:'ブロック中',default:'未設定'}[status]||'未設定';el.className='notif-status '+status;}
+  if(btn)btn.style.display=status==='granted'?'none':'inline-block';
+}
+function requestNotification(){
+  if(!('Notification' in window)){showToast('このブラウザは通知非対応','');return;}
+  Notification.requestPermission().then(p=>{
+    updateNotifUI();
+    if(p==='granted')showToast('通知を許可しました！','good');
+  });
+}
+
+// ━━ Partial reset ━━
+function partialReset(type){
+  const labels={homework:'宿題',habits:'習慣ログ',lessons:'レッスン進捗',coins:'コイン'};
+  if(!confirm(`${labels[type]}のデータを削除しますか？`))return;
+  if(type==='homework')S.homework=[];
+  else if(type==='habits'){S.habitLogs={};S.customHabits=[];}
+  else if(type==='lessons'){S.lessonDone={};S.lessonMemos={};}
+  else if(type==='coins'){S.coins=0;S.totalEarned=0;S.coinLog=[];S.coinHistory={};}
+  save();closeSettings();renderHome();showToast(labels[type]+'をリセットしました','good');
 }
 
 // ━━ Milestone progress bar ━━
@@ -3196,7 +3382,9 @@ if('serviceWorker' in navigator){
 
 // ━━ Init ━━
 function init(){
-  load();processRepeatHW();checkLogin();syncCoins();snapCoinHistory();updateSoundUI();applyLightMode();applyTheme();setupOffline();loadUserNameUI();renderHome();checkAchievements();
+  load();processRepeatHW();checkLogin();syncCoins();snapCoinHistory();updateSoundUI();applyLightMode();applyTheme();setupOffline();loadUserNameUI();updateNotifUI();renderHome();checkAchievements();
+  // スワイプ設定（少し遅らせてDOMが確定してから）
+  setTimeout(()=>{setupCharSwipe('homeCharBubble');setupCharSwipe('habitCharBubble');},500);
   // 初回のみウェルカム表示（スプラッシュ後）
   if(!S.welcomed){setTimeout(()=>{document.getElementById('welcomeOver').className='welcome-over show';},1700);}
   const di=document.getElementById('hwDateInput');
