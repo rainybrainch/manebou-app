@@ -502,6 +502,31 @@ html,body{width:100%;height:100%;background:#000;overflow:hidden}
 .toggle-track.on{background:rgba(87,200,124,.4);border-color:rgba(87,200,124,.5)}
 .toggle-thumb{width:14px;height:14px;border-radius:50%;background:var(--muted);position:absolute;top:2px;left:2px;transition:all .2s;box-shadow:0 1px 4px rgba(0,0,0,.4)}
 .toggle-track.on .toggle-thumb{left:18px;background:#fff}
+/* ━━ Tsumitate sim ━━ */
+.tsum-wrap{background:var(--sf);border:1px solid rgba(201,168,76,.15);border-radius:10px;padding:13px;margin-bottom:10px}
+.tsum-title{font-size:.58rem;font-weight:900;color:var(--acc);letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px}
+.tsum-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.tsum-lbl{font-size:.65rem;color:var(--muted);flex-shrink:0;width:64px}
+.tsum-input{flex:1;background:rgba(0,0,0,.3);border:1px solid var(--line);border-radius:7px;padding:6px 10px;font-size:.8rem;font-weight:700;color:var(--text);font-family:var(--serif);outline:none;text-align:right;transition:border-color .15s}
+.tsum-input:focus{border-color:rgba(201,168,76,.4)}
+.tsum-results{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
+.tsum-cell{background:rgba(255,255,255,.03);border-radius:7px;padding:8px 10px;text-align:center;border:1px solid var(--line)}
+.tsum-val{font-family:var(--serif);font-size:.95rem;font-weight:700;color:var(--acc)}
+.tsum-sub{font-size:.5rem;color:var(--muted);margin-top:2px;letter-spacing:.06em}
+/* ━━ Coin log ━━ */
+.coin-log-list{display:flex;flex-direction:column;gap:3px;max-height:200px;overflow-y:auto}
+.cl-item{display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--sf);border-radius:7px;font-size:.68rem}
+.cl-label{color:var(--muted);flex:1}
+.cl-amount{font-family:var(--serif);font-weight:700;color:var(--acc)}
+.cl-time{font-size:.54rem;color:var(--faint);margin-left:8px}
+/* ━━ HW game tag ━━ */
+.hw-game-select{
+  background:rgba(0,0,0,.3);border:1px solid var(--line);border-radius:7px;
+  padding:6px 8px;font-size:.7rem;color:var(--muted);font-family:inherit;
+  outline:none;transition:border-color .15s;flex:1;
+}
+.hw-game-select:focus{border-color:rgba(201,168,76,.35)}
+.hw-tag{font-size:.52rem;font-weight:900;padding:2px 7px;border-radius:999px;border:1px solid;white-space:nowrap;margin-top:2px;display:inline-block}
 /* ━━ Achievement badges ━━ */
 .badge-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:4px}
 .ach-badge{background:var(--sf);border:1px solid var(--line);border-radius:10px;padding:10px 4px;text-align:center;transition:all .15s}
@@ -724,10 +749,19 @@ html,body{width:100%;height:100%;background:#000;overflow:hidden}
       <div class="slabel" style="margin-bottom:10px">宿題を追加</div>
       <input class="hw-input" id="hwTitleInput" type="text" placeholder="宿題の内容を入力…" maxlength="60"
         onkeydown="if(event.key==='Enter')addHomework()">
-      <div class="hw-row">
-        <input class="hw-date" id="hwDateInput" type="date">
-        <button class="btn-acc" onclick="addHomework()" style="flex-shrink:0;white-space:nowrap">追加 ＋</button>
+      <div class="hw-row" style="margin-bottom:8px">
+        <select class="hw-game-select" id="hwGameTag">
+          <option value="">タグなし</option>
+          <option value="itadaki">🏙️ いただきスト</option>
+          <option value="jinsei">🎡 人生ゲーム</option>
+          <option value="momotetsu">🚅 桃鉄</option>
+          <option value="zai">📊 ZAi</option>
+          <option value="monopoly">🏘️ モノポリー</option>
+          <option value="other">📌 その他</option>
+        </select>
+        <input class="hw-date" id="hwDateInput" type="date" style="flex:1">
       </div>
+      <button class="btn-acc" onclick="addHomework()" style="width:100%;padding:11px;font-size:.85rem">追加 ＋</button>
     </div>
     <div class="slabel">宿題リスト</div>
     <div id="hwList"></div>
@@ -760,6 +794,25 @@ html,body{width:100%;height:100%;background:#000;overflow:hidden}
       <div class="div-sim-title">📐 コイン運用シミュレーション</div>
       <div id="divSimBox"></div>
     </div>
+    <div class="divider"></div>
+    <!-- 積立シミュレーション -->
+    <div class="tsum-wrap">
+      <div class="tsum-title">💹 積立シミュレーション</div>
+      <div class="tsum-row">
+        <span class="tsum-lbl">毎日の積立</span>
+        <input class="tsum-input" id="tsumDaily" type="number" value="15" min="1" max="9999" oninput="calcTsum()">
+        <span style="font-size:.64rem;color:var(--muted)">🪙/日</span>
+      </div>
+      <div class="tsum-row">
+        <span class="tsum-lbl">運用利率</span>
+        <input class="tsum-input" id="tsumRate" type="number" value="5" min="0" max="50" oninput="calcTsum()">
+        <span style="font-size:.64rem;color:var(--muted)">%/年</span>
+      </div>
+      <div class="tsum-results" id="tsumResults"></div>
+    </div>
+    <!-- コイン獲得ログ -->
+    <div class="slabel">コイン獲得履歴</div>
+    <div class="coin-log-list" id="coinLogList"></div>
     <div class="divider"></div>
     <div class="mkt-shop">
       <div class="mkt-shop-title">🏪 マーケット</div>
@@ -1022,6 +1075,7 @@ function addCoins(n,label='',withConfetti=false){
   showToast((label?label+' ':'')+'+'+n,'coin');
   playSound('coin');
   spawnCoinFloat(n);
+  if(label)addCoinLog(label,n);
   const el=document.getElementById('tCoins');
   if(el){el.classList.add('pop');setTimeout(()=>el.classList.remove('pop'),300);}
   if(withConfetti)launchConfetti();
@@ -1344,6 +1398,7 @@ function renderHomework(){
       <button class="hw-chk${h.done?' done':''}" onclick="${h.done?'':` completeHW('${h.id}');renderHomework()`}">${h.done?'✓':''}</button>
       <div class="hw-body">
         <div class="hw-title">${h.title}</div>
+        ${h.gameTag?(()=>{const g=GAMES.find(x=>x.id===h.gameTag);return g?`<span class="hw-tag" style="color:${g.color};border-color:${g.color}44">${g.emoji} ${g.name}</span>`:`<span class="hw-tag" style="color:var(--muted);border-color:var(--line)">📌 その他</span>`;})():''}
         ${dueToday?'<span class="hw-today-tag">TODAY</span>':''}
         ${h.dueDate&&!dueToday?`<div class="hw-due${overdue?' overdue':''}">期限：${h.dueDate}${overdue?' ⚠️':''}</div>`:''}
       </div>
@@ -1359,7 +1414,9 @@ function renderHomework(){
 }
 function addHomework(){
   const title=document.getElementById('hwTitleInput').value.trim();if(!title)return;
-  S.homework.unshift({id:uid(),title,dueDate:document.getElementById('hwDateInput').value||'',done:false,doneAt:null});
+  const gameTag=document.getElementById('hwGameTag')?.value||'';
+  const gameInfo=gameTag?GAMES.find(g=>g.id===gameTag):null;
+  S.homework.unshift({id:uid(),title,dueDate:document.getElementById('hwDateInput').value||'',gameTag,done:false,doneAt:null});
   save();renderHomework();
   document.getElementById('hwTitleInput').value='';
   showToast('宿題を追加しました','good');
@@ -1420,8 +1477,8 @@ function drawCoinHistory(){
 
 // ━━ Market ━━
 function renderMarket(){
-  syncCoins();snapCoinHistory();
-  setTimeout(drawCoinHistory,50);
+  syncCoins();snapCoinHistory();renderCoinLog();
+  setTimeout(()=>{drawCoinHistory();calcTsum();},50);
   // コイン配当シミュレーション（仮定: 年利3%・5%・8%）
   const c=S.coins;
   const el=document.getElementById('divSimBox');
@@ -1450,6 +1507,33 @@ function renderChars(){
         <div class="ccf-quote">${ch.quote}</div>
       </div>
     </div>`).join('');
+}
+
+// ━━ 積立シミュレーション ━━
+function calcTsum(){
+  const daily=parseFloat(document.getElementById('tsumDaily')?.value)||15;
+  const rate =parseFloat(document.getElementById('tsumRate')?.value)||5;
+  const r=rate/100/365;
+  const calc=(days)=>{let tot=0;for(let i=0;i<days;i++)tot=(tot+daily)*(1+r);return Math.round(tot);};
+  const y1=calc(365),y3=calc(365*3),y5=calc(365*5),y10=calc(365*10);
+  const el=document.getElementById('tsumResults');if(!el)return;
+  el.innerHTML=[{label:'1年後',val:y1},{label:'3年後',val:y3},{label:'5年後',val:y5},{label:'10年後',val:y10}]
+    .map(x=>`<div class="tsum-cell"><div class="tsum-val">${fmt(x.val)}🪙</div><div class="tsum-sub">${x.label}</div></div>`).join('');
+}
+
+// ━━ Coin log ━━
+function addCoinLog(label,amount){
+  if(!S.coinLog)S.coinLog=[];
+  S.coinLog.unshift({label,amount,time:new Date().toLocaleTimeString('ja',{hour:'2-digit',minute:'2-digit'})});
+  if(S.coinLog.length>30)S.coinLog=S.coinLog.slice(0,30);
+  save();
+}
+function renderCoinLog(){
+  const el=document.getElementById('coinLogList');if(!el)return;
+  const logs=S.coinLog||[];
+  el.innerHTML=logs.length
+    ?logs.map(l=>`<div class="cl-item"><span class="cl-label">${l.label}</span><span class="cl-amount">+${l.amount}</span><span class="cl-time">${l.time}</span></div>`).join('')
+    :'<div style="text-align:center;padding:12px;font-size:.68rem;color:var(--faint)">まだ記録がありません</div>';
 }
 
 // ━━ Sound toggle ━━
