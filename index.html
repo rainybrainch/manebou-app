@@ -1202,6 +1202,7 @@ body.light #toast{background:#fff;color:var(--text)}
         <button class="study-filter-btn"        id="sf-todo" onclick="setStudyFilter('todo')">未完了</button>
         <button class="study-filter-btn"        id="sf-done" onclick="setStudyFilter('done')">完了</button>
         <button class="sort-btn" id="sortGame" onclick="toggleGameSort()">↕ 並替</button>
+        <button class="sort-btn" id="flatView" onclick="toggleFlatView()">☰ 一覧</button>
       </div>
     </div>
     <div id="gameList"></div>
@@ -1267,6 +1268,12 @@ body.light #toast{background:#fff;color:var(--text)}
         <button class="hw-filter-btn active" id="hwd-easy"   onclick="setHwDiff('easy')">易</button>
         <button class="hw-filter-btn"        id="hwd-normal" onclick="setHwDiff('normal')">普</button>
         <button class="hw-filter-btn"        id="hwd-hard"   onclick="setHwDiff('hard')">難</button>
+      </div>
+      <div class="hw-row" style="gap:5px;margin-bottom:8px">
+        <span style="font-size:.6rem;color:var(--muted);flex-shrink:0">繰り返し：</span>
+        <button class="hw-filter-btn active" id="hwr-none"  onclick="setHwRepeat('none')">なし</button>
+        <button class="hw-filter-btn"        id="hwr-daily" onclick="setHwRepeat('daily')">毎日</button>
+        <button class="hw-filter-btn"        id="hwr-weekly"onclick="setHwRepeat('weekly')">毎週</button>
       </div>
       <button class="btn-acc" onclick="addHomework()" style="width:100%;padding:11px;font-size:.85rem">追加 ＋</button>
     </div>
@@ -1974,6 +1981,17 @@ function renderStudy(){
     return true;
   });
   renderStudyDonut();renderNextLesson();
+  if(_flatView){
+    const allLessons=GAMES.filter(g=>g.ready).flatMap(g=>g.lessons.map(l=>({...l,game:g})));
+    document.getElementById('gameList').innerHTML=`<div class="lesson-list">${allLessons.map(l=>{
+      const key=l.game.id+'_'+l.id,done=!!S.lessonDone[key];
+      return`<div class="lesson-row${done?' done':''}" onclick="toggleLesson('${l.game.id}','${l.id}')">
+        <span class="lr-num" style="color:${l.game.color}">${l.game.emoji}</span>
+        <span class="lr-title">${l.title}</span>
+        <span class="lr-status">${done?'✅':'⬜'}</span>
+      </div>`;}).join('')}</div>`;
+    return;
+  }
   document.getElementById('gameList').innerHTML=filteredGames.map(g=>{
     const doneCnt=Object.keys(S.lessonDone).filter(k=>k.startsWith(g.id+'_')).length;
     return`
@@ -2136,6 +2154,7 @@ function renderHabits(){
           ${!done?`onpointerdown="addRipple(this,event)"`:''}>
           ${done?'✓':''}
         </button>
+        ${!done?`<button onclick="skipHabit('${h.id}')" style="background:none;border:1px solid var(--line);border-radius:6px;font-size:.56rem;color:var(--muted);cursor:pointer;padding:3px 6px;flex-shrink:0;transition:all .15s" title="スキップ">Skip</button>`:''}
         ${h.id.startsWith('ch_')?`<button onclick="deleteCustomHabit('${h.id}')" style="background:none;border:none;color:var(--faint);font-size:.75rem;cursor:pointer;padding:2px;flex-shrink:0" title="削除">✕</button>`:''}
       </div>`;
   }).join('');
@@ -2187,6 +2206,7 @@ function renderHomework(){updateWeekHwCount();renderDiffStats();
       <div class="hw-body">
         <div class="hw-title">${h.title}</div>
         ${h.difficulty?`<span class="hw-diff-badge hw-diff-${h.difficulty}">${h.difficulty==='easy'?'易':h.difficulty==='normal'?'普':'難'}</span>`:''}
+        ${h.repeat?`<span class="hw-diff-badge" style="color:var(--blue);border-color:rgba(107,182,255,.3)">${h.repeat==='daily'?'🔁毎日':'🔁毎週'}</span>`:''}
         ${h.gameTag?(()=>{const g=GAMES.find(x=>x.id===h.gameTag);return g?`<span class="hw-tag" style="color:${g.color};border-color:${g.color}44">${g.emoji} ${g.name}</span>`:`<span class="hw-tag" style="color:var(--muted);border-color:var(--line)">📌 その他</span>`;})():''}
         ${dueToday?'<span class="hw-today-tag">TODAY</span>':''}
         ${dueSoon?'<span class="hw-due-soon-tag">⏰ 明日まで</span>':''}
@@ -2209,7 +2229,7 @@ function addHomework(){
   const title=document.getElementById('hwTitleInput').value.trim();if(!title)return;
   const gameTag=document.getElementById('hwGameTag')?.value||'';
   const gameInfo=gameTag?GAMES.find(g=>g.id===gameTag):null;
-  S.homework.unshift({id:uid(),title,dueDate:document.getElementById('hwDateInput').value||'',gameTag,difficulty:_hwDiff,done:false,doneAt:null});
+  S.homework.unshift({id:uid(),title,dueDate:document.getElementById('hwDateInput').value||'',gameTag,difficulty:_hwDiff,repeat:_hwRepeat!=='none'?_hwRepeat:null,done:false,doneAt:null});
   save();renderHomework();
   document.getElementById('hwTitleInput').value='';
   showToast('宿題を追加しました','good');
@@ -2470,6 +2490,48 @@ function cycleChar(containerId){
     renderCharBubble(containerId,CHARS[_charIdx[containerId]].id);
   }
   _tapTimer[containerId]=now;
+}
+
+// ━━ HW repeat ━━
+let _hwRepeat='none';
+function setHwRepeat(r){
+  _hwRepeat=r;
+  ['none','daily','weekly'].forEach(x=>{
+    const el=document.getElementById('hwr-'+x);
+    if(el)el.className='hw-filter-btn'+(x===r?' active':'');
+  });
+}
+function processRepeatHW(){
+  const td=today();
+  S.homework.filter(h=>h.repeat&&h.done&&h.doneAt<td).forEach(h=>{
+    if(h.repeat==='daily'){h.done=false;h.doneAt=null;h.dueDate=td;}
+    else if(h.repeat==='weekly'){
+      const d=new Date(h.doneAt);d.setDate(d.getDate()+7);
+      if(d.toISOString().slice(0,10)<=td){h.done=false;h.doneAt=null;h.dueDate=d.toISOString().slice(0,10);}
+    }
+  });
+  save();
+}
+
+// ━━ Habit skip ━━
+function skipHabit(id){
+  const td=today();
+  if(!S.habitSkips)S.habitSkips={};
+  if(!S.habitSkips[td])S.habitSkips[td]=[];
+  if(!S.habitSkips[td].includes(id)){
+    S.habitSkips[td].push(id);save();
+    showToast('スキップしました（連続記録は維持）','good');
+    renderHabits();
+  }
+}
+
+// ━━ Flat lesson view ━━
+let _flatView=false;
+function toggleFlatView(){
+  _flatView=!_flatView;
+  const el=document.getElementById('flatView');
+  if(el)el.className='sort-btn'+(_flatView?' active':'');
+  renderStudy();
 }
 
 // ━━ Milestone progress bar ━━
@@ -3020,8 +3082,10 @@ const ACHIEVEMENTS=[
   {id:'first_habit', ico:'📅',name:'初習慣',       check:()=>Object.values(S.habitLogs).some(l=>l.length>0)},
   {id:'streak3',     ico:'🔥',name:'3日連続',      check:()=>S.streak>=3},
   {id:'streak7',     ico:'⚡',name:'7日連続',      check:()=>S.streak>=7},
+  {id:'streak30',    ico:'💎',name:'30日連続',     check:()=>S.streak>=30},
   {id:'coins100',    ico:'🪙',name:'100コイン',    check:()=>S.totalEarned>=100},
   {id:'coins500',    ico:'💰',name:'500コイン',    check:()=>S.totalEarned>=500},
+  {id:'coins1000',   ico:'👑',name:'1000コイン',   check:()=>S.totalEarned>=1000},
   {id:'all_lessons', ico:'🏆',name:'全レッスン',   check:()=>GAMES.filter(g=>g.ready).every(g=>g.lessons.every(l=>S.lessonDone[g.id+'_'+l.id]))},
 ];
 function checkAchievements(){
@@ -3132,7 +3196,7 @@ if('serviceWorker' in navigator){
 
 // ━━ Init ━━
 function init(){
-  load();checkLogin();syncCoins();snapCoinHistory();updateSoundUI();applyLightMode();applyTheme();setupOffline();loadUserNameUI();renderHome();checkAchievements();
+  load();processRepeatHW();checkLogin();syncCoins();snapCoinHistory();updateSoundUI();applyLightMode();applyTheme();setupOffline();loadUserNameUI();renderHome();checkAchievements();
   // 初回のみウェルカム表示（スプラッシュ後）
   if(!S.welcomed){setTimeout(()=>{document.getElementById('welcomeOver').className='welcome-over show';},1700);}
   const di=document.getElementById('hwDateInput');
