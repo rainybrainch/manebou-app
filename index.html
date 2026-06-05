@@ -529,6 +529,18 @@ html,body{width:100%;height:100%;background:#000;overflow:hidden}
 /* ━━ Game progress bar ━━ */
 .game-prog-bar{height:3px;background:rgba(255,255,255,.06);border-radius:99px;overflow:hidden;margin-top:8px}
 .game-prog-fill{height:100%;border-radius:99px;transition:width .5s cubic-bezier(.34,1.2,.64,1)}
+/* ━━ Weekly widget ━━ */
+.weekly-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:0}
+.ww-cell{background:var(--sf);border:1px solid var(--line);border-radius:9px;padding:11px 10px;text-align:center}
+.ww-val{font-family:var(--serif);font-size:1.2rem;font-weight:700;color:var(--text);line-height:1}
+.ww-lbl{font-size:.5rem;color:var(--muted);margin-top:4px;letter-spacing:.1em;text-transform:uppercase}
+.ww-bar-wrap{grid-column:span 2;background:var(--sf);border:1px solid var(--line);border-radius:9px;padding:10px 12px}
+.ww-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.ww-bar-row:last-child{margin-bottom:0}
+.ww-bar-label{font-size:.58rem;color:var(--muted);width:52px;flex-shrink:0;text-align:right}
+.ww-bar-bg{flex:1;height:4px;background:rgba(255,255,255,.06);border-radius:99px;overflow:hidden}
+.ww-bar-fill{height:100%;border-radius:99px;transition:width .5s cubic-bezier(.34,1.2,.64,1)}
+.ww-bar-num{font-size:.56rem;font-weight:900;width:28px;flex-shrink:0;text-align:right}
 /* ━━ HW today highlight ━━ */
 .hw-item.today{border-color:rgba(201,168,76,.4);background:rgba(201,168,76,.04)}
 .hw-today-tag{font-size:.52rem;font-weight:900;color:var(--acc);border:1px solid rgba(201,168,76,.3);border-radius:999px;padding:1px 6px;margin-top:3px;display:inline-block;letter-spacing:.06em}
@@ -573,10 +585,13 @@ html,body{width:100%;height:100%;background:#000;overflow:hidden}
     <div id="todayList" class="today-list"></div>
 
     <div class="divider"></div>
+    <div class="slabel">今週の成果</div>
+    <div id="weeklyWidget"></div>
+    <div class="divider"></div>
     <div class="slabel" style="color:var(--faint)">今後追加予定</div>
     <div class="ph-card">
       <span class="ph-ico">📊</span>
-      進捗レポート・週次サマリー・ランキングなど
+      詳細レポート・ランキングなど
     </div>
   </div>
 </div>
@@ -923,6 +938,43 @@ function renderCharBubble(containerId,charId){
     </div>`;
 }
 
+// ━━ Weekly widget ━━
+function renderWeekly(){
+  const el=document.getElementById('weeklyWidget');if(!el)return;
+  // 今週月曜〜今日の日付配列
+  const now=new Date(today());
+  const mon=new Date(now);mon.setDate(now.getDate()-((now.getDay()+6)%7));
+  const dates=[];for(let d=new Date(mon);d<=now;d.setDate(d.getDate()+1))dates.push(d.toISOString().slice(0,10));
+  // 週内の習慣チェック数
+  const habitsActive=HABITS.filter(h=>!h.disabled);
+  let habitChecks=0;
+  habitsActive.forEach(h=>{habitChecks+=(S.habitLogs[h.id]||[]).filter(d=>dates.includes(d)).length;});
+  const habitMax=habitsActive.length*dates.length;
+  // 週内の宿題完了数
+  const hwDone=S.homework.filter(h=>h.done&&dates.includes(h.doneAt)).length;
+  // 週内のレッスン完了（レッスンにdoneAt記録なし→全体数で代替）
+  const lessonTotal=Object.keys(S.lessonDone).length;
+  // コイン推移（今週の獲得コインは記録がないので残高から推算は難しい→獲得機会ベースで表示）
+  const habitPct=habitMax>0?Math.round(habitChecks/habitMax*100):0;
+  el.innerHTML=`
+    <div class="weekly-grid">
+      <div class="ww-cell"><div class="ww-val" style="color:var(--grn)">${hwDone}</div><div class="ww-lbl">宿題完了</div></div>
+      <div class="ww-cell"><div class="ww-val" style="color:var(--acc)">${habitChecks}</div><div class="ww-lbl">習慣達成</div></div>
+      <div class="ww-bar-wrap">
+        <div class="ww-bar-row">
+          <div class="ww-bar-label">習慣</div>
+          <div class="ww-bar-bg"><div class="ww-bar-fill" style="width:${habitPct}%;background:var(--grn)"></div></div>
+          <div class="ww-bar-num" style="color:var(--grn)">${habitPct}%</div>
+        </div>
+        <div class="ww-bar-row">
+          <div class="ww-bar-label">レッスン</div>
+          <div class="ww-bar-bg"><div class="ww-bar-fill" style="width:${Math.min(100,lessonTotal/12*100)}%;background:var(--acc)"></div></div>
+          <div class="ww-bar-num" style="color:var(--acc)">${lessonTotal}</div>
+        </div>
+      </div>
+    </div>`;
+}
+
 // ━━ Home ━━
 function renderHome(){
   syncCoins();updateNavBadges();
@@ -949,6 +1001,7 @@ function renderHome(){
     items.push({ico:'📝',text:h.title,tag:'宿題',tagC:'rgba(167,139,250,.6)',done:false,action:`completeHW('${h.id}');renderHome()`});
   });
 
+  renderWeekly();
   document.getElementById('todayList').innerHTML=items.length
     ?items.map(i=>`
       <div class="today-item${i.done?' done':''}" ${i.action?`onclick="${i.action}"`:''}">
@@ -1055,8 +1108,14 @@ function checkHabit(id){
 // ━━ Homework ━━
 function renderHomework(){
   const td=today();
-  const pending=S.homework.filter(h=>!h.done);
-  const done   =S.homework.filter(h=> h.done);
+  // 期限順ソート（期限なし→末尾、期限あり→昇順）
+  const sortByDue=(a,b)=>{
+    if(!a.dueDate&&!b.dueDate)return 0;
+    if(!a.dueDate)return 1;if(!b.dueDate)return -1;
+    return a.dueDate<b.dueDate?-1:a.dueDate>b.dueDate?1:0;
+  };
+  const pending=S.homework.filter(h=>!h.done).sort(sortByDue);
+  const done   =S.homework.filter(h=> h.done).sort((a,b)=>b.doneAt>a.doneAt?1:-1);
   const toHtml=h=>{
     const overdue=!h.done&&h.dueDate&&h.dueDate<td;
     const dueToday=!h.done&&h.dueDate===td;
@@ -1115,6 +1174,11 @@ function renderChars(){
         <div class="ccf-quote">${ch.quote}</div>
       </div>
     </div>`).join('');
+}
+
+// ━━ Service Worker (PWA offline) ━━
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('./sw.js').catch(()=>{});
 }
 
 // ━━ Init ━━
