@@ -504,6 +504,28 @@ html,body{width:100%;height:100%;background:#000;overflow:hidden}
 }
 .nav-badge.show{display:flex}
 @keyframes badgePop{0%{transform:scale(0)}60%{transform:scale(1.2)}100%{transform:scale(1)}}
+/* ━━ Game clear overlay ━━ */
+.game-clear{
+  position:fixed;inset:0;z-index:700;
+  background:rgba(7,8,13,.92);backdrop-filter:blur(12px);
+  display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;
+  animation:fadeScaleIn .35s cubic-bezier(.34,1.4,.64,1);
+}
+.game-clear.show{display:flex}
+.gc-ico{font-size:4rem;filter:drop-shadow(0 4px 20px rgba(201,168,76,.6));animation:gcBounce 1.2s ease infinite}
+.gc-title{font-family:var(--serif);font-size:1.5rem;font-weight:700;color:var(--acc)}
+.gc-sub{font-size:.76rem;color:var(--muted);text-align:center;line-height:1.7}
+.gc-close{margin-top:8px;padding:11px 28px;border-radius:10px;border:1px solid rgba(201,168,76,.35);background:rgba(201,168,76,.1);color:var(--acc);font-family:inherit;font-size:.9rem;font-weight:900;cursor:pointer;transition:all .15s}
+.gc-close:hover{background:rgba(201,168,76,.2)}
+@keyframes gcBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+@keyframes fadeScaleIn{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}
+/* ━━ Market dividend sim ━━ */
+.div-sim{background:var(--sf);border:1px solid rgba(201,168,76,.18);border-radius:10px;padding:13px;margin-bottom:10px}
+.div-sim-title{font-size:.6rem;font-weight:900;color:var(--acc);letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px}
+.div-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--line);font-size:.72rem}
+.div-row:last-child{border-bottom:none}
+.div-label{color:var(--muted)}
+.div-val{font-family:var(--serif);font-weight:700;color:var(--acc)}
 /* ━━ Coin float ━━ */
 .coin-float{
   position:fixed;pointer-events:none;z-index:600;
@@ -658,6 +680,10 @@ html,body{width:100%;height:100%;background:#000;overflow:hidden}
       <div class="asset-box-hd">🏘️ 不動産</div>
       <div class="asset-box-empty" id="propList">保有なし</div>
     </div>
+    <div class="div-sim">
+      <div class="div-sim-title">📐 コイン運用シミュレーション</div>
+      <div id="divSimBox"></div>
+    </div>
     <div class="divider"></div>
     <div class="mkt-shop">
       <div class="mkt-shop-title">🏪 マーケット</div>
@@ -701,6 +727,14 @@ html,body{width:100%;height:100%;background:#000;overflow:hidden}
     </div>
   </div>
   <button class="fb-close" onclick="closeFeedback()">OK →</button>
+</div>
+
+<!-- ━━ Game Clear Overlay ━━ -->
+<div id="gameClearOverlay" class="game-clear">
+  <div class="gc-ico">🏆</div>
+  <div class="gc-title" id="gcTitle">ゲームクリア！</div>
+  <div class="gc-sub"   id="gcSub"></div>
+  <button class="gc-close" onclick="document.getElementById('gameClearOverlay').className='game-clear'">つぎへ →</button>
 </div>
 
 <div id="confettiWrap" class="confetti-wrap"></div>
@@ -1053,6 +1087,19 @@ function toggleLesson(gameId,lessonId){
     const g=GAMES.find(x=>x.id===gameId), l=g?.lessons.find(x=>x.id===lessonId);
     addCoins(REWARDS.lesson,'レッスン完了！',false);
     showFeedback(true,'レッスン完了！ 📚',(l?.title||'')+' +'+REWARDS.lesson+' コイン');
+    // 全レッスン完了チェック
+    if(g&&g.lessons.length>0){
+      const allDone=g.lessons.every(ll=>S.lessonDone[g.id+'_'+ll.id]);
+      if(allDone){
+        setTimeout(()=>{
+          launchConfetti();playSound('done');
+          document.getElementById('gcTitle').textContent=g.name+' ― 全レッスン完了！';
+          document.getElementById('gcSub').textContent=g.name+'の全'+g.lessons.length+'レッスンをマスター！\nボーナス +100コイン！';
+          document.getElementById('gameClearOverlay').className='game-clear show';
+          addCoins(100,'ゲームクリア！',false);
+        },600);
+      }
+    }
   }
   renderStudy();
 }
@@ -1156,7 +1203,19 @@ function deleteHW(id){
 }
 
 // ━━ Market ━━
-function renderMarket(){syncCoins();}
+function renderMarket(){
+  syncCoins();
+  // コイン配当シミュレーション（仮定: 年利3%・5%・8%）
+  const c=S.coins;
+  const el=document.getElementById('divSimBox');
+  if(!el)return;
+  const rates=[{r:.03,label:'安全運用 3%'},{r:.05,label:'標準運用 5%'},{r:.08,label:'積極運用 8%'}];
+  el.innerHTML=rates.map(x=>`
+    <div class="div-row">
+      <span class="div-label">${x.label}</span>
+      <span class="div-val">+${fmt(Math.round(c*x.r))} / 年</span>
+    </div>`).join('');
+}
 
 // ━━ Characters ━━
 function renderChars(){
