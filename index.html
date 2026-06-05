@@ -625,6 +625,24 @@ html,body{width:100%;height:100%;background:#000;overflow:hidden}
 .heatmap-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
 .hm-nav-btn{background:none;border:1px solid var(--line);border-radius:6px;padding:3px 8px;font-size:.68rem;color:var(--muted);cursor:pointer;transition:all .15s}
 .hm-nav-btn:hover{border-color:var(--line2);color:var(--text)}
+/* ━━ All badges cleared ━━ */
+.all-clear-over{
+  position:fixed;inset:0;z-index:900;
+  background:rgba(7,8,13,.94);backdrop-filter:blur(16px);
+  display:none;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;padding:24px;
+}
+.all-clear-over.show{display:flex;animation:fadeScaleIn .4s ease}
+.ac-ico{font-size:4rem;animation:gcBounce 1s ease infinite;filter:drop-shadow(0 4px 24px rgba(201,168,76,.6))}
+.ac-title{font-family:var(--serif);font-size:1.5rem;font-weight:700;color:var(--acc)}
+.ac-sub{font-size:.76rem;color:var(--muted);line-height:1.8;max-width:280px}
+/* ━━ Char messages ━━ */
+.char-msg-list{display:flex;flex-direction:column;gap:5px;margin-top:10px}
+.char-msg-item{background:var(--sf);border:1px solid var(--line);border-radius:8px;padding:9px 12px;font-size:.72rem;color:var(--muted);line-height:1.6;font-style:italic;position:relative;padding-left:20px}
+.char-msg-item::before{content:'❝';position:absolute;left:8px;top:6px;font-size:.9rem;color:var(--acc);opacity:.5}
+/* ━━ Habit month badge ━━ */
+.habit-month-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;font-size:.54rem;font-weight:900;border:1px solid;margin-top:3px}
+/* ━━ Coin countup ━━ */
+.coin-anim{transition:all .4s cubic-bezier(.34,1.56,.64,1)}
 /* ━━ Edit modal ━━ */
 .edit-modal{
   position:fixed;inset:0;z-index:800;
@@ -1099,6 +1117,14 @@ body.light #toast{background:#fff;color:var(--text)}
   </div>
 </div>
 
+<!-- ━━ All Badges Cleared ━━ -->
+<div class="all-clear-over" id="allClearOver">
+  <div class="ac-ico">🏆</div>
+  <div class="ac-title">全バッジ解除！</div>
+  <div class="ac-sub">すべての達成バッジを解除しました！<br>マネぼうマスターの証です。<br>おめでとうございます！</div>
+  <button class="btn-acc" style="margin-top:12px;padding:12px 28px" onclick="document.getElementById('allClearOver').className='all-clear-over'">ありがとう！</button>
+</div>
+
 <!-- ━━ HW Edit Modal ━━ -->
 <div class="edit-modal" id="hwEditModal" onclick="if(event.target===this)closeHwEdit()">
   <div class="edit-panel">
@@ -1321,7 +1347,15 @@ function addCoins(n,label='',withConfetti=false){
 
 function syncCoins(){
   ['tCoinsNum','heroCoins','mktCoins'].forEach(id=>{
-    const el=document.getElementById(id);if(el)el.textContent=fmt(S.coins);
+    const el=document.getElementById(id);if(!el)return;
+    const prev=parseInt(el.textContent.replace(/,/g,''))||0;
+    if(prev!==S.coins&&Math.abs(S.coins-prev)<500){
+      let cur=prev,step=Math.ceil((S.coins-prev)/8)||1;
+      const ticker=setInterval(()=>{
+        cur+=step;if((step>0&&cur>=S.coins)||(step<0&&cur<=S.coins)){cur=S.coins;clearInterval(ticker);}
+        el.textContent=fmt(cur);
+      },40);
+    } else el.textContent=fmt(S.coins);
   });
   ['tStreak','heroStreak'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.textContent=S.streak;
@@ -1550,6 +1584,33 @@ function toggleLesson(gameId,lessonId){
   renderStudy();
 }
 
+// ━━ Habit month achievement badge ━━
+function renderHabitMonthBadge(){
+  const now=new Date(today());
+  const year=now.getFullYear(), month=now.getMonth();
+  const daysInMonth=new Date(year,month+1,0).getDate();
+  const daysElapsed=now.getDate();
+  const habitsActive=allHabits().filter(h=>!h.disabled);
+  let checks=0,maxChecks=habitsActive.length*daysElapsed;
+  habitsActive.forEach(h=>{
+    (S.habitLogs[h.id]||[]).forEach(d=>{
+      const dt=new Date(d);
+      if(dt.getFullYear()===year&&dt.getMonth()===month)checks++;
+    });
+  });
+  const pct=maxChecks>0?Math.round(checks/maxChecks*100):0;
+  const badge=pct>=90?{ico:'🏅',label:'今月 達人',c:'#c9a84c',bc:'rgba(201,168,76,.25)'}
+             :pct>=70?{ico:'🌟',label:'今月 優秀',c:'#57c87c',bc:'rgba(87,200,124,.2)'}
+             :pct>=50?{ico:'📈',label:'今月 成長中',c:'#6bb6ff',bc:'rgba(107,182,255,.2)'}
+             :null;
+  const el=document.getElementById('habitCharBubble');
+  if(!el||!badge)return;
+  // バッジをキャラバブル下に追加
+  let b=document.getElementById('habitMonthBadge');
+  if(!b){b=document.createElement('div');b.id='habitMonthBadge';el.parentNode.insertBefore(b,el.nextSibling);}
+  b.innerHTML=`<div class="habit-month-badge" style="color:${badge.c};border-color:${badge.bc};background:${badge.bc}">${badge.ico} ${badge.label} ${pct}%達成</div>`;
+}
+
 // ━━ Habit heatmap ━━
 function renderHeatmap(){
   const el=document.getElementById('habitHeatmap');if(!el)return;
@@ -1595,7 +1656,7 @@ function renderHeatmap(){
 function renderHabits(){
   const dayIdx=Math.floor(Date.now()/86400000);
   renderCharBubble('habitCharBubble',dayIdx%2===0?'fukurou':'enda');
-  renderHeatmap();renderHabitEmojiRow();
+  renderHeatmap();renderHabitEmojiRow();renderHabitMonthBadge();
   const td=today();
   const habitsAll=allHabits();
   document.getElementById('habitList').innerHTML=habitsAll.map(h=>{
@@ -1775,6 +1836,8 @@ function renderChars(){
       </div>
       <div class="ccf-body">
         <div class="ccf-quote">${ch.quote}</div>
+        <div class="slabel" style="margin-top:12px;margin-bottom:6px">メッセージ</div>
+        <div class="char-msg-list">${ch.msgs.map(m=>`<div class="char-msg-item">${m}</div>`).join('')}</div>
       </div>
     </div>`).join('');
 }
@@ -1993,12 +2056,18 @@ const ACHIEVEMENTS=[
 ];
 function checkAchievements(){
   if(!S.achievements)S.achievements=[];
+  let newUnlock=false;
   ACHIEVEMENTS.forEach(a=>{
     if(!S.achievements.includes(a.id)&&a.check()){
-      S.achievements.push(a.id);save();
+      S.achievements.push(a.id);save();newUnlock=true;
       setTimeout(()=>showToast(a.ico+' バッジ獲得: '+a.name,'good'),300);
     }
   });
+  // 全バッジ解除チェック
+  if(newUnlock&&S.achievements.length===ACHIEVEMENTS.length&&!S.allClearShown){
+    S.allClearShown=true;save();
+    setTimeout(()=>{launchConfetti();document.getElementById('allClearOver').className='all-clear-over show';},800);
+  }
 }
 function renderAchBadges(){
   const el=document.getElementById('achBadgeGrid');if(!el)return;
