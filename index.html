@@ -191,7 +191,7 @@ html,body{width:100%;height:100%;background:#000;overflow:hidden}
 
 /* ━━ Home ━━ */
 .home-stats-row{
-  display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;
+  display:grid;grid-template-columns:repeat(4,1fr);gap:0;
   border:1px solid var(--line);border-radius:12px;overflow:hidden;
   margin-bottom:16px;
 }
@@ -734,6 +734,24 @@ body.light #toast{background:#fff;color:var(--text)}
   border:1px solid;font-weight:900;font-size:.8rem;
   letter-spacing:.06em;margin-top:10px;
 }
+/* ━━ Milestone progress ━━ */
+.milestone-bar-wrap{margin-top:10px}
+.milestone-bar-label{display:flex;justify-content:space-between;font-size:.58rem;color:var(--muted);margin-bottom:4px}
+.milestone-bar-bg{height:6px;background:rgba(255,255,255,.06);border-radius:99px;overflow:hidden}
+.milestone-bar-fill{height:100%;border-radius:99px;transition:width .6s cubic-bezier(.34,1.2,.64,1)}
+/* ━━ Coin pace ━━ */
+.coin-pace-row{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--sf);border:1px solid var(--line);border-radius:8px;margin-top:8px;font-size:.68rem}
+.coin-pace-val{font-family:var(--serif);font-weight:700;color:var(--acc)}
+/* ━━ Coin log day group ━━ */
+.cl-day-header{font-size:.56rem;font-weight:900;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;padding:5px 0 3px;border-top:1px solid var(--line);margin-top:4px;display:flex;justify-content:space-between}
+.cl-day-header:first-child{border-top:none;margin-top:0}
+.cl-day-total{color:var(--acc)}
+/* ━━ Days streak ━━ */
+.days-since{font-size:.5rem;color:var(--faint);margin-top:2px;letter-spacing:.06em}
+/* ━━ Char screen messages ━━ */
+.char-today-msg{background:linear-gradient(135deg,rgba(201,168,76,.08),rgba(201,168,76,.02));border:1px solid rgba(201,168,76,.2);border-radius:10px;padding:11px 13px;margin-top:10px}
+.ctm-label{font-size:.52rem;font-weight:900;color:var(--acc);letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px}
+.ctm-text{font-family:var(--serif);font-size:.78rem;color:var(--text);line-height:1.6;font-style:italic}
 /* ━━ Streak ranking ━━ */
 .streak-rank-list{display:flex;flex-direction:column;gap:5px;margin-top:8px}
 .streak-rank-item{
@@ -1281,8 +1299,13 @@ body.light #toast{background:#fff;color:var(--text)}
         <div class="mkt-coin-lbl">保有コイン</div>
         <div class="mkt-coin-val">🪙 <span id="mktCoins">0</span></div>
         <div id="coinRankBadge" class="coin-rank-badge"></div>
+        <div class="milestone-bar-wrap" id="milestonebar"></div>
       </div>
       <button class="share-btn" onclick="shareProgress()">📤 シェア</button>
+    </div>
+    <div class="coin-pace-row" id="coinPaceRow">
+      <span style="color:var(--muted)">📊 1日平均獲得</span>
+      <span class="coin-pace-val" id="coinPaceVal">計算中…</span>
     </div>
     <div class="slabel">ポートフォリオ</div>
     <div class="asset-box">
@@ -1801,6 +1824,7 @@ function showStreakMilestone(n){
 // ━━ Login ━━
 function checkLogin(){
   const td=today();if(S.lastLogin===td)return;
+  if(!S.firstLogin)S.firstLogin=td;
   const prev=S.lastLogin;S.lastLogin=td;
   if(prev){const diff=(new Date(td)-new Date(prev))/86400000;S.streak=diff<=1.5?S.streak+1:1;}
   else S.streak=1;
@@ -1883,10 +1907,23 @@ function renderHome(){
   const habitsActive=HABITS.filter(h=>!h.disabled);
   const habitsDone  =habitsActive.filter(h=>(S.habitLogs[h.id]||[]).includes(td)).length;
 
+  const totalLessons=GAMES.filter(g=>g.ready).reduce((s,g)=>s+g.lessons.length,0);
+  const studyPct=totalLessons?Math.round(lessonCount/totalLessons*100):0;
+  const daysSince=S.firstLogin?Math.floor((Date.now()-new Date(S.firstLogin).getTime())/86400000)+1:1;
   document.getElementById('homeStats').innerHTML=`
-    <div class="hs-cell" style="cursor:pointer" onclick="nav('studyScreen','nb-study');renderStudy()"><div class="hs-val grn">${lessonCount}</div><div class="hs-lbl">📚 レッスン</div></div>
-    <div class="hs-cell" style="cursor:pointer" onclick="nav('hwScreen','nb-hw');renderHomework()"><div class="hs-val acc">${hwPending}</div><div class="hs-lbl">📝 宿題残り</div></div>
-    <div class="hs-cell" style="cursor:pointer" onclick="nav('habitsScreen','nb-habits');renderHabits()"><div class="hs-val ora">${habitsDone}/${habitsActive.length}</div><div class="hs-lbl">📅 習慣</div></div>`;
+    <div class="hs-cell" style="cursor:pointer" onclick="nav('studyScreen','nb-study');renderStudy()">
+      <div class="hs-val grn">${studyPct}%</div><div class="hs-lbl">📚 学習率</div>
+      <div class="days-since">${lessonCount}/${totalLessons}</div>
+    </div>
+    <div class="hs-cell" style="cursor:pointer" onclick="nav('hwScreen','nb-hw');renderHomework()">
+      <div class="hs-val acc">${hwPending}</div><div class="hs-lbl">📝 宿題残り</div>
+    </div>
+    <div class="hs-cell" style="cursor:pointer" onclick="nav('habitsScreen','nb-habits');renderHabits()">
+      <div class="hs-val ora">${habitsDone}/${habitsActive.length}</div><div class="hs-lbl">📅 習慣</div>
+    </div>
+    <div class="hs-cell" onclick="nav('marketScreen','nb-market');renderMarket()" style="cursor:pointer">
+      <div class="hs-val" style="color:var(--pur);font-size:1.1rem">${daysSince}日</div><div class="hs-lbl">🗓 継続</div>
+    </div>`;
 
   const items=[];
   habitsActive.forEach(h=>{
@@ -2180,7 +2217,7 @@ function addHomework(){
 function completeHW(id){
   const h=S.homework.find(x=>x.id===id);if(!h||h.done)return;
   h.done=true;h.doneAt=today();save();
-  launchConfetti();playSound('done');
+  launchConfetti();playHwCompleteSound(h.difficulty||'normal');
   addCoins(REWARDS.homework,'宿題完了！🎉',false);
   showFeedback(true,'宿題完了！ 🎉',h.title+' +'+REWARDS.homework+' コイン獲得');
   setTimeout(showEncouragement,600);
@@ -2234,7 +2271,7 @@ function drawCoinHistory(){
 
 // ━━ Market ━━
 function renderMarket(){
-  syncCoins();snapCoinHistory();renderCoinLog();renderMktAdvice();renderCoinTips();renderCoinRank();
+  syncCoins();snapCoinHistory();renderCoinLog();renderMktAdvice();renderCoinTips();renderCoinRank();renderMilestoneBar();renderCoinPace();
   setTimeout(()=>{drawCoinHistory();calcTsum();},50);
   // コイン配当シミュレーション（仮定: 年利3%・5%・8%）
   const c=S.coins;
@@ -2262,7 +2299,11 @@ function renderChars(){
       </div>
       <div class="ccf-body">
         <div class="ccf-quote">${ch.quote}</div>
-        <div class="slabel" style="margin-top:12px;margin-bottom:6px">メッセージ</div>
+        <div class="char-today-msg">
+          <div class="ctm-label">💬 今日のメッセージ</div>
+          <div class="ctm-text">${ch.msgs[Math.floor(Date.now()/86400000)%ch.msgs.length]}</div>
+        </div>
+        <div class="slabel" style="margin-top:12px;margin-bottom:6px">全メッセージ</div>
         <div class="char-msg-list">${ch.msgs.map(m=>`<div class="char-msg-item">${m}</div>`).join('')}</div>
       </div>
     </div>`).join('');
@@ -2429,6 +2470,66 @@ function cycleChar(containerId){
     renderCharBubble(containerId,CHARS[_charIdx[containerId]].id);
   }
   _tapTimer[containerId]=now;
+}
+
+// ━━ Milestone progress bar ━━
+function renderMilestoneBar(){
+  const el=document.getElementById('milestonebar');if(!el)return;
+  const cur=COIN_RANKS.findIndex(r=>S.coins<r.min);
+  const prev=cur<=0?COIN_RANKS[0]:COIN_RANKS[cur-1];
+  const next=cur<0?null:COIN_RANKS[cur];
+  if(!next){el.innerHTML='<div style="font-size:.58rem;color:var(--acc);text-align:center;margin-top:8px">👑 最高ランク達成！</div>';return;}
+  const pct=Math.min(100,Math.round((S.coins-prev.min)/(next.min-prev.min)*100));
+  el.innerHTML=`<div class="milestone-bar-wrap">
+    <div class="milestone-bar-label"><span>${prev.label}</span><span>→ ${next.label} (あと${fmt(next.min-S.coins)}🪙)</span></div>
+    <div class="milestone-bar-bg"><div class="milestone-bar-fill" style="width:${pct}%;background:linear-gradient(90deg,${prev.c||'var(--acc)'},${next.c||'var(--acc)'})"></div></div>
+  </div>`;
+}
+
+// ━━ Coin pace ━━
+function renderCoinPace(){
+  const el=document.getElementById('coinPaceVal');if(!el)return;
+  const history=S.coinHistory||{};
+  const dates=Object.keys(history).sort();
+  if(dates.length<2){el.textContent='データ収集中…';return;}
+  const values=dates.map(d=>history[d]);
+  let totalEarned=0;
+  for(let i=1;i<values.length;i++)totalEarned+=Math.max(0,values[i]-values[i-1]);
+  const avgPerDay=Math.round(totalEarned/(dates.length-1));
+  el.textContent=`+${fmt(avgPerDay)} 🪙/日`;
+}
+
+// ━━ Coin log with daily subtotals ━━
+function renderCoinLog(){
+  const el=document.getElementById('coinLogList');if(!el)return;
+  const logs=S.coinLog||[];
+  if(!logs.length){el.innerHTML='<div style="text-align:center;padding:12px;font-size:.68rem;color:var(--faint)">まだ記録がありません</div>';return;}
+  // グループ化（時刻→今日/昨日判定）
+  const today_str=today();
+  const yesterday=new Date(today_str);yesterday.setDate(yesterday.getDate()-1);
+  const yest_str=yesterday.toISOString().slice(0,10);
+  // ログは時刻のみなのでグループ化は省略→先頭に今日の小計を表示
+  const todayLogs=logs.filter((_,i)=>i<10); // 直近10件
+  const todayTotal=todayLogs.reduce((s,l)=>s+l.amount,0);
+  el.innerHTML=`<div class="cl-day-header"><span>直近の記録</span><span class="cl-day-total">合計 +${todayTotal}🪙</span></div>`
+    +todayLogs.map(l=>`<div class="cl-item"><span class="cl-label">${l.label}</span><span class="cl-amount">+${l.amount}</span><span class="cl-time">${l.time}</span></div>`).join('');
+}
+
+// ━━ Difficulty-based sound ━━
+function playHwCompleteSound(difficulty){
+  if(!isSoundOn())return;
+  try{
+    const ac=getAC(),t=ac.currentTime;
+    const beep=(freq,start,dur,vol=.2)=>{
+      const o=ac.createOscillator(),g=ac.createGain();
+      o.frequency.value=freq;g.gain.setValueAtTime(vol,t+start);
+      g.gain.exponentialRampToValueAtTime(.001,t+start+dur);
+      o.connect(g);g.connect(ac.destination);o.start(t+start);o.stop(t+start+dur);
+    };
+    if(difficulty==='easy'){beep(659,.0,.12);beep(784,.1,.15);}
+    else if(difficulty==='hard'){[523,659,784,988,1047].forEach((f,i)=>beep(f,i*.08,.2,.25));}
+    else{beep(523,.0,.1);beep(659,.09,.14);beep(784,.18,.18);}
+  }catch(e){}
 }
 
 // ━━ News ticker ━━
