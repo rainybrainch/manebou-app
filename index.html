@@ -601,6 +601,67 @@ html,body{width:100%;height:100%;background:#000;overflow:hidden}
 .si-btn.danger:hover{background:rgba(224,85,85,.18)}
 .si-btn.neutral{border:1px solid var(--line);background:var(--sf);color:var(--muted)}
 @keyframes settingsIn{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:translateY(0)}}
+/* ━━ Offline banner ━━ */
+#offlineBanner{
+  position:fixed;top:var(--top);left:50%;transform:translateX(-50%);
+  width:calc(min(430px,100vw));
+  background:rgba(224,85,85,.95);backdrop-filter:blur(8px);
+  padding:7px 16px;text-align:center;z-index:300;
+  font-size:.68rem;font-weight:900;color:#fff;
+  display:none;border-bottom:1px solid rgba(255,255,255,.2);
+  letter-spacing:.06em;
+}
+#offlineBanner.show{display:block}
+/* ━━ Motivational quote ━━ */
+.quote-card{
+  background:linear-gradient(135deg,rgba(201,168,76,.06),rgba(107,182,255,.03));
+  border:1px solid rgba(201,168,76,.15);border-radius:10px;
+  padding:12px 14px;margin-bottom:14px;position:relative;overflow:hidden;
+}
+.quote-card::before{content:'❝';position:absolute;right:10px;top:4px;font-size:2rem;color:rgba(201,168,76,.12);line-height:1;pointer-events:none}
+.quote-text{font-family:var(--serif);font-size:.76rem;color:var(--text);line-height:1.7;font-style:italic}
+.quote-author{font-size:.56rem;color:var(--muted);margin-top:5px;letter-spacing:.06em;text-align:right}
+/* ━━ Date display ━━ */
+.date-chip{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:3px 10px;border-radius:999px;
+  border:1px solid var(--line);background:var(--sf);
+  font-size:.56rem;font-weight:900;color:var(--muted);letter-spacing:.06em;
+  margin-bottom:10px;
+}
+/* ━━ HW priority ━━ */
+.hw-star{background:none;border:none;font-size:1rem;cursor:pointer;padding:2px;flex-shrink:0;transition:transform .15s;filter:grayscale(1) brightness(.4)}
+.hw-star.on{filter:none;animation:starPop .3s ease}
+@keyframes starPop{0%{transform:scale(0)}60%{transform:scale(1.3)}100%{transform:scale(1)}}
+.hw-item.priority{border-color:rgba(201,168,76,.35);background:rgba(201,168,76,.03)}
+/* ━━ Custom habit form ━━ */
+.custom-habit-form{
+  background:var(--sf);border:1px solid var(--line);border-radius:10px;
+  padding:12px;margin-top:12px;
+}
+.habit-emoji-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.habit-emoji-btn{
+  width:34px;height:34px;border-radius:7px;border:1px solid var(--line);
+  background:var(--sf);font-size:1.1rem;cursor:pointer;
+  transition:all .15s;display:flex;align-items:center;justify-content:center;
+}
+.habit-emoji-btn.selected{border-color:rgba(201,168,76,.5);background:rgba(201,168,76,.1)}
+/* ━━ A2HS ━━ */
+#a2hsBanner{
+  position:fixed;bottom:calc(var(--nav)+8px);left:50%;transform:translateX(-50%);
+  width:calc(min(398px,calc(100vw - 32px)));
+  background:rgba(7,8,13,.96);border:1px solid rgba(201,168,76,.3);
+  border-radius:12px;padding:12px 16px;z-index:300;
+  display:none;align-items:center;gap:12px;
+  box-shadow:0 8px 30px rgba(0,0,0,.5);backdrop-filter:blur(12px);
+}
+#a2hsBanner.show{display:flex;animation:fbSlideUp .3s ease}
+.a2hs-ico{font-size:1.6rem;flex-shrink:0}
+.a2hs-text{flex:1}
+.a2hs-title{font-size:.78rem;font-weight:900;color:var(--text)}
+.a2hs-sub{font-size:.6rem;color:var(--muted);margin-top:2px}
+.a2hs-btn{padding:6px 12px;border-radius:7px;border:1px solid rgba(201,168,76,.35);background:rgba(201,168,76,.1);color:var(--acc);font-size:.72rem;font-weight:900;font-family:inherit;cursor:pointer;white-space:nowrap;flex-shrink:0}
+.a2hs-close{background:none;border:none;color:var(--muted);font-size:.9rem;cursor:pointer;flex-shrink:0}
 /* ━━ Game clear overlay ━━ */
 .game-clear{
   position:fixed;inset:0;z-index:700;
@@ -698,7 +759,9 @@ html,body{width:100%;height:100%;background:#000;overflow:hidden}
 <!-- ── ホーム ── -->
 <div class="screen active" id="homeScreen">
   <div class="inner">
+    <div class="date-chip" id="homeDateChip">📅 ―</div>
     <div id="homeCharBubble" class="char-bubble-wrap"></div>
+    <div class="quote-card" id="quoteCard"><div class="quote-text" id="quoteText"></div><div class="quote-author" id="quoteAuthor"></div></div>
 
     <!-- コイン + ストリーク バナー -->
     <div class="coin-banner">
@@ -762,6 +825,14 @@ html,body{width:100%;height:100%;background:#000;overflow:hidden}
     <div id="habitCharBubble" class="char-bubble-wrap"></div>
     <div class="slabel">今日の習慣</div>
     <div id="habitList"></div>
+    <div class="custom-habit-form">
+      <div class="slabel" style="margin-bottom:8px">習慣を追加</div>
+      <div class="habit-emoji-row" id="habitEmojiRow"></div>
+      <div class="hw-row" style="gap:7px">
+        <input class="hw-input" id="customHabitName" type="text" placeholder="習慣の名前…" maxlength="20" style="margin-bottom:0;flex:1" onkeydown="if(event.key==='Enter')addCustomHabit()">
+        <button class="btn-acc" style="flex-shrink:0;padding:9px 14px;white-space:nowrap" onclick="addCustomHabit()">追加</button>
+      </div>
+    </div>
     <div class="divider"></div>
     <div class="slabel">今月の習慣記録</div>
     <div id="habitHeatmap"></div>
@@ -927,6 +998,20 @@ html,body{width:100%;height:100%;background:#000;overflow:hidden}
       <button class="si-btn neutral" onclick="closeSettings()">✕ 閉じる</button>
     </div>
   </div>
+</div>
+
+<!-- ━━ Offline Banner ━━ -->
+<div id="offlineBanner">📡 オフライン ― キャッシュデータで動作中</div>
+
+<!-- ━━ A2HS Banner ━━ -->
+<div id="a2hsBanner">
+  <div class="a2hs-ico">📲</div>
+  <div class="a2hs-text">
+    <div class="a2hs-title">ホーム画面に追加</div>
+    <div class="a2hs-sub">アプリとして使うとより便利！</div>
+  </div>
+  <button class="a2hs-btn" id="a2hsInstallBtn">追加する</button>
+  <button class="a2hs-close" onclick="dismissA2HS()">✕</button>
 </div>
 
 <!-- ━━ Game Clear Overlay ━━ -->
@@ -1128,7 +1213,7 @@ function updateNavBadges(){
   const bHw=document.getElementById('badge-hw');
   if(bHw){bHw.textContent=hwPending>9?'9+':hwPending||'';bHw.className='nav-badge'+(hwPending>0?' show':'');}
   // 習慣バッジ（未チェック数）
-  const habitsActive=HABITS.filter(h=>!h.disabled);
+  const habitsActive=allHabits().filter(h=>!h.disabled);
   const habitsMissed=habitsActive.filter(h=>!(S.habitLogs[h.id]||[]).includes(td)).length;
   const bH=document.getElementById('badge-habits');
   if(bH){bH.textContent=habitsMissed||'';bH.className='nav-badge'+(habitsMissed>0?' show':'');}
@@ -1229,7 +1314,7 @@ function renderWeekly(){
 
 // ━━ Home ━━
 function renderHome(){
-  syncCoins();updateNavBadges();
+  syncCoins();updateNavBadges();renderDateChip();renderQuote();
   const dayIdx=Math.floor(Date.now()/86400000);
   renderCharBubble('homeCharBubble',dayIdx%2===0?'enda':'fukurou');
 
@@ -1379,9 +1464,10 @@ function renderHeatmap(){
 function renderHabits(){
   const dayIdx=Math.floor(Date.now()/86400000);
   renderCharBubble('habitCharBubble',dayIdx%2===0?'fukurou':'enda');
-  renderHeatmap();
+  renderHeatmap();renderHabitEmojiRow();
   const td=today();
-  document.getElementById('habitList').innerHTML=HABITS.map(h=>{
+  const habitsAll=allHabits();
+  document.getElementById('habitList').innerHTML=habitsAll.map(h=>{
     if(h.disabled)return`
       <div class="habit-row disabled">
         <div class="hr-ico">${h.emoji}</div>
@@ -1403,6 +1489,7 @@ function renderHabits(){
           ${!done?`onpointerdown="addRipple(this,event)"`:''}>
           ${done?'✓':''}
         </button>
+        ${h.id.startsWith('ch_')?`<button onclick="deleteCustomHabit('${h.id}')" style="background:none;border:none;color:var(--faint);font-size:.75rem;cursor:pointer;padding:2px;flex-shrink:0" title="削除">✕</button>`:''}
       </div>`;
   }).join('');
 }
@@ -1419,10 +1506,10 @@ function checkHabit(id){
   if(!S.habitLogs[id])S.habitLogs[id]=[];
   if(S.habitLogs[id].includes(td))return;
   S.habitLogs[id].push(td);save();
-  const h=HABITS.find(x=>x.id===id);
+  const h=allHabits().find(x=>x.id===id);
   playSound('check');
   addCoins(h?h.coins:REWARDS.habit,'習慣チェック！',false);
-  showFeedback(true,'習慣チェック！ ✅',h.name+' +'+h.coins+' コイン獲得');
+  showFeedback(true,'習慣チェック！ ✅',(h?.name||'習慣')+' +'+(h?.coins||10)+' コイン獲得');
 }
 
 // ━━ Homework ━━
@@ -1439,7 +1526,7 @@ function renderHomework(){
   const toHtml=h=>{
     const overdue=!h.done&&h.dueDate&&h.dueDate<td;
     const dueToday=!h.done&&h.dueDate===td;
-    return`<div class="hw-item${h.done?' done':''}${dueToday?' today':''}">
+    return`<div class="hw-item${h.done?' done':''}${dueToday?' today':''}${h.priority?' priority':''}">
       <button class="hw-chk${h.done?' done':''}" onclick="${h.done?'':` completeHW('${h.id}');renderHomework()`}">${h.done?'✓':''}</button>
       <div class="hw-body">
         <div class="hw-title">${h.title}</div>
@@ -1447,6 +1534,7 @@ function renderHomework(){
         ${dueToday?'<span class="hw-today-tag">TODAY</span>':''}
         ${h.dueDate&&!dueToday?`<div class="hw-due${overdue?' overdue':''}">期限：${h.dueDate}${overdue?' ⚠️':''}</div>`:''}
       </div>
+      <button class="hw-star${h.priority?' on':''}" onclick="togglePriority('${h.id}')">⭐</button>
       <button class="hw-del" onclick="deleteHW('${h.id}')">✕</button>
     </div>`;
   };
@@ -1581,6 +1669,99 @@ function renderCoinLog(){
     :'<div style="text-align:center;padding:12px;font-size:.68rem;color:var(--faint)">まだ記録がありません</div>';
 }
 
+// ━━ Motivational quotes ━━
+const QUOTES=[
+  {text:'投資で大切なのは、賢さよりも規律だ。',author:'— ウォーレン・バフェット'},
+  {text:'複利は人類最大の発明だ。知っている者がそれを稼ぎ、知らない者がそれを払う。',author:'— アルバート・アインシュタイン'},
+  {text:'リスクとは、自分が何をやっているかを知らないことから生まれる。',author:'— ウォーレン・バフェット'},
+  {text:'お金は奴隷にすることもできれば、主人にすることもできる。',author:'— フランシス・ベーコン'},
+  {text:'成功のために必要なのは、正しい方向に努力し続けることだ。',author:'— サミュエル・スマイルズ'},
+  {text:'長期的な視野で見れば、株式市場は楽観主義者に味方する。',author:'— ベンジャミン・グレアム'},
+  {text:'今日の種まきが、明日の収穫につながる。',author:'— マネぼう'},
+  {text:'経済の歴史を知ることは、未来を予測する最善の方法だ。',author:'— えんだ / 円舵'},
+  {text:'毎日の小さな習慣が、10年後の大きな差を生む。',author:'— ふくろう / 服牢'},
+  {text:'貯めることより、増やすことより、学ぶことが先だ。',author:'— マネぼう'},
+];
+function renderQuote(){
+  const q=QUOTES[Math.floor(Date.now()/86400000)%QUOTES.length];
+  const qt=document.getElementById('quoteText'), qa=document.getElementById('quoteAuthor');
+  if(qt)qt.textContent=q.text;if(qa)qa.textContent=q.author;
+}
+
+// ━━ Date display ━━
+function renderDateChip(){
+  const el=document.getElementById('homeDateChip');if(!el)return;
+  const now=new Date();
+  const days=['日','月','火','水','木','金','土'];
+  el.textContent=`📅 ${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日（${days[now.getDay()]}）`;
+}
+
+// ━━ Offline detection ━━
+function setupOffline(){
+  const b=document.getElementById('offlineBanner');
+  const update=()=>{if(b)b.className=navigator.onLine?'':'show'};
+  window.addEventListener('online',update);window.addEventListener('offline',update);
+  update();
+}
+
+// ━━ A2HS (Add to Home Screen) ━━
+let _deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();_deferredPrompt=e;
+  if(!localStorage.getItem('a2hs_dismissed')){
+    setTimeout(()=>{document.getElementById('a2hsBanner').className='a2hsBanner show';},3000);
+  }
+});
+document.getElementById('a2hsInstallBtn')?.addEventListener('click',async()=>{
+  if(!_deferredPrompt)return;
+  _deferredPrompt.prompt();
+  const {outcome}=await _deferredPrompt.userChoice;
+  _deferredPrompt=null;
+  dismissA2HS();
+  if(outcome==='accepted')showToast('インストール完了！','good');
+});
+function dismissA2HS(){
+  document.getElementById('a2hsBanner').className='a2hsBanner';
+  localStorage.setItem('a2hs_dismissed','1');
+}
+
+// ━━ HW priority toggle ━━
+function togglePriority(id){
+  const h=S.homework.find(x=>x.id===id);if(!h)return;
+  h.priority=!h.priority;save();renderHomework();
+}
+
+// ━━ Custom habits ━━
+const HABIT_EMOJIS=['🏃','💪','📖','🧘','💤','🥗','💧','🎵','✏️','🌞','🚴','🧹'];
+let _selectedEmoji=HABIT_EMOJIS[0];
+function renderHabitEmojiRow(){
+  const el=document.getElementById('habitEmojiRow');if(!el)return;
+  el.innerHTML=HABIT_EMOJIS.map(e=>`
+    <button class="habit-emoji-btn${e===_selectedEmoji?' selected':''}" onclick="selectHabitEmoji('${e}')">${e}</button>
+  `).join('');
+}
+function selectHabitEmoji(e){_selectedEmoji=e;renderHabitEmojiRow();}
+function addCustomHabit(){
+  const name=document.getElementById('customHabitName')?.value.trim();
+  if(!name)return;
+  if(!S.customHabits)S.customHabits=[];
+  const id='ch_'+uid();
+  S.customHabits.push({id,name,emoji:_selectedEmoji,coins:10});
+  save();
+  document.getElementById('customHabitName').value='';
+  renderHabits();
+  showToast(_selectedEmoji+' 習慣を追加しました','good');
+}
+function deleteCustomHabit(id){
+  if(!S.customHabits)return;
+  S.customHabits=S.customHabits.filter(h=>h.id!==id);
+  delete S.habitLogs[id];
+  save();renderHabits();
+}
+function allHabits(){
+  return [...HABITS,...(S.customHabits||[])];
+}
+
 // ━━ Sound toggle ━━
 function isSoundOn(){return S.soundOn!==false;}
 function toggleSound(){
@@ -1657,7 +1838,7 @@ if('serviceWorker' in navigator){
 
 // ━━ Init ━━
 function init(){
-  load();checkLogin();syncCoins();snapCoinHistory();updateSoundUI();renderHome();checkAchievements();
+  load();checkLogin();syncCoins();snapCoinHistory();updateSoundUI();setupOffline();renderHome();checkAchievements();
   // 初回のみウェルカム表示（スプラッシュ後）
   if(!S.welcomed){setTimeout(()=>{document.getElementById('welcomeOver').className='welcome-over show';},1700);}
   const di=document.getElementById('hwDateInput');
