@@ -814,6 +814,39 @@ body.light #toast{background:#fff;color:var(--text)}
 }
 .hw-bulk-btn:hover{background:rgba(87,200,124,.16)}
 .hw-bulk-btn:active{transform:scale(.97)}
+/* ━━ Badge tooltip ━━ */
+.ach-badge-h{position:relative}
+.ach-tooltip{
+  position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%) scale(0);
+  background:rgba(7,8,13,.95);border:1px solid var(--line2);border-radius:8px;
+  padding:6px 10px;white-space:nowrap;font-size:.6rem;color:var(--text);
+  z-index:50;pointer-events:none;transition:transform .15s;
+  box-shadow:0 4px 16px rgba(0,0,0,.5);
+}
+.ach-badge-h:hover .ach-tooltip{transform:translateX(-50%) scale(1)}
+/* ━━ Sort btn ━━ */
+.sort-btn{
+  padding:4px 9px;border-radius:999px;border:1px solid var(--line);
+  background:var(--sf);font-size:.54rem;font-weight:900;color:var(--muted);
+  font-family:inherit;cursor:pointer;transition:all .15s;letter-spacing:.04em;
+}
+.sort-btn.active{border-color:rgba(201,168,76,.4);background:rgba(201,168,76,.1);color:var(--acc)}
+/* ━━ Tomorrow reminder ━━ */
+.tomorrow-card{
+  background:rgba(107,182,255,.04);border:1px solid rgba(107,182,255,.15);
+  border-radius:10px;padding:11px 13px;margin-bottom:0;
+}
+.tm-label{font-size:.54rem;font-weight:900;color:var(--blue);letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px}
+.tm-list{display:flex;flex-direction:column;gap:4px}
+.tm-item{font-size:.7rem;color:var(--muted);display:flex;align-items:center;gap:6px}
+/* ━━ Week hw counter ━━ */
+.week-hw-row{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px 12px;background:var(--sf);border:1px solid var(--line);
+  border-radius:8px;margin-bottom:8px;
+}
+.wh-label{font-size:.6rem;color:var(--muted);letter-spacing:.06em}
+.wh-val{font-family:var(--serif);font-size:1rem;font-weight:700;color:var(--grn)}
 /* ━━ Rich splash ━━ */
 .spl-chars{display:flex;gap:12px;justify-content:center;margin-top:8px}
 .spl-char{width:40px;height:40px;object-fit:cover;border-radius:50%;border:1.5px solid rgba(201,168,76,.4);opacity:.7}
@@ -962,7 +995,7 @@ body.light #toast{background:#fff;color:var(--text)}
   <div class="top-streak"><span class="streak-fire">🔥</span><span id="tStreak">0</span></div>
   <div class="top-brand">マネぼう</div>
   <div style="display:flex;align-items:center;gap:6px">
-    <div class="top-coins" id="tCoins">🪙 <span id="tCoinsNum">0</span><span class="today-earned" id="todayEarned"></span></div>
+    <div class="top-coins" id="tCoins" onclick="copyCoins()" title="タップでコピー" style="cursor:pointer">🪙 <span id="tCoinsNum">0</span><span class="today-earned" id="todayEarned"></span></div>
     <button class="top-gear" onclick="openSettings()" title="設定">⚙️</button>
   </div>
 </div>
@@ -1013,6 +1046,9 @@ body.light #toast{background:#fff;color:var(--text)}
     <div class="slabel">今週の成果</div>
     <div id="weeklyWidget"></div>
     <div class="divider"></div>
+    <div class="slabel">明日のやること</div>
+    <div class="tomorrow-card"><div class="tm-label">TOMORROW</div><div class="tm-list" id="tomorrowList"></div></div>
+    <div class="divider"></div>
     <div class="slabel">今週のコイン獲得</div>
     <div class="card" id="weekCoinWidget" style="padding:10px 12px"></div>
     <div class="divider"></div>
@@ -1033,6 +1069,7 @@ body.light #toast{background:#fff;color:var(--text)}
         <button class="study-filter-btn active" id="sf-all"  onclick="setStudyFilter('all')">全て</button>
         <button class="study-filter-btn"        id="sf-todo" onclick="setStudyFilter('todo')">未完了</button>
         <button class="study-filter-btn"        id="sf-done" onclick="setStudyFilter('done')">完了</button>
+        <button class="sort-btn" id="sortGame" onclick="toggleGameSort()">↕ 並替</button>
       </div>
     </div>
     <div id="gameList"></div>
@@ -1097,6 +1134,10 @@ body.light #toast{background:#fff;color:var(--text)}
         <button class="hw-filter-btn"        id="hwd-hard"   onclick="setHwDiff('hard')">難</button>
       </div>
       <button class="btn-acc" onclick="addHomework()" style="width:100%;padding:11px;font-size:.85rem">追加 ＋</button>
+    </div>
+    <div class="week-hw-row">
+      <span class="wh-label">📝 今週の完了数</span>
+      <span class="wh-val" id="weekHwCount">0件</span>
     </div>
     <div class="hw-filter-row">
       <button class="hw-filter-btn active" id="hwf-all"  onclick="setHwFilter('all')">全て</button>
@@ -1682,7 +1723,7 @@ function renderHome(){
     items.push({ico:'📝',text:h.title,tag:'宿題',tagC:'rgba(167,139,250,.6)',done:false,action:`completeHW('${h.id}');renderHome()`});
   });
 
-  renderWeekly();renderWeekCoinWidget();renderAchBadges();checkAchievements();
+  renderWeekly();renderWeekCoinWidget();renderAchBadges();checkAchievements();renderTomorrow();
   document.getElementById('todayList').innerHTML=items.length
     ?items.map(i=>`
       <div class="today-item${i.done?' done':''}" ${i.action?`onclick="${i.action}"`:''}">
@@ -1707,7 +1748,14 @@ function setStudyFilter(f){
 
 // ━━ Study ━━
 function renderStudy(){
-  const filteredGames=GAMES.filter(g=>{
+  const sortedGames=_gameSort==='progress'
+    ?[...GAMES].sort((a,b)=>{
+        const pa=a.lessons.length?Object.keys(S.lessonDone).filter(k=>k.startsWith(a.id+'_')).length/a.lessons.length:0;
+        const pb=b.lessons.length?Object.keys(S.lessonDone).filter(k=>k.startsWith(b.id+'_')).length/b.lessons.length:0;
+        return pb-pa;
+      })
+    :GAMES;
+  const filteredGames=sortedGames.filter(g=>{
     if(_studyFilter==='all')return true;
     if(_studyFilter==='done')return g.ready&&g.lessons.every(l=>S.lessonDone[g.id+'_'+l.id]);
     if(_studyFilter==='todo')return !g.ready||!g.lessons.every(l=>S.lessonDone[g.id+'_'+l.id]);
@@ -1902,7 +1950,7 @@ function checkHabit(id){
 }
 
 // ━━ Homework ━━
-function renderHomework(){
+function renderHomework(){updateWeekHwCount();
   const td=today();
   // 期限順ソート（期限なし→末尾、期限あり→昇順）
   const sortByDue=(a,b)=>{
@@ -2104,6 +2152,49 @@ function renderWeekCoinWidget(){
       </div>
       <div class="wc-bar-label" style="color:${d.isToday?'var(--acc)':'var(--faint)'}">${d.day}</div>
     </div>`).join('')}</div>`;
+}
+
+// ━━ Tomorrow reminder ━━
+function renderTomorrow(){
+  const el=document.getElementById('tomorrowList');if(!el)return;
+  const tm=new Date(today());tm.setDate(tm.getDate()+1);
+  const tms=tm.toISOString().slice(0,10);
+  const items=[];
+  // 明日期限の宿題
+  S.homework.filter(h=>!h.done&&h.dueDate===tms).forEach(h=>{
+    items.push({ico:'📝',text:h.title});
+  });
+  // 習慣リマインダー
+  allHabits().filter(h=>!h.disabled).slice(0,2).forEach(h=>{
+    items.push({ico:h.emoji,text:h.name+'チェックを忘れずに'});
+  });
+  el.innerHTML=items.length
+    ?items.map(i=>`<div class="tm-item"><span>${i.ico}</span><span>${i.text}</span></div>`).join('')
+    :'<div class="tm-item"><span>🌙</span><span>明日の予定はのんびりです</span></div>';
+}
+
+// ━━ Week HW counter ━━
+function updateWeekHwCount(){
+  const el=document.getElementById('weekHwCount');if(!el)return;
+  const now=new Date(today());
+  const mon=new Date(now);mon.setDate(now.getDate()-((now.getDay()+6)%7));
+  const dates=[];for(let d=new Date(mon);d<=now;d.setDate(d.getDate()+1))dates.push(d.toISOString().slice(0,10));
+  const cnt=S.homework.filter(h=>h.done&&dates.includes(h.doneAt)).length;
+  el.textContent=cnt+'件';
+}
+
+// ━━ Copy coins ━━
+function copyCoins(){
+  navigator.clipboard?.writeText(String(S.coins)).then(()=>showToast('🪙 '+fmt(S.coins)+' コピーしました','good'));
+}
+
+// ━━ Game sort ━━
+let _gameSort='default';
+function toggleGameSort(){
+  _gameSort=_gameSort==='default'?'progress':'default';
+  const el=document.getElementById('sortGame');
+  if(el)el.className='sort-btn'+(_gameSort!=='default'?' active':'');
+  renderStudy();
 }
 
 // ━━ User name ━━
@@ -2458,9 +2549,11 @@ function renderAchBadges(){
   const el=document.getElementById('achBadgeGrid');if(!el)return;
   el.innerHTML=ACHIEVEMENTS.map(a=>{
     const ul=S.achievements&&S.achievements.includes(a.id);
+    const condStr={first_lesson:'1つレッスンを完了',first_hw:'1つ宿題を完了',first_habit:'1回習慣チェック',streak3:'3日連続ログイン',streak7:'7日連続ログイン',coins100:'累計100コイン獲得',coins500:'累計500コイン獲得',all_lessons:'全レッスン完了'}[a.id]||'';
     return`<div class="ach-badge-h${ul?' unlocked':''}">
       <span class="ach-ico-h">${a.ico}</span>
       <div class="ach-name-h">${a.name}</div>
+      <div class="ach-tooltip">${a.name}<br><span style="color:var(--muted);font-size:.52rem">${condStr}</span></div>
     </div>`;
   }).join('');
 }
