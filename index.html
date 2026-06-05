@@ -766,6 +766,27 @@ body.light #toast{background:#fff;color:var(--text)}
 .coin-shower-wrap{position:fixed;inset:0;pointer-events:none;z-index:401;overflow:hidden}
 .cs-coin{position:absolute;font-size:1.2rem;animation:coinShower var(--d,1s) var(--del,0s) ease-in forwards}
 @keyframes coinShower{0%{opacity:1;transform:translate(0,0) rotate(0)}100%{opacity:0;transform:translate(var(--dx,0px),80vh) rotate(360deg)}}
+/* ━━ Skip log ━━ */
+.skip-log-list{display:flex;flex-direction:column;gap:3px;max-height:140px;overflow-y:auto;margin-top:8px}
+.skip-log-item{display:flex;align-items:center;justify-content:space-between;padding:5px 9px;background:var(--sf);border:1px solid var(--line);border-radius:7px;font-size:.64rem}
+.skip-log-habit{color:var(--muted)}
+.skip-log-date{color:var(--faint);font-size:.56rem}
+/* ━━ Fixed char chip ━━ */
+.fixed-char-chip{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:3px 9px;border-radius:999px;
+  border:1px solid var(--line);background:var(--sf);
+  font-size:.6rem;font-weight:900;color:var(--muted);
+  cursor:pointer;transition:all .15s;margin-top:6px;
+}
+.fixed-char-chip.on{border-color:rgba(201,168,76,.4);background:rgba(201,168,76,.1);color:var(--acc)}
+/* ━━ Lesson check anim ━━ */
+@keyframes lessonCheck{0%{transform:scale(0)}50%{transform:scale(1.5)}80%{transform:scale(1.1)}100%{transform:scale(1)}}
+.lr-status.animating{animation:lessonCheck .35s ease forwards}
+/* ━━ Tsumitate month toggle ━━ */
+.tsum-period-row{display:flex;gap:4px;margin-bottom:8px}
+.tsum-period-btn{padding:3px 8px;border-radius:999px;border:1px solid var(--line);background:var(--sf);font-size:.54rem;font-weight:900;color:var(--muted);cursor:pointer;font-family:inherit;transition:all .15s}
+.tsum-period-btn.active{border-color:rgba(201,168,76,.35);background:rgba(201,168,76,.1);color:var(--acc)}
 /* ━━ Today event ━━ */
 .today-event{
   background:linear-gradient(135deg,rgba(224,85,85,.06),rgba(224,85,85,.02));
@@ -1343,6 +1364,9 @@ body.light #toast{background:#fff;color:var(--text)}
       </div>
     </div>
     <div class="divider"></div>
+    <div class="slabel">スキップログ</div>
+    <div id="skipLogList" class="skip-log-list"></div>
+    <div class="divider" style="margin:8px 0"></div>
     <div class="slabel">連続記録ランキング</div>
     <div id="streakRankList" class="streak-rank-list"></div>
     <div class="divider"></div>
@@ -1475,6 +1499,10 @@ body.light #toast{background:#fff;color:var(--text)}
     <!-- 積立シミュレーション -->
     <div class="tsum-wrap">
       <div class="tsum-title">💹 積立シミュレーション</div>
+      <div class="tsum-period-row">
+        <button class="tsum-period-btn active" id="tp-day"   onclick="setTsumPeriod('day')">日次積立</button>
+        <button class="tsum-period-btn"        id="tp-month" onclick="setTsumPeriod('month')">月次積立</button>
+      </div>
       <div class="tsum-row">
         <span class="tsum-lbl">毎日の積立</span>
         <input class="tsum-input" id="tsumDaily" type="number" value="15" min="1" max="9999" oninput="calcTsum()">
@@ -2020,6 +2048,8 @@ function checkLogin(){
 // ━━ Char bubble ━━
 const _charIdx={};
 function renderCharBubble(containerId,charId){
+  // 固定キャラがあればそちらを優先
+  if(S.fixedChar)charId=S.fixedChar;
   if(!_charIdx[containerId])_charIdx[containerId]=CHARS.findIndex(c=>c.id===charId)||0;
   const idx=_charIdx[containerId];
   const ch=CHARS[idx]||CHARS[0];
@@ -2300,7 +2330,7 @@ function renderHeatmap(){
 function renderHabits(){
   const dayIdx=Math.floor(Date.now()/86400000);
   renderCharBubble('habitCharBubble',dayIdx%2===0?'fukurou':'enda');
-  renderHeatmap();renderHabitEmojiRow();renderHabitMonthBadge();renderStreakRanking();renderHabitWeekSummary();
+  renderHeatmap();renderHabitEmojiRow();renderHabitMonthBadge();renderStreakRanking();renderHabitWeekSummary();renderSkipLog();
   const td=today();
   // チェック済みを下部に移動
   const habitsAll=[
@@ -2348,7 +2378,7 @@ function checkHabit(id){
   if(S.habitLogs[id].includes(td))return;
   S.habitLogs[id].push(td);save();
   const h=allHabits().find(x=>x.id===id);
-  playSound('check');
+  playSound('check');checkAllHabitsDone();
   addCoins(h?h.coins:REWARDS.habit,'習慣チェック！',false);
   showFeedback(true,'習慣チェック！ ✅',(h?.name||'習慣')+' +'+(h?.coins||10)+' コイン獲得');
   // ストリーク強調
@@ -2497,7 +2527,10 @@ function renderChars(){
         </div>
       </div>
       <div class="ccf-body">
-        <button onclick="openCharZoom('${ch.id}')" style="width:100%;margin-bottom:10px;padding:7px;border-radius:8px;border:1px solid var(--line);background:var(--sf);font-size:.7rem;font-weight:900;color:var(--muted);cursor:pointer;transition:all .15s" onmouseover="this.style.background='var(--sf2)'" onmouseout="this.style.background='var(--sf)'">🔍 拡大表示</button>
+        <div style="display:flex;gap:7px;margin-bottom:10px">
+          <button onclick="openCharZoom('${ch.id}')" style="flex:1;padding:7px;border-radius:8px;border:1px solid var(--line);background:var(--sf);font-size:.7rem;font-weight:900;color:var(--muted);cursor:pointer;transition:all .15s">🔍 拡大</button>
+          <button onclick="setFixedChar('${ch.id}')" class="fixed-char-chip${S.fixedChar===ch.id?' on':''}" id="fixBtn_${ch.id}">📌 ${S.fixedChar===ch.id?'固定中':'固定する'}</button>
+        </div>
         <div class="ccf-quote">${ch.quote}</div>
         <div class="char-today-msg">
           <div class="ctm-label">💬 今日のメッセージ</div>
@@ -2511,8 +2544,11 @@ function renderChars(){
 
 // ━━ 積立シミュレーション ━━
 function calcTsum(){
-  const daily=parseFloat(document.getElementById('tsumDaily')?.value)||15;
-  const rate =parseFloat(document.getElementById('tsumRate')?.value)||5;
+  let daily=parseFloat(document.getElementById('tsumDaily')?.value)||15;
+  const rate=parseFloat(document.getElementById('tsumRate')?.value)||5;
+  // 月次の場合は月額を日割りに変換
+  const isMonth=_tsumPeriod==='month';
+  if(isMonth)daily=daily/30;
   const r=rate/100/365;
   const calc=(days)=>{let tot=0;for(let i=0;i<days;i++)tot=(tot+daily)*(1+r);return Math.round(tot);};
   const y1=calc(365),y3=calc(365*3),y5=calc(365*5),y10=calc(365*10);
@@ -2712,6 +2748,54 @@ function toggleFlatView(){
   const el=document.getElementById('flatView');
   if(el)el.className='sort-btn'+(_flatView?' active':'');
   renderStudy();
+}
+
+// ━━ Skip log ━━
+function renderSkipLog(){
+  const el=document.getElementById('skipLogList');if(!el)return;
+  const skips=S.habitSkips||{};
+  const entries=[];
+  Object.entries(skips).forEach(([date,ids])=>{
+    ids.forEach(id=>{
+      const h=allHabits().find(x=>x.id===id);
+      if(h)entries.push({date,name:h.name,emoji:h.emoji});
+    });
+  });
+  entries.sort((a,b)=>b.date.localeCompare(a.date));
+  el.innerHTML=entries.slice(0,10).length
+    ?entries.slice(0,10).map(e=>`<div class="skip-log-item"><span class="skip-log-habit">${e.emoji} ${e.name}</span><span class="skip-log-date">${e.date}</span></div>`).join('')
+    :'<div style="font-size:.66rem;color:var(--faint);padding:8px;text-align:center">スキップ記録はありません</div>';
+}
+
+// ━━ Fixed char ━━
+function setFixedChar(id){
+  S.fixedChar=S.fixedChar===id?null:id;save();
+  renderChars();showToast(S.fixedChar?'キャラを固定しました':'固定を解除しました','good');
+}
+
+// ━━ Tsum period ━━
+let _tsumPeriod='day';
+function setTsumPeriod(p){
+  _tsumPeriod=p;
+  ['day','month'].forEach(x=>{
+    const el=document.getElementById('tp-'+x);if(el)el.className='tsum-period-btn'+(x===p?' active':'');
+  });
+  // ラベル更新
+  const dailyEl=document.getElementById('tsumDaily')?.parentElement?.querySelector('.tsum-lbl');
+  if(dailyEl)dailyEl.textContent=p==='day'?'毎日の積立':'毎月の積立';
+  calcTsum();
+}
+
+// ━━ All habits done confetti ━━
+function checkAllHabitsDone(){
+  const td=today();
+  const habitsActive=allHabits().filter(h=>!h.disabled);
+  const allDone=habitsActive.length>0&&habitsActive.every(h=>(S.habitLogs[h.id]||[]).includes(td));
+  if(allDone&&!S.allHabitsDoneShown?.includes(td)){
+    if(!S.allHabitsDoneShown)S.allHabitsDoneShown=[];
+    S.allHabitsDoneShown.push(td);save();
+    setTimeout(()=>{launchConfetti();showToast('🎉 今日の習慣を全て達成！','good');},300);
+  }
 }
 
 // ━━ Today event (何の日) ━━
