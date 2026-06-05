@@ -755,6 +755,43 @@ body.light #toast{background:#fff;color:var(--text)}
 .a2hs-sub{font-size:.6rem;color:var(--muted);margin-top:2px}
 .a2hs-btn{padding:6px 12px;border-radius:7px;border:1px solid rgba(201,168,76,.35);background:rgba(201,168,76,.1);color:var(--acc);font-size:.72rem;font-weight:900;font-family:inherit;cursor:pointer;white-space:nowrap;flex-shrink:0}
 .a2hs-close{background:none;border:none;color:var(--muted);font-size:.9rem;cursor:pointer;flex-shrink:0}
+/* ━━ Gear icon ━━ */
+.top-gear{
+  background:none;border:none;color:var(--muted);font-size:.9rem;
+  cursor:pointer;padding:4px;transition:all .2s;line-height:1;
+}
+.top-gear:hover{color:var(--acc);transform:rotate(45deg)}
+/* ━━ Encouragement overlay ━━ */
+.enc-over{
+  position:fixed;inset:0;z-index:750;
+  background:rgba(7,8,13,.88);backdrop-filter:blur(14px);
+  display:none;flex-direction:column;align-items:center;justify-content:center;
+  gap:10px;text-align:center;padding:24px;
+}
+.enc-over.show{display:flex;animation:fadeScaleIn .3s ease}
+.enc-ico{font-size:3.5rem;animation:gcBounce 1s ease infinite}
+.enc-title{font-family:var(--serif);font-size:1.3rem;font-weight:700;color:var(--grn)}
+.enc-msg{font-size:.8rem;color:var(--muted);line-height:1.8;max-width:280px}
+/* ━━ Badge scroll ━━ */
+.badge-scroll{display:flex;gap:7px;overflow-x:auto;padding-bottom:6px;-webkit-overflow-scrolling:touch}
+.badge-scroll::-webkit-scrollbar{height:0}
+.ach-badge-h{
+  background:var(--sf);border:1px solid var(--line);border-radius:10px;
+  padding:10px 8px;text-align:center;flex-shrink:0;width:72px;
+  transition:all .15s;
+}
+.ach-badge-h.unlocked{border-color:rgba(201,168,76,.4);background:rgba(201,168,76,.06)}
+.ach-badge-h:hover{transform:translateY(-2px)}
+.ach-ico-h{font-size:1.3rem;display:block;margin-bottom:4px;filter:grayscale(1) brightness(.3)}
+.ach-badge-h.unlocked .ach-ico-h{filter:none}
+.ach-name-h{font-size:.44rem;color:var(--muted);font-weight:900;letter-spacing:.04em;line-height:1.3}
+.ach-badge-h.unlocked .ach-name-h{color:var(--acc)}
+/* ━━ Clickable stat card ━━ */
+.qs-card{cursor:pointer;transition:all .15s}
+.qs-card:hover{background:var(--sf2);transform:translateY(-1px);border-color:rgba(201,168,76,.25)}
+.qs-card:active{transform:scale(.96)}
+/* ━━ Game card gradient ━━ */
+.game-block-head-grad{background-size:cover}
 /* ━━ Game clear overlay ━━ */
 .game-clear{
   position:fixed;inset:0;z-index:700;
@@ -842,8 +879,11 @@ body.light #toast{background:#fff;color:var(--text)}
 <!-- ━━ TopBar ━━ -->
 <div id="topBar">
   <div class="top-streak"><span class="streak-fire">🔥</span><span id="tStreak">0</span></div>
-  <div class="top-brand" onclick="openSettings()" style="cursor:pointer">マネぼう</div>
-  <div class="top-coins" id="tCoins">🪙 <span id="tCoinsNum">0</span></div>
+  <div class="top-brand">マネぼう</div>
+  <div style="display:flex;align-items:center;gap:6px">
+    <div class="top-coins" id="tCoins">🪙 <span id="tCoinsNum">0</span></div>
+    <button class="top-gear" onclick="openSettings()" title="設定">⚙️</button>
+  </div>
 </div>
 
 <!-- ━━ Screens ━━ -->
@@ -893,7 +933,7 @@ body.light #toast{background:#fff;color:var(--text)}
     <div class="card" id="weekCoinWidget" style="padding:10px 12px"></div>
     <div class="divider"></div>
     <div class="slabel">達成バッジ</div>
-    <div id="achBadgeGrid" class="badge-grid"></div>
+    <div id="achBadgeGrid" class="badge-scroll"></div>
     <div class="divider"></div>
     <div class="slabel" style="color:var(--faint)">今後追加予定</div>
     <div class="ph-card"><span class="ph-ico">📊</span>詳細レポート・ランキングなど</div>
@@ -1120,6 +1160,10 @@ body.light #toast{background:#fff;color:var(--text)}
       <button class="si-btn danger" onclick="confirmReset()">リセット</button>
     </div>
     <div class="settings-item">
+      <div><div class="si-label">データをエクスポート</div><div class="si-sub">学習記録をJSONで保存</div></div>
+      <button class="si-btn neutral" onclick="exportData()">保存 ↓</button>
+    </div>
+    <div class="settings-item">
       <div><div class="si-label">フィードバック</div><div class="si-sub">改善要望・バグ報告</div></div>
       <a href="mailto:fukuisho0603@gmail.com?subject=マネぼうアプリ フィードバック" class="si-btn neutral" style="text-decoration:none;display:inline-block">送る ↗</a>
     </div>
@@ -1132,6 +1176,14 @@ body.light #toast{background:#fff;color:var(--text)}
       <button class="si-btn neutral" onclick="closeSettings()">✕ 閉じる</button>
     </div>
   </div>
+</div>
+
+<!-- ━━ Encouragement ━━ -->
+<div class="enc-over" id="encOver">
+  <div class="enc-ico" id="encIco">🎉</div>
+  <div class="enc-title" id="encTitle">すごい！</div>
+  <div class="enc-msg"   id="encMsg"></div>
+  <button class="btn-grn" style="margin-top:8px;padding:11px 24px" onclick="closeEnc()">やったー！</button>
 </div>
 
 <!-- ━━ All Badges Cleared ━━ -->
@@ -1502,9 +1554,9 @@ function renderHome(){
   const habitsDone  =habitsActive.filter(h=>(S.habitLogs[h.id]||[]).includes(td)).length;
 
   document.getElementById('homeStats').innerHTML=`
-    <div class="hs-cell"><div class="hs-val grn">${lessonCount}</div><div class="hs-lbl">レッスン</div></div>
-    <div class="hs-cell"><div class="hs-val acc">${hwPending}</div><div class="hs-lbl">宿題残り</div></div>
-    <div class="hs-cell"><div class="hs-val ora">${habitsDone}/${habitsActive.length}</div><div class="hs-lbl">習慣 今日</div></div>`;
+    <div class="hs-cell" style="cursor:pointer" onclick="nav('studyScreen','nb-study');renderStudy()"><div class="hs-val grn">${lessonCount}</div><div class="hs-lbl">📚 レッスン</div></div>
+    <div class="hs-cell" style="cursor:pointer" onclick="nav('hwScreen','nb-hw');renderHomework()"><div class="hs-val acc">${hwPending}</div><div class="hs-lbl">📝 宿題残り</div></div>
+    <div class="hs-cell" style="cursor:pointer" onclick="nav('habitsScreen','nb-habits');renderHabits()"><div class="hs-val ora">${habitsDone}/${habitsActive.length}</div><div class="hs-lbl">📅 習慣</div></div>`;
 
   const items=[];
   habitsActive.forEach(h=>{
@@ -1550,7 +1602,7 @@ function renderStudy(){
     const doneCnt=Object.keys(S.lessonDone).filter(k=>k.startsWith(g.id+'_')).length;
     return`
       <div class="game-block${g.ready?' ready':''}" id="gc-${g.id}">
-        <div class="game-block-head" ${g.ready?`onclick="toggleGame('${g.id}')"`:''}">
+        <div class="game-block-head" style="background:linear-gradient(135deg,${g.color}08,transparent)" ${g.ready?`onclick="toggleGame('${g.id}')"`:''}">
           <div class="gb-ico" style="background:${g.color}18;border:1px solid ${g.color}30">${g.emoji}</div>
           <div class="gb-info">
             <div class="gb-name">${g.name}</div>
@@ -1675,7 +1727,11 @@ function renderHabits(){
   renderCharBubble('habitCharBubble',dayIdx%2===0?'fukurou':'enda');
   renderHeatmap();renderHabitEmojiRow();renderHabitMonthBadge();
   const td=today();
-  const habitsAll=allHabits();
+  // チェック済みを下部に移動
+  const habitsAll=[
+    ...allHabits().filter(h=>!(S.habitLogs[h.id]||[]).includes(td)),
+    ...allHabits().filter(h=> (S.habitLogs[h.id]||[]).includes(td)),
+  ];
   document.getElementById('habitList').innerHTML=habitsAll.map(h=>{
     if(h.disabled)return`
       <div class="habit-row disabled">
@@ -1778,6 +1834,7 @@ function completeHW(id){
   launchConfetti();playSound('done');
   addCoins(REWARDS.homework,'宿題完了！🎉',false);
   showFeedback(true,'宿題完了！ 🎉',h.title+' +'+REWARDS.homework+' コイン獲得');
+  setTimeout(showEncouragement,600);
   renderHomework();
 }
 function deleteHW(id){
@@ -1913,6 +1970,34 @@ function renderWeekCoinWidget(){
       </div>
       <div class="wc-bar-label" style="color:${d.isToday?'var(--acc)':'var(--faint)'}">${d.day}</div>
     </div>`).join('')}</div>`;
+}
+
+// ━━ Encouragement messages ━━
+const ENC_MSGS=[
+  {ico:'🎉',t:'よくやった！',m:'一つひとつの積み重ねが、大きな力になる。'},
+  {ico:'🌟',t:'すばらしい！',m:'宿題をやり遂げた君は、本物の学習者だ。'},
+  {ico:'💪',t:'お疲れさま！',m:'今日も一歩前に進んだ。この調子で！'},
+  {ico:'🏆',t:'完璧！',m:'継続は力なり。君は確実に成長している。'},
+  {ico:'🚀',t:'最高！',m:'えんだとふくろうも誇りに思っているよ！'},
+];
+function showEncouragement(){
+  const e=ENC_MSGS[Math.floor(Math.random()*ENC_MSGS.length)];
+  document.getElementById('encIco').textContent=e.ico;
+  document.getElementById('encTitle').textContent=e.t;
+  document.getElementById('encMsg').textContent=e.m;
+  document.getElementById('encOver').className='enc-over show';
+}
+function closeEnc(){document.getElementById('encOver').className='enc-over';}
+
+// ━━ Data export ━━
+function exportData(){
+  const data={exportedAt:new Date().toISOString(),version:'0.5',...S};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`manebo-data-${today()}.json`;
+  a.click();URL.revokeObjectURL(a.href);
+  showToast('データをエクスポートしました','good');
 }
 
 // ━━ Greeting ━━
@@ -2119,9 +2204,9 @@ function renderAchBadges(){
   const el=document.getElementById('achBadgeGrid');if(!el)return;
   el.innerHTML=ACHIEVEMENTS.map(a=>{
     const ul=S.achievements&&S.achievements.includes(a.id);
-    return`<div class="ach-badge${ul?' unlocked':''}">
-      <span class="ach-ico">${a.ico}</span>
-      <div class="ach-name">${a.name}</div>
+    return`<div class="ach-badge-h${ul?' unlocked':''}">
+      <span class="ach-ico-h">${a.ico}</span>
+      <div class="ach-name-h">${a.name}</div>
     </div>`;
   }).join('');
 }
