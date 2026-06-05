@@ -755,6 +755,42 @@ body.light #toast{background:#fff;color:var(--text)}
 .ticker-text{font-size:.68rem;color:var(--muted);white-space:nowrap;overflow:hidden;
   animation:tickerScroll 18s linear infinite}
 @keyframes tickerScroll{0%{transform:translateX(100%)}100%{transform:translateX(-100%)}}
+/* ━━ Next lesson suggestion ━━ */
+.next-lesson-card{
+  background:linear-gradient(135deg,rgba(87,200,124,.08),rgba(87,200,124,.02));
+  border:1px solid rgba(87,200,124,.2);border-radius:10px;padding:11px 13px;
+  margin-bottom:10px;display:flex;align-items:center;gap:10px;cursor:pointer;
+  transition:all .15s;
+}
+.next-lesson-card:hover{background:rgba(87,200,124,.14);transform:translateX(2px)}
+.nl-ico{font-size:1.3rem;flex-shrink:0}
+.nl-info{flex:1}
+.nl-label{font-size:.54rem;font-weight:900;color:var(--grn);letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px}
+.nl-title{font-size:.8rem;font-weight:900;color:var(--text)}
+.nl-game{font-size:.6rem;color:var(--muted);margin-top:2px}
+/* ━━ HW calendar view ━━ */
+.hw-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:8px}
+.hwcal-hd{font-size:.46rem;color:var(--faint);text-align:center;padding:2px 0}
+.hwcal-cell{min-height:36px;border-radius:5px;background:rgba(255,255,255,.02);border:1px solid transparent;padding:2px;cursor:default;position:relative}
+.hwcal-cell.has-hw{border-color:rgba(201,168,76,.2);cursor:pointer}
+.hwcal-cell.today-cell{border-color:rgba(201,168,76,.5);background:rgba(201,168,76,.04)}
+.hwcal-date{font-size:.46rem;color:var(--faint);text-align:right;line-height:1}
+.hwcal-dot{width:5px;height:5px;border-radius:50%;margin:2px auto 0}
+.hwcal-view-btn{padding:5px 12px;border-radius:7px;border:1px solid var(--line);background:var(--sf);font-size:.6rem;font-weight:900;color:var(--muted);cursor:pointer;font-family:inherit;transition:all .15s}
+.hwcal-view-btn.active{border-color:rgba(201,168,76,.35);background:rgba(201,168,76,.08);color:var(--acc)}
+/* ━━ Diff stats ━━ */
+.diff-stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px}
+.diff-stat-cell{background:var(--sf);border:1px solid var(--line);border-radius:9px;padding:9px 6px;text-align:center}
+.ds-val{font-family:var(--serif);font-size:1.1rem;font-weight:700}
+.ds-lbl{font-size:.5rem;color:var(--muted);margin-top:2px;letter-spacing:.06em}
+/* ━━ Char reaction ━━ */
+.char-reaction{
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);
+  z-index:600;font-size:3rem;text-align:center;pointer-events:none;
+  transition:transform .25s cubic-bezier(.34,1.56,.64,1);
+}
+.char-reaction.show{transform:translate(-50%,-50%) scale(1);animation:reactionFloat 1.4s ease forwards}
+@keyframes reactionFloat{0%{opacity:1;transform:translate(-50%,-50%) scale(1.2)}70%{opacity:1;transform:translate(-50%,-75%) scale(1)}100%{opacity:0;transform:translate(-50%,-90%) scale(.8)}}
 /* ━━ Guide modal ━━ */
 .guide-over{
   position:fixed;inset:0;z-index:800;background:rgba(7,8,13,.94);backdrop-filter:blur(14px);
@@ -1133,6 +1169,7 @@ body.light #toast{background:#fff;color:var(--text)}
 <!-- ── 学習 ── -->
 <div class="screen" id="studyScreen">
   <div class="inner">
+    <div id="nextLessonCard"></div>
     <div class="study-progress-bar">
       <canvas class="spb-canvas" id="studyDonut" width="56" height="56"></canvas>
       <div class="spb-info">
@@ -1218,7 +1255,10 @@ body.light #toast{background:#fff;color:var(--text)}
     <div class="week-hw-row">
       <span class="wh-label">📝 今週の完了数</span>
       <span class="wh-val" id="weekHwCount">0件</span>
+      <button class="hwcal-view-btn" id="hwCalToggle" onclick="toggleHwCalendar()">📅 カレンダー</button>
     </div>
+    <div id="hwCalendarView" style="display:none;margin-bottom:10px"></div>
+    <div class="diff-stat-row" id="diffStatRow"></div>
     <div class="hw-filter-row">
       <button class="hw-filter-btn active" id="hwf-all"  onclick="setHwFilter('all')">全て</button>
       <button class="hw-filter-btn"        id="hwf-todo" onclick="setHwFilter('todo')">未完了</button>
@@ -1496,6 +1536,9 @@ body.light #toast{background:#fff;color:var(--text)}
     <button class="btn-acc" style="width:100%;margin-top:14px;padding:12px" onclick="closeGamePopup()">閉じる</button>
   </div>
 </div>
+
+<!-- ━━ Char Reaction ━━ -->
+<div class="char-reaction" id="charReaction"></div>
 
 <!-- ━━ Streak Popup ━━ -->
 <div class="streak-popup" id="streakPopup">
@@ -1893,7 +1936,7 @@ function renderStudy(){
     if(_studyFilter==='todo')return !g.ready||!g.lessons.every(l=>S.lessonDone[g.id+'_'+l.id]);
     return true;
   });
-  renderStudyDonut();
+  renderStudyDonut();renderNextLesson();
   document.getElementById('gameList').innerHTML=filteredGames.map(g=>{
     const doneCnt=Object.keys(S.lessonDone).filter(k=>k.startsWith(g.id+'_')).length;
     return`
@@ -2083,7 +2126,7 @@ function checkHabit(id){
 }
 
 // ━━ Homework ━━
-function renderHomework(){updateWeekHwCount();
+function renderHomework(){updateWeekHwCount();renderDiffStats();
   const td=today();
   // 期限順ソート（期限なし→末尾、期限あり→昇順）
   const sortByDue=(a,b)=>{
@@ -2285,6 +2328,107 @@ function renderWeekCoinWidget(){
       </div>
       <div class="wc-bar-label" style="color:${d.isToday?'var(--acc)':'var(--faint)'}">${d.day}</div>
     </div>`).join('')}</div>`;
+}
+
+// ━━ Next lesson suggestion ━━
+function renderNextLesson(){
+  const el=document.getElementById('nextLessonCard');if(!el)return;
+  for(const g of GAMES){
+    if(!g.ready)continue;
+    const next=g.lessons.find(l=>!S.lessonDone[g.id+'_'+l.id]);
+    if(next){
+      el.innerHTML=`<div class="next-lesson-card" onclick="nav('studyScreen','nb-study');renderStudy();setTimeout(()=>toggleGame('${g.id}'),200)">
+        <div class="nl-ico">${g.emoji}</div>
+        <div class="nl-info">
+          <div class="nl-label">✨ 次のレッスン</div>
+          <div class="nl-title">${next.title}</div>
+          <div class="nl-game">${g.name}</div>
+        </div>
+        <span style="color:var(--grn);font-size:.8rem">→</span>
+      </div>`;
+      return;
+    }
+  }
+  el.innerHTML=''; // 全完了なら非表示
+}
+
+// ━━ HW calendar view ━━
+let _hwCalOpen=false;
+function toggleHwCalendar(){
+  _hwCalOpen=!_hwCalOpen;
+  const view=document.getElementById('hwCalendarView');
+  const btn=document.getElementById('hwCalToggle');
+  if(view)view.style.display=_hwCalOpen?'block':'none';
+  if(btn)btn.className='hwcal-view-btn'+(_hwCalOpen?' active':'');
+  if(_hwCalOpen)renderHwCalendar();
+}
+function renderHwCalendar(){
+  const el=document.getElementById('hwCalendarView');if(!el)return;
+  const now=new Date(today());
+  const year=now.getFullYear(), month=now.getMonth();
+  const firstDay=(new Date(year,month,1).getDay()+6)%7; // 月曜始まり
+  const daysInMonth=new Date(year,month+1,0).getDate();
+  const dayNames=['月','火','水','木','金','土','日'];
+  // 宿題を日付でインデックス化
+  const hwByDate={};
+  S.homework.forEach(h=>{if(h.dueDate){if(!hwByDate[h.dueDate])hwByDate[h.dueDate]=[];hwByDate[h.dueDate].push(h);}});
+  const cells=[];
+  for(let i=0;i<firstDay;i++)cells.push('<div class="hwcal-cell"></div>');
+  for(let d=1;d<=daysInMonth;d++){
+    const ds=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const hws=hwByDate[ds]||[];
+    const isToday=ds===today();
+    cells.push(`<div class="hwcal-cell${hws.length?' has-hw':''}${isToday?' today-cell':''}" title="${hws.map(h=>h.title).join(', ')||''}">
+      <div class="hwcal-date">${d}</div>
+      ${hws.slice(0,3).map(h=>`<div class="hwcal-dot" style="background:${h.done?'rgba(87,200,124,.7)':'rgba(201,168,76,.7)'}"></div>`).join('')}
+    </div>`);
+  }
+  el.innerHTML=`
+    <div class="hw-cal-grid">${dayNames.map(n=>`<div class="hwcal-hd">${n}</div>`).join('')}</div>
+    <div class="hw-cal-grid">${cells.join('')}</div>
+    <div style="display:flex;gap:10px;font-size:.56rem;color:var(--muted);margin-top:5px">
+      <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:rgba(201,168,76,.7);margin-right:3px"></span>未完了</span>
+      <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:rgba(87,200,124,.7);margin-right:3px"></span>完了</span>
+    </div>`;
+}
+
+// ━━ HW difficulty stats ━━
+function renderDiffStats(){
+  const el=document.getElementById('diffStatRow');if(!el)return;
+  const diffs=['easy','normal','hard'];
+  const labels={easy:'易',normal:'普',hard:'難'};
+  const colors={easy:'var(--grn)',normal:'var(--acc)',hard:'var(--red)'};
+  el.innerHTML=diffs.map(d=>{
+    const total=S.homework.filter(h=>h.difficulty===d).length;
+    const done=S.homework.filter(h=>h.difficulty===d&&h.done).length;
+    const pct=total?Math.round(done/total*100):0;
+    return`<div class="diff-stat-cell">
+      <div class="ds-val" style="color:${colors[d]}">${pct}%</div>
+      <div class="ds-lbl">${labels[d]} (${done}/${total})</div>
+    </div>`;
+  }).join('');
+}
+
+// ━━ Char double tap reaction ━━
+const REACTIONS=['🎉','✨','💰','🔥','⚡','💎','🌟','🎊'];
+let _tapTimer={};
+function cycleChar(containerId){
+  const now=Date.now();
+  if(now-(_tapTimer[containerId]||0)<400){
+    // ダブルタップ：リアクション
+    const el=document.getElementById('charReaction');
+    if(el){
+      el.textContent=REACTIONS[Math.floor(Math.random()*REACTIONS.length)];
+      el.className='char-reaction show';
+      setTimeout(()=>{el.className='char-reaction';},1500);
+    }
+    playSound('done');
+  } else {
+    // シングルタップ：キャラ切替
+    _charIdx[containerId]=((_charIdx[containerId]||0)+1)%CHARS.length;
+    renderCharBubble(containerId,CHARS[_charIdx[containerId]].id);
+  }
+  _tapTimer[containerId]=now;
 }
 
 // ━━ News ticker ━━
