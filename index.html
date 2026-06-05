@@ -814,6 +814,31 @@ body.light #toast{background:#fff;color:var(--text)}
 }
 .hw-bulk-btn:hover{background:rgba(87,200,124,.16)}
 .hw-bulk-btn:active{transform:scale(.97)}
+/* ━━ Theme color picker ━━ */
+.theme-colors{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.theme-dot{width:22px;height:22px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all .15s;flex-shrink:0}
+.theme-dot.active{border-color:#fff;transform:scale(1.2)}
+/* ━━ Study donut ━━ */
+.study-progress-bar{
+  background:var(--sf);border:1px solid var(--line);border-radius:10px;
+  padding:12px 14px;margin-bottom:10px;
+  display:flex;align-items:center;gap:14px;
+}
+.spb-canvas{flex-shrink:0}
+.spb-info{flex:1}
+.spb-title{font-size:.7rem;font-weight:900;color:var(--text);margin-bottom:4px}
+.spb-sub{font-size:.6rem;color:var(--muted);line-height:1.6}
+/* ━━ HW category summary ━━ */
+.hw-cat-row{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px}
+.hw-cat-chip{padding:3px 8px;border-radius:999px;font-size:.54rem;font-weight:900;border:1px solid;cursor:pointer;transition:all .15s}
+/* ━━ Share button ━━ */
+.share-btn{
+  display:flex;align-items:center;gap:5px;padding:6px 12px;
+  border-radius:7px;border:1px solid rgba(107,182,255,.28);
+  background:rgba(107,182,255,.07);color:var(--blue);
+  font-size:.7rem;font-weight:900;font-family:inherit;cursor:pointer;transition:all .15s;
+}
+.share-btn:hover{background:rgba(107,182,255,.16)}
 /* ━━ Badge tooltip ━━ */
 .ach-badge-h{position:relative}
 .ach-tooltip{
@@ -1063,6 +1088,13 @@ body.light #toast{background:#fff;color:var(--text)}
 <!-- ── 学習 ── -->
 <div class="screen" id="studyScreen">
   <div class="inner">
+    <div class="study-progress-bar">
+      <canvas class="spb-canvas" id="studyDonut" width="56" height="56"></canvas>
+      <div class="spb-info">
+        <div class="spb-title" id="studyProgTitle">全体進捗</div>
+        <div class="spb-sub" id="studyProgSub"></div>
+      </div>
+    </div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
       <div class="slabel" style="margin-bottom:0">ゲーム × カリキュラム</div>
       <div style="display:flex;gap:5px">
@@ -1161,6 +1193,7 @@ body.light #toast{background:#fff;color:var(--text)}
         <div class="mkt-coin-lbl">保有コイン</div>
         <div class="mkt-coin-val">🪙 <span id="mktCoins">0</span></div>
       </div>
+      <button class="share-btn" onclick="shareProgress()">📤 シェア</button>
     </div>
     <div class="slabel">ポートフォリオ</div>
     <div class="asset-box">
@@ -1303,6 +1336,10 @@ body.light #toast{background:#fff;color:var(--text)}
     <div class="settings-item">
       <div><div class="si-label">データをリセット</div><div class="si-sub">コイン・習慣・宿題・レッスンを全て削除</div></div>
       <button class="si-btn danger" onclick="confirmReset()">リセット</button>
+    </div>
+    <div class="settings-item">
+      <div><div class="si-label">テーマカラー</div><div class="si-sub">アクセントカラーを変更</div></div>
+      <div class="theme-colors" id="themeColorPicker"></div>
     </div>
     <div class="settings-item">
       <div><div class="si-label">データをエクスポート</div><div class="si-sub">学習記録をJSONで保存</div></div>
@@ -1737,6 +1774,7 @@ function renderHome(){
 
 // ━━ Study filter ━━
 let _studyFilter='all';
+let _gameSort='default';
 function setStudyFilter(f){
   _studyFilter=f;
   ['all','todo','done'].forEach(x=>{
@@ -1761,6 +1799,7 @@ function renderStudy(){
     if(_studyFilter==='todo')return !g.ready||!g.lessons.every(l=>S.lessonDone[g.id+'_'+l.id]);
     return true;
   });
+  renderStudyDonut();
   document.getElementById('gameList').innerHTML=filteredGames.map(g=>{
     const doneCnt=Object.keys(S.lessonDone).filter(k=>k.startsWith(g.id+'_')).length;
     return`
@@ -2154,6 +2193,52 @@ function renderWeekCoinWidget(){
     </div>`).join('')}</div>`;
 }
 
+// ━━ Theme colors ━━
+const THEMES=[
+  {acc:'#c9a84c',name:'ゴールド'},
+  {acc:'#57c87c',name:'グリーン'},
+  {acc:'#6bb6ff',name:'ブルー'},
+  {acc:'#a78bfa',name:'パープル'},
+  {acc:'#f97316',name:'オレンジ'},
+  {acc:'#e05555',name:'レッド'},
+];
+function applyTheme(){
+  if(S.themeAcc){document.documentElement.style.setProperty('--acc',S.themeAcc);}
+  const picker=document.getElementById('themeColorPicker');
+  if(!picker)return;
+  picker.innerHTML=THEMES.map(t=>`
+    <div class="theme-dot${S.themeAcc===t.acc?' active':''}" style="background:${t.acc}" title="${t.name}"
+      onclick="setTheme('${t.acc}')"></div>`).join('');
+}
+function setTheme(acc){
+  S.themeAcc=acc;save();applyTheme();
+  document.documentElement.style.setProperty('--acc',acc);
+  const goldd=acc==='#c9a84c'?'#9a7c28':acc;
+  document.documentElement.style.setProperty('--goldd',goldd);
+  closeSettings();setTimeout(openSettings,100);
+}
+
+// ━━ Share progress ━━
+function shareProgress(){
+  const lessonCount=Object.keys(S.lessonDone).length;
+  const text=`📚 マネぼうアプリで学習中！\n🪙 コイン: ${fmt(S.coins)}\n🔥 連続: ${S.streak}日\n📖 レッスン完了: ${lessonCount}個\n\nhttps://rainybrainch.github.io/manebou-app/`;
+  if(navigator.share){navigator.share({title:'マネぼうアプリ',text});}
+  else{navigator.clipboard?.writeText(text).then(()=>showToast('シェアテキストをコピーしました','good'));}
+}
+
+// ━━ Study donut ━━
+function renderStudyDonut(){
+  const allLessons=GAMES.filter(g=>g.ready).flatMap(g=>g.lessons);
+  const done=Object.keys(S.lessonDone).length;
+  const total=allLessons.length||1;
+  const pct=Math.round(done/total*100);
+  const el=document.getElementById('studyProgTitle');
+  const sub=document.getElementById('studyProgSub');
+  if(el)el.textContent=`学習進捗 ${pct}%`;
+  if(sub)sub.innerHTML=`${done} / ${total} レッスン完了<br><span style="color:var(--acc);font-weight:700">${pct===100?'👑 全レッスン制覇！':'あと'+(total-done)+'レッスン'}</span>`;
+  setTimeout(()=>drawDonut('studyDonut',[done,total-done],['rgba(87,200,124,.8)','rgba(255,255,255,.06)']),30);
+}
+
 // ━━ Tomorrow reminder ━━
 function renderTomorrow(){
   const el=document.getElementById('tomorrowList');if(!el)return;
@@ -2189,7 +2274,6 @@ function copyCoins(){
 }
 
 // ━━ Game sort ━━
-let _gameSort='default';
 function toggleGameSort(){
   _gameSort=_gameSort==='default'?'progress':'default';
   const el=document.getElementById('sortGame');
@@ -2638,7 +2722,7 @@ if('serviceWorker' in navigator){
 
 // ━━ Init ━━
 function init(){
-  load();checkLogin();syncCoins();snapCoinHistory();updateSoundUI();applyLightMode();setupOffline();loadUserNameUI();renderHome();checkAchievements();
+  load();checkLogin();syncCoins();snapCoinHistory();updateSoundUI();applyLightMode();applyTheme();setupOffline();loadUserNameUI();renderHome();checkAchievements();
   // 初回のみウェルカム表示（スプラッシュ後）
   if(!S.welcomed){setTimeout(()=>{document.getElementById('welcomeOver').className='welcome-over show';},1700);}
   const di=document.getElementById('hwDateInput');
