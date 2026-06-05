@@ -589,6 +589,23 @@ html,body{width:100%;height:100%;background:#000;overflow:hidden}
 /* ━━ Game progress bar ━━ */
 .game-prog-bar{height:3px;background:rgba(255,255,255,.06);border-radius:99px;overflow:hidden;margin-top:8px}
 .game-prog-fill{height:100%;border-radius:99px;transition:width .5s cubic-bezier(.34,1.2,.64,1)}
+/* ━━ Habit heatmap ━━ */
+.heatmap-wrap{background:var(--sf);border:1px solid var(--line);border-radius:10px;padding:12px}
+.heatmap-month-label{font-size:.56rem;color:var(--muted);letter-spacing:.14em;margin-bottom:8px;text-align:center;text-transform:uppercase}
+.heatmap-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.hm-cell{aspect-ratio:1;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:.42rem;color:rgba(255,255,255,.3);transition:transform .1s}
+.hm-cell:hover{transform:scale(1.3);z-index:1}
+.hm-cell.empty{background:rgba(255,255,255,.04)}
+.hm-cell.d0{background:rgba(255,255,255,.04)}
+.hm-cell.d1{background:rgba(87,200,124,.25)}
+.hm-cell.d2{background:rgba(87,200,124,.55)}
+.hm-cell.d3{background:rgba(87,200,124,.85)}
+.hm-day-labels{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:5px}
+.hm-day-lbl{text-align:center;font-size:.44rem;color:var(--faint);letter-spacing:.04em}
+/* ━━ Coin history chart ━━ */
+.coin-chart-wrap{background:var(--sf);border:1px solid rgba(201,168,76,.15);border-radius:10px;padding:12px;margin-bottom:10px}
+.coin-chart-label{font-size:.56rem;color:var(--acc);letter-spacing:.12em;text-transform:uppercase;margin-bottom:8px}
+#coinHistoryCanvas{width:100%;height:70px;display:block}
 /* ━━ Weekly widget ━━ */
 .weekly-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:0}
 .ww-cell{background:var(--sf);border:1px solid var(--line);border-radius:9px;padding:11px 10px;text-align:center}
@@ -676,10 +693,8 @@ html,body{width:100%;height:100%;background:#000;overflow:hidden}
     <div class="slabel">今日の習慣</div>
     <div id="habitList"></div>
     <div class="divider"></div>
-    <div class="ph-card">
-      <span class="ph-ico">📅</span>
-      習慣カレンダー・連続記録グラフは今後追加予定
-    </div>
+    <div class="slabel">今月の習慣記録</div>
+    <div id="habitHeatmap"></div>
   </div>
 </div>
 
@@ -717,6 +732,10 @@ html,body{width:100%;height:100%;background:#000;overflow:hidden}
     <div class="asset-box">
       <div class="asset-box-hd">🏘️ 不動産</div>
       <div class="asset-box-empty" id="propList">保有なし</div>
+    </div>
+    <div class="coin-chart-wrap">
+      <div class="coin-chart-label">📈 コイン推移（直近14日）</div>
+      <canvas id="coinHistoryCanvas"></canvas>
     </div>
     <div class="div-sim">
       <div class="div-sim-title">📐 コイン運用シミュレーション</div>
@@ -1181,10 +1200,47 @@ function toggleLesson(gameId,lessonId){
   renderStudy();
 }
 
+// ━━ Habit heatmap ━━
+function renderHeatmap(){
+  const el=document.getElementById('habitHeatmap');if(!el)return;
+  const now=new Date(today());
+  const year=now.getFullYear(), month=now.getMonth();
+  const firstDay=new Date(year,month,1).getDay(); // 0=日
+  const daysInMonth=new Date(year,month+1,0).getDate();
+  const habitsActive=HABITS.filter(h=>!h.disabled);
+  const maxPerDay=habitsActive.length||1;
+  // 日ごとのチェック数マップ
+  const checkMap={};
+  habitsActive.forEach(h=>{
+    (S.habitLogs[h.id]||[]).forEach(d=>{
+      const dt=new Date(d);
+      if(dt.getFullYear()===year&&dt.getMonth()===month){
+        const key=dt.getDate();checkMap[key]=(checkMap[key]||0)+1;
+      }
+    });
+  });
+  const dayNames=['日','月','火','水','木','金','土'];
+  const cells=[];
+  for(let i=0;i<firstDay;i++)cells.push('<div class="hm-cell empty"></div>');
+  for(let d=1;d<=daysInMonth;d++){
+    const n=checkMap[d]||0;
+    const lvl=n===0?0:n>=maxPerDay?3:Math.ceil(n/maxPerDay*2);
+    const isToday=d===now.getDate();
+    cells.push(`<div class="hm-cell d${lvl}" title="${d}日 ${n}/${maxPerDay}"${isToday?' style="outline:1.5px solid rgba(201,168,76,.7);border-radius:3px"':''}>${d}</div>`);
+  }
+  const monthLabel=`${year}年${month+1}月`;
+  el.innerHTML=`<div class="heatmap-wrap">
+    <div class="heatmap-month-label">${monthLabel}</div>
+    <div class="hm-day-labels">${dayNames.map(n=>`<div class="hm-day-lbl">${n}</div>`).join('')}</div>
+    <div class="heatmap-grid">${cells.join('')}</div>
+  </div>`;
+}
+
 // ━━ Habits ━━
 function renderHabits(){
   const dayIdx=Math.floor(Date.now()/86400000);
   renderCharBubble('habitCharBubble',dayIdx%2===0?'fukurou':'enda');
+  renderHeatmap();
   const td=today();
   document.getElementById('habitList').innerHTML=HABITS.map(h=>{
     if(h.disabled)return`
@@ -1279,9 +1335,52 @@ function deleteHW(id){
   S.homework=S.homework.filter(x=>x.id!==id);save();renderHomework();
 }
 
+// ━━ Coin history snapshot ━━
+function snapCoinHistory(){
+  const td=today();
+  if(!S.coinHistory)S.coinHistory={};
+  S.coinHistory[td]=S.coins;
+  // 30日以上古いデータは削除
+  const cutoff=new Date(td);cutoff.setDate(cutoff.getDate()-30);
+  Object.keys(S.coinHistory).forEach(k=>{if(k<cutoff.toISOString().slice(0,10))delete S.coinHistory[k];});
+  save();
+}
+
+function drawCoinHistory(){
+  const cv=document.getElementById('coinHistoryCanvas');if(!cv)return;
+  const history=S.coinHistory||{};
+  const dates=[];const now=new Date(today());
+  for(let i=13;i>=0;i--){const d=new Date(now);d.setDate(now.getDate()-i);dates.push(d.toISOString().slice(0,10));}
+  const vals=dates.map(d=>history[d]??null);
+  // Fill gaps
+  let last=0;const filled=vals.map(v=>{if(v!==null)last=v;return v??last;});
+  const dpr=window.devicePixelRatio||1;
+  cv.width=cv.offsetWidth*dpr;cv.height=70*dpr;
+  const ctx=cv.getContext('2d');ctx.scale(dpr,dpr);
+  const W=cv.offsetWidth,H=70,n=filled.length;
+  if(n<2){ctx.fillStyle='rgba(201,168,76,.15)';ctx.fillRect(0,0,W,H);return;}
+  const mn=Math.min(...filled),mx=Math.max(...filled,1);
+  const pad=6;const xStep=(W-pad*2)/(n-1);
+  // Gradient fill
+  const grad=ctx.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0,'rgba(201,168,76,.3)');grad.addColorStop(1,'rgba(201,168,76,.02)');
+  ctx.beginPath();
+  ctx.moveTo(pad,H-pad);
+  filled.forEach((v,i)=>{const x=pad+i*xStep,y=pad+(1-(v-mn)/(mx-mn||1))*(H-pad*2);ctx.lineTo(x,y);});
+  ctx.lineTo(W-pad,H-pad);ctx.closePath();ctx.fillStyle=grad;ctx.fill();
+  // Line
+  ctx.beginPath();
+  filled.forEach((v,i)=>{const x=pad+i*xStep,y=pad+(1-(v-mn)/(mx-mn||1))*(H-pad*2);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+  ctx.strokeStyle='rgba(201,168,76,.85)';ctx.lineWidth=1.5;ctx.stroke();
+  // Latest dot
+  const lx=pad+(n-1)*xStep,ly=pad+(1-(filled[n-1]-mn)/(mx-mn||1))*(H-pad*2);
+  ctx.beginPath();ctx.arc(lx,ly,3,0,Math.PI*2);ctx.fillStyle='#c9a84c';ctx.fill();
+}
+
 // ━━ Market ━━
 function renderMarket(){
-  syncCoins();
+  syncCoins();snapCoinHistory();
+  setTimeout(drawCoinHistory,50);
   // コイン配当シミュレーション（仮定: 年利3%・5%・8%）
   const c=S.coins;
   const el=document.getElementById('divSimBox');
@@ -1333,7 +1432,7 @@ if('serviceWorker' in navigator){
 
 // ━━ Init ━━
 function init(){
-  load();checkLogin();syncCoins();renderHome();
+  load();checkLogin();syncCoins();snapCoinHistory();renderHome();
   // 初回のみウェルカム表示（スプラッシュ後）
   if(!S.welcomed){setTimeout(()=>{document.getElementById('welcomeOver').className='welcome-over show';},1700);}
   const di=document.getElementById('hwDateInput');
