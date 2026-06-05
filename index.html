@@ -601,6 +601,30 @@ html,body{width:100%;height:100%;background:#000;overflow:hidden}
 .si-btn.danger:hover{background:rgba(224,85,85,.18)}
 .si-btn.neutral{border:1px solid var(--line);background:var(--sf);color:var(--muted)}
 @keyframes settingsIn{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:translateY(0)}}
+/* ━━ Greeting ━━ */
+.greeting-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.greeting-text{font-family:var(--serif);font-size:1.05rem;font-weight:700;color:var(--text);line-height:1.3}
+.greeting-sub{font-size:.58rem;color:var(--muted);margin-top:2px;letter-spacing:.06em}
+/* ━━ HW filter ━━ */
+.hw-filter-row{display:flex;gap:5px;margin-bottom:10px}
+.hw-filter-btn{padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:var(--sf);font-size:.56rem;font-weight:900;color:var(--muted);font-family:inherit;cursor:pointer;transition:all .15s;letter-spacing:.06em}
+.hw-filter-btn.active{border-color:rgba(201,168,76,.4);background:rgba(201,168,76,.1);color:var(--acc)}
+/* ━━ Snooze button ━━ */
+.hw-snooze{background:none;border:none;color:var(--muted);font-size:.65rem;cursor:pointer;padding:2px 4px;flex-shrink:0;transition:color .15s;white-space:nowrap}
+.hw-snooze:hover{color:var(--blue)}
+/* ━━ Market advice ━━ */
+.mkt-advice{background:linear-gradient(135deg,rgba(107,182,255,.06),rgba(107,182,255,.02));border:1px solid rgba(107,182,255,.15);border-radius:10px;padding:12px 14px;margin-bottom:12px}
+.mkt-advice-label{font-size:.54rem;font-weight:900;color:var(--blue);letter-spacing:.14em;text-transform:uppercase;margin-bottom:6px}
+.mkt-advice-text{font-family:var(--serif);font-size:.76rem;color:var(--text);line-height:1.7;font-style:italic}
+.mkt-advice-author{font-size:.56rem;color:var(--muted);text-align:right;margin-top:4px}
+/* ━━ Chart period toggle ━━ */
+.chart-period-row{display:flex;justify-content:flex-end;gap:4px;margin-bottom:6px}
+.chart-period-btn{padding:3px 8px;border-radius:999px;border:1px solid var(--line);background:var(--sf);font-size:.54rem;font-weight:900;color:var(--muted);cursor:pointer;font-family:inherit;transition:all .15s}
+.chart-period-btn.active{border-color:rgba(201,168,76,.4);background:rgba(201,168,76,.1);color:var(--acc)}
+/* ━━ Heatmap nav ━━ */
+.heatmap-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.hm-nav-btn{background:none;border:1px solid var(--line);border-radius:6px;padding:3px 8px;font-size:.68rem;color:var(--muted);cursor:pointer;transition:all .15s}
+.hm-nav-btn:hover{border-color:var(--line2);color:var(--text)}
 /* ━━ Edit modal ━━ */
 .edit-modal{
   position:fixed;inset:0;z-index:800;
@@ -800,7 +824,12 @@ body.light #toast{background:#fff;color:var(--text)}
 <!-- ── ホーム ── -->
 <div class="screen active" id="homeScreen">
   <div class="inner">
-    <div class="date-chip" id="homeDateChip">📅 ―</div>
+    <div class="greeting-row">
+      <div>
+        <div class="greeting-text" id="greetingText">こんにちは！</div>
+        <div class="greeting-sub" id="homeDateChip">📅 ―</div>
+      </div>
+    </div>
     <div id="homeCharBubble" class="char-bubble-wrap"></div>
     <div class="quote-card" id="quoteCard"><div class="quote-text" id="quoteText"></div><div class="quote-author" id="quoteAuthor"></div></div>
 
@@ -875,8 +904,15 @@ body.light #toast{background:#fff;color:var(--text)}
       </div>
     </div>
     <div class="divider"></div>
-    <div class="slabel">今月の習慣記録</div>
-    <div id="habitHeatmap"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0">
+      <div class="slabel" style="margin-bottom:0">習慣記録</div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <button class="hm-nav-btn" onclick="shiftHeatmapMonth(-1)">‹ 前月</button>
+        <span id="heatmapMonthLabel" style="font-size:.58rem;color:var(--muted)"></span>
+        <button class="hm-nav-btn" onclick="shiftHeatmapMonth(1)">次月 ›</button>
+      </div>
+    </div>
+    <div id="habitHeatmap" style="margin-top:10px"></div>
   </div>
 </div>
 
@@ -901,6 +937,12 @@ body.light #toast{background:#fff;color:var(--text)}
       </div>
       <button class="btn-acc" onclick="addHomework()" style="width:100%;padding:11px;font-size:.85rem">追加 ＋</button>
     </div>
+    <div class="hw-filter-row">
+      <button class="hw-filter-btn active" id="hwf-all"  onclick="setHwFilter('all')">全て</button>
+      <button class="hw-filter-btn"        id="hwf-todo" onclick="setHwFilter('todo')">未完了</button>
+      <button class="hw-filter-btn"        id="hwf-done" onclick="setHwFilter('done')">完了済み</button>
+      <button class="hw-filter-btn"        id="hwf-star" onclick="setHwFilter('star')">⭐ 重要</button>
+    </div>
     <div class="slabel">宿題リスト</div>
     <div id="hwList"></div>
   </div>
@@ -924,8 +966,18 @@ body.light #toast{background:#fff;color:var(--text)}
       <div class="asset-box-hd">🏘️ 不動産</div>
       <div class="asset-box-empty" id="propList">保有なし</div>
     </div>
+    <div class="mkt-advice">
+      <div class="mkt-advice-label">💡 今日のアドバイス</div>
+      <div class="mkt-advice-text" id="mktAdviceText"></div>
+      <div class="mkt-advice-author" id="mktAdviceAuthor"></div>
+    </div>
     <div class="coin-chart-wrap">
-      <div class="coin-chart-label">📈 コイン推移（直近14日）</div>
+      <div class="chart-period-row">
+        <button class="chart-period-btn" id="cp-7"  onclick="setChartPeriod(7)">7日</button>
+        <button class="chart-period-btn active" id="cp-14" onclick="setChartPeriod(14)">14日</button>
+        <button class="chart-period-btn" id="cp-30" onclick="setChartPeriod(30)">30日</button>
+      </div>
+      <div class="coin-chart-label">📈 コイン推移</div>
       <canvas id="coinHistoryCanvas"></canvas>
     </div>
     <div class="div-sim">
@@ -1388,7 +1440,7 @@ function renderWeekly(){
 
 // ━━ Home ━━
 function renderHome(){
-  syncCoins();updateNavBadges();renderDateChip();renderQuote();
+  syncCoins();updateNavBadges();renderDateChip();renderGreeting();renderQuote();
   const dayIdx=Math.floor(Date.now()/86400000);
   renderCharBubble('homeCharBubble',dayIdx%2===0?'enda':'fukurou');
 
@@ -1501,8 +1553,13 @@ function toggleLesson(gameId,lessonId){
 // ━━ Habit heatmap ━━
 function renderHeatmap(){
   const el=document.getElementById('habitHeatmap');if(!el)return;
-  const now=new Date(today());
+  const now=new Date(today());now.setMonth(now.getMonth()+_heatmapOffset);
   const year=now.getFullYear(), month=now.getMonth();
+  const lbl=document.getElementById('heatmapMonthLabel');
+  if(lbl)lbl.textContent=`${year}年${month+1}月`;
+  // 未来月は無効化
+  const navNext=document.querySelector('.hm-nav-btn:last-of-type');
+  if(navNext)navNext.style.opacity=_heatmapOffset>=0?'.3':'1',navNext.disabled=_heatmapOffset>=0;
   const firstDay=new Date(year,month,1).getDay(); // 0=日
   const daysInMonth=new Date(year,month+1,0).getDate();
   const habitsActive=HABITS.filter(h=>!h.disabled);
@@ -1595,8 +1652,12 @@ function renderHomework(){
     if(!a.dueDate)return 1;if(!b.dueDate)return -1;
     return a.dueDate<b.dueDate?-1:a.dueDate>b.dueDate?1:0;
   };
-  const pending=S.homework.filter(h=>!h.done).sort(sortByDue);
-  const done   =S.homework.filter(h=> h.done).sort((a,b)=>b.doneAt>a.doneAt?1:-1);
+  let allHw=S.homework;
+  if(_hwFilter==='todo') allHw=allHw.filter(h=>!h.done);
+  else if(_hwFilter==='done') allHw=allHw.filter(h=>h.done);
+  else if(_hwFilter==='star') allHw=allHw.filter(h=>h.priority&&!h.done);
+  const pending=allHw.filter(h=>!h.done).sort(sortByDue);
+  const done   =(_hwFilter==='all'||_hwFilter==='star'?allHw:allHw).filter(h=>h.done).sort((a,b)=>b.doneAt>a.doneAt?1:-1);
   const toHtml=h=>{
     const overdue=!h.done&&h.dueDate&&h.dueDate<td;
     const dueToday=!h.done&&h.dueDate===td;
@@ -1609,7 +1670,8 @@ function renderHomework(){
         ${h.dueDate&&!dueToday?`<div class="hw-due${overdue?' overdue':''}">期限：${h.dueDate}${overdue?' ⚠️':''}</div>`:''}
       </div>
       <button class="hw-star${h.priority?' on':''}" onclick="togglePriority('${h.id}')">⭐</button>
-      ${!h.done?`<button onclick="openHwEdit('${h.id}')" style="background:none;border:none;color:var(--muted);font-size:.75rem;cursor:pointer;padding:2px;flex-shrink:0;transition:color .15s" onmouseover="this.style.color='var(--acc)'" onmouseout="this.style.color='var(--muted)'">✏️</button>`:''}
+      ${!h.done?`<button onclick="openHwEdit('${h.id}')" style="background:none;border:none;color:var(--muted);font-size:.75rem;cursor:pointer;padding:2px;flex-shrink:0;transition:color .15s">✏️</button>`:''}
+      ${!h.done&&h.dueDate?`<button class="hw-snooze" onclick="snoozeHW('${h.id}')" title="期限を1日後ろへ">💤+1</button>`:''}
       <button class="hw-del" onclick="deleteHW('${h.id}')">✕</button>
     </div>`;
   };
@@ -1656,7 +1718,7 @@ function drawCoinHistory(){
   const cv=document.getElementById('coinHistoryCanvas');if(!cv)return;
   const history=S.coinHistory||{};
   const dates=[];const now=new Date(today());
-  for(let i=13;i>=0;i--){const d=new Date(now);d.setDate(now.getDate()-i);dates.push(d.toISOString().slice(0,10));}
+  for(let i=_chartPeriod-1;i>=0;i--){const d=new Date(now);d.setDate(now.getDate()-i);dates.push(d.toISOString().slice(0,10));}
   const vals=dates.map(d=>history[d]??null);
   // Fill gaps
   let last=0;const filled=vals.map(v=>{if(v!==null)last=v;return v??last;});
@@ -1685,7 +1747,7 @@ function drawCoinHistory(){
 
 // ━━ Market ━━
 function renderMarket(){
-  syncCoins();snapCoinHistory();renderCoinLog();
+  syncCoins();snapCoinHistory();renderCoinLog();renderMktAdvice();
   setTimeout(()=>{drawCoinHistory();calcTsum();},50);
   // コイン配当シミュレーション（仮定: 年利3%・5%・8%）
   const c=S.coins;
@@ -1743,6 +1805,63 @@ function renderCoinLog(){
     ?logs.map(l=>`<div class="cl-item"><span class="cl-label">${l.label}</span><span class="cl-amount">+${l.amount}</span><span class="cl-time">${l.time}</span></div>`).join('')
     :'<div style="text-align:center;padding:12px;font-size:.68rem;color:var(--faint)">まだ記録がありません</div>';
 }
+
+// ━━ Greeting ━━
+function renderGreeting(){
+  const h=new Date().getHours();
+  const greet=h<5?'深夜もお疲れさま！':h<10?'おはようございます！':h<17?'こんにちは！':h<21?'こんばんは！':'お疲れさまです！';
+  const el=document.getElementById('greetingText');if(el)el.textContent=greet;
+}
+
+// ━━ HW filter ━━
+let _hwFilter='all';
+function setHwFilter(f){
+  _hwFilter=f;
+  ['all','todo','done','star'].forEach(x=>{
+    const el=document.getElementById('hwf-'+x);
+    if(el)el.className='hw-filter-btn'+(x===f?' active':'');
+  });
+  renderHomework();
+}
+
+// ━━ Snooze ━━
+function snoozeHW(id){
+  const h=S.homework.find(x=>x.id===id);if(!h||!h.dueDate)return;
+  const d=new Date(h.dueDate);d.setDate(d.getDate()+1);
+  h.dueDate=d.toISOString().slice(0,10);
+  save();renderHomework();showToast('💤 1日スヌーズしました','good');
+}
+
+// ━━ Market advice ━━
+const MKT_ADVICE=[
+  {text:'分散投資はリスクを分けることで、損失を限定する最もシンプルな方法だ。',author:'— ハリー・マーコウィッツ'},
+  {text:'株式市場は、忍耐のない者から忍耐強い者へ富を移転する装置だ。',author:'— ウォーレン・バフェット'},
+  {text:'買い時は悲観が最高潮に達した時。売り時は楽観が最高潮に達した時だ。',author:'— ジョン・テンプルトン'},
+  {text:'長期的に見れば、株式市場はビジネスの成長を反映する。',author:'— ピーター・リンチ'},
+  {text:'複利の魔法を信じ、時間に働いてもらおう。',author:'— えんだ / 円舵'},
+  {text:'リスクを理解しない者は、それに支配される。',author:'— ふくろう / 服牢'},
+  {text:'貯蓄は守り。投資は攻め。両方知ることで人生は豊かになる。',author:'— マネぼう'},
+];
+function renderMktAdvice(){
+  const q=MKT_ADVICE[Math.floor(Date.now()/86400000)%MKT_ADVICE.length];
+  const t=document.getElementById('mktAdviceText'),a=document.getElementById('mktAdviceAuthor');
+  if(t)t.textContent=q.text;if(a)a.textContent=q.author;
+}
+
+// ━━ Chart period ━━
+let _chartPeriod=14;
+function setChartPeriod(n){
+  _chartPeriod=n;
+  [7,14,30].forEach(x=>{
+    const el=document.getElementById('cp-'+x);
+    if(el)el.className='chart-period-btn'+(x===n?' active':'');
+  });
+  setTimeout(drawCoinHistory,30);
+}
+
+// ━━ Heatmap month navigation ━━
+let _heatmapOffset=0; // 0=今月、-1=先月
+function shiftHeatmapMonth(d){_heatmapOffset+=d;renderHeatmap();}
 
 // ━━ Motivational quotes ━━
 const QUOTES=[
