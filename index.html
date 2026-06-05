@@ -766,6 +766,41 @@ body.light #toast{background:#fff;color:var(--text)}
 .coin-shower-wrap{position:fixed;inset:0;pointer-events:none;z-index:401;overflow:hidden}
 .cs-coin{position:absolute;font-size:1.2rem;animation:coinShower var(--d,1s) var(--del,0s) ease-in forwards}
 @keyframes coinShower{0%{opacity:1;transform:translate(0,0) rotate(0)}100%{opacity:0;transform:translate(var(--dx,0px),80vh) rotate(360deg)}}
+/* ━━ Today event ━━ */
+.today-event{
+  background:linear-gradient(135deg,rgba(224,85,85,.06),rgba(224,85,85,.02));
+  border:1px solid rgba(224,85,85,.15);border-radius:10px;
+  padding:10px 13px;margin-bottom:12px;
+}
+.te-label{font-size:.52rem;font-weight:900;color:var(--red);letter-spacing:.12em;text-transform:uppercase;margin-bottom:5px;display:flex;align-items:center;gap:5px}
+.te-year{font-family:var(--serif);font-size:.85rem;font-weight:700;color:var(--text);margin-bottom:2px}
+.te-desc{font-size:.68rem;color:var(--muted);line-height:1.6}
+/* ━━ Yesterday diff ━━ */
+.yesterday-diff{font-size:.58rem;font-weight:900;display:inline-flex;align-items:center;gap:3px;margin-left:8px}
+.yesterday-diff.up{color:var(--grn)}.yesterday-diff.dn{color:var(--red)}.yesterday-diff.eq{color:var(--muted)}
+/* ━━ Shop tabs ━━ */
+.shop-tab-row{display:flex;gap:0;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:10px}
+.shop-tab{flex:1;padding:8px;text-align:center;font-size:.62rem;font-weight:900;cursor:pointer;transition:all .15s;border:none;font-family:inherit;color:var(--muted);background:var(--sf)}
+.shop-tab.active{background:rgba(201,168,76,.12);color:var(--acc)}
+/* ━━ Week report modal ━━ */
+.week-report-over{
+  position:fixed;inset:0;z-index:800;background:rgba(7,8,13,.94);backdrop-filter:blur(14px);
+  display:none;flex-direction:column;
+}
+.week-report-over.show{display:flex;animation:fadeScaleIn .3s ease}
+.wr-header{padding:16px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;background:rgba(7,8,13,.96);flex-shrink:0}
+.wr-body{flex:1;overflow-y:auto;padding:18px}
+.wr-stat{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--line)}
+.wr-stat:last-child{border-bottom:none}
+.wr-label{font-size:.78rem;color:var(--muted)}
+.wr-val{font-family:var(--serif);font-size:1.1rem;font-weight:700;color:var(--text)}
+/* ━━ Quick priority ━━ */
+.quick-priority-btn{
+  padding:9px 14px;border-radius:8px;border:1px solid rgba(201,168,76,.25);
+  background:rgba(201,168,76,.06);color:var(--acc);
+  font-size:.8rem;font-weight:900;font-family:inherit;cursor:pointer;transition:all .15s;
+}
+.quick-priority-btn.on{background:rgba(201,168,76,.18);border-color:rgba(201,168,76,.5)}
 /* ━━ Week score ━━ */
 .week-score-card{
   background:linear-gradient(135deg,rgba(167,139,250,.08),rgba(167,139,250,.02));
@@ -1215,6 +1250,7 @@ body.light #toast{background:#fff;color:var(--text)}
       </div>
     </div>
     <div id="homeCharBubble" class="char-bubble-wrap" id="homeCharSwipe"></div>
+    <div class="today-event" id="todayEventCard"></div>
     <div class="week-score-card" id="weekScoreCard"></div>
     <div class="quote-card" id="quoteCard"><div class="quote-text" id="quoteText"></div><div class="quote-author" id="quoteAuthor"></div></div>
 
@@ -1222,7 +1258,7 @@ body.light #toast{background:#fff;color:var(--text)}
     <div class="coin-banner">
       <div>
         <div class="coin-banner-sub">ゲーム内コイン</div>
-        <div class="coin-banner-val">🪙 <span id="heroCoins">0</span></div>
+        <div class="coin-banner-val">🪙 <span id="heroCoins">0</span><span class="yesterday-diff" id="yesterdayDiff"></span></div>
         <div class="total-earned-row">
           <span class="te-label">累計獲得</span>
           <span class="te-val" id="heroTotalEarned">0 🪙</span>
@@ -1353,7 +1389,10 @@ body.light #toast{background:#fff;color:var(--text)}
         <button class="hw-filter-btn"        id="hwr-daily" onclick="setHwRepeat('daily')">毎日</button>
         <button class="hw-filter-btn"        id="hwr-weekly"onclick="setHwRepeat('weekly')">毎週</button>
       </div>
-      <button class="btn-acc" onclick="addHomework()" style="width:100%;padding:11px;font-size:.85rem">追加 ＋</button>
+      <div class="hw-row" style="gap:7px">
+        <button class="quick-priority-btn" id="quickPriorityBtn" onclick="toggleQuickPriority()">⭐ 重要</button>
+        <button class="btn-acc" onclick="addHomework()" style="flex:1;padding:11px;font-size:.85rem">追加 ＋</button>
+      </div>
     </div>
     <div class="hw-progress-section">
       <svg class="hw-ring" width="48" height="48" viewBox="0 0 48 48">
@@ -1383,6 +1422,7 @@ body.light #toast{background:#fff;color:var(--text)}
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
       <div class="slabel" style="margin-bottom:0">宿題リスト</div>
       <button class="hw-bulk-btn" id="hwBulkBtn" style="width:auto;padding:5px 12px;margin-bottom:0;font-size:.62rem" onclick="bulkCompleteHW()">✓ 全て完了</button>
+      <button class="hw-bulk-btn" style="width:auto;padding:5px 12px;margin-bottom:0;font-size:.62rem;border-color:rgba(224,85,85,.3);color:var(--red);background:rgba(224,85,85,.06)" onclick="clearDoneHW()">🗑 完了済を削除</button>
     </div>
     <div id="hwList"></div>
   </div>
@@ -1456,6 +1496,10 @@ body.light #toast{background:#fff;color:var(--text)}
     <div class="coin-log-list" id="coinLogList"></div>
     <div class="divider"></div>
     <div class="slabel">🏪 学習教材ショップ</div>
+    <div class="shop-tab-row">
+      <button class="shop-tab active" id="stab-all"   onclick="setShopTab('all')">全商品</button>
+      <button class="shop-tab"        id="stab-owned" onclick="setShopTab('owned')">購入済み</button>
+    </div>
     <div class="vshop-grid" id="vshopGrid"></div>
     <div class="divider"></div>
     <div class="slabel">💡 コインの使い道アイデア</div>
@@ -1574,6 +1618,10 @@ body.light #toast{background:#fff;color:var(--text)}
       <button class="si-btn neutral" onclick="exportData()">保存 ↓</button>
     </div>
     <div class="settings-item">
+      <div><div class="si-label">週次レポート</div><div class="si-sub">今週の成果をまとめて確認</div></div>
+      <button class="si-btn neutral" onclick="openWeekReport()">表示</button>
+    </div>
+    <div class="settings-item">
       <div><div class="si-label">サウンドプレビュー</div><div class="si-sub">通知音を確認する</div></div>
       <div style="display:flex;gap:5px">
         <button class="si-btn neutral" onclick="playSound('coin')">🪙</button>
@@ -1674,6 +1722,15 @@ body.light #toast{background:#fff;color:var(--text)}
     <div class="gpp-lessons" id="gppLessons"></div>
     <button class="btn-acc" style="width:100%;margin-top:14px;padding:12px" onclick="closeGamePopup()">閉じる</button>
   </div>
+</div>
+
+<!-- ━━ Week Report ━━ -->
+<div class="week-report-over" id="weekReportOver">
+  <div class="wr-header">
+    <span style="font-family:var(--serif);font-size:1rem;font-weight:700;color:var(--acc)">📊 今週のレポート</span>
+    <button onclick="closeWeekReport()" style="background:none;border:1px solid var(--line);border-radius:6px;padding:4px 10px;font-size:.7rem;color:var(--muted);cursor:pointer">閉じる</button>
+  </div>
+  <div class="wr-body" id="wrBody"></div>
 </div>
 
 <!-- ━━ Char Zoom ━━ -->
@@ -2022,7 +2079,7 @@ function renderWeekly(){
 
 // ━━ Home ━━
 function renderHome(){
-  syncCoins();updateNavBadges();renderDateChip();renderGreeting();renderQuote();renderTicker();renderWeekScore();
+  syncCoins();updateNavBadges();renderDateChip();renderGreeting();renderQuote();renderTicker();renderWeekScore();renderTodayEvent();renderYesterdayDiff();
   const dayIdx=Math.floor(Date.now()/86400000);
   renderCharBubble('homeCharBubble',dayIdx%2===0?'enda':'fukurou');
 
@@ -2118,7 +2175,7 @@ function renderStudy(){
           <div class="gb-ico" style="background:${g.color}18;border:1px solid ${g.color}30">${g.emoji}</div>
           <div class="gb-info">
             <div class="gb-name">${g.name}</div>
-            <div class="gb-meta">${g.ready?g.lessons.length+' レッスン':'準備中 ― 近日公開'}</div>
+            <div class="gb-meta">${g.ready?g.lessons.length+' レッスン':'準備中 ― 近日公開'} ${g.ready?`・約${g.lessons.length*5}分`:''}</div>
             ${g.ready&&g.lessons.length?`<div class="gb-prog">✓ ${doneCnt} / ${g.lessons.length} 完了 ${doneCnt===g.lessons.length?'👑':''}</div><div class="game-prog-bar"><div class="game-prog-fill" style="width:${Math.round(doneCnt/g.lessons.length*100)}%;background:${g.color}99"></div></div>`:''}
           </div>
           ${g.ready?`<button onclick="event.stopPropagation();openGamePopup('${g.id}')" style="background:none;border:1px solid ${g.color}44;border-radius:6px;padding:4px 8px;font-size:.56rem;font-weight:900;color:${g.color};cursor:pointer;flex-shrink:0;margin-right:5px">詳細</button><span class="gb-arrow" style="color:${g.color}aa">▶</span>`:''}
@@ -2347,7 +2404,7 @@ function addHomework(){
   const title=document.getElementById('hwTitleInput').value.trim();if(!title)return;
   const gameTag=document.getElementById('hwGameTag')?.value||'';
   const gameInfo=gameTag?GAMES.find(g=>g.id===gameTag):null;
-  S.homework.unshift({id:uid(),title,dueDate:document.getElementById('hwDateInput').value||'',gameTag,difficulty:_hwDiff,repeat:_hwRepeat!=='none'?_hwRepeat:null,done:false,doneAt:null});
+  S.homework.unshift({id:uid(),title,dueDate:document.getElementById('hwDateInput').value||'',gameTag,difficulty:_hwDiff,repeat:_hwRepeat!=='none'?_hwRepeat:null,priority:_quickPriority,done:false,doneAt:null});
   save();renderHomework();
   document.getElementById('hwTitleInput').value='';
   showToast('宿題を追加しました','good');
@@ -2657,6 +2714,114 @@ function toggleFlatView(){
   renderStudy();
 }
 
+// ━━ Today event (何の日) ━━
+const TODAY_EVENTS=[
+  {m:1, d:1,  year:1973, title:'変動相場制へ移行',  desc:'日本が固定相場制から変動相場制に移行。円の価値が市場で決まる時代へ。'},
+  {m:1, d:9,  year:2007, title:'iPhone発表',         desc:'スティーブ・ジョブズがiPhoneを発表。スマートフォン時代が始まり、経済の在り方が変わった。'},
+  {m:2, d:22, year:1985, title:'プラザ合意前夜',     desc:'G5各国がドル高是正で会議。翌年のプラザ合意で円は急騰し、日本経済が大転換。'},
+  {m:3, d:11, year:2011, title:'東日本大震災',       desc:'マグニチュード9.0の大地震。株式市場は急落し、復興需要と円高が経済に影響。'},
+  {m:4, d:1,  year:2019, title:'令和元年',            desc:'新元号「令和」に改元。日本経済は新時代に向けて動き出した。'},
+  {m:5, d:6,  year:2009, title:'リーマン底打ち',     desc:'世界的な量的緩和政策が浸透し株式市場が底打ち。投資の好機となった年。'},
+  {m:6, d:29, year:2007, title:'iPhone発売（日本）', desc:'日本でiPhone販売開始。モバイル経済が爆発的に拡大する契機となった。'},
+  {m:7, d:2,  year:1997, title:'アジア通貨危機',     desc:'タイバーツが暴落し、アジア各国に通貨危機が波及。日本の金融機関にも打撃。'},
+  {m:8, d:15, year:1971, title:'ニクソンショック',   desc:'米国がドルと金の兌換を停止。戦後の固定相場制が崩壊した歴史的瞬間。'},
+  {m:9, d:15, year:2008, title:'リーマン・ブラザーズ破綻',desc:'米投資銀行が経営破綻。世界金融危機が始まり、世界同時不況へ突入した。'},
+  {m:10,d:19, year:1987, title:'ブラックマンデー',   desc:'NYダウが1日で約22%暴落。「ブラックマンデー」として歴史に刻まれた。'},
+  {m:11,d:29, year:1989, title:'日経平均最高値',     desc:'日経平均が38,915円の史上最高値を記録。翌年からバブル崩壊が始まった。'},
+  {m:12,d:29, year:1989, title:'バブル最高値記念日', desc:'日経平均株価が38,915円の最高値を記録した翌日。歴史の転換点となった日。'},
+];
+function renderTodayEvent(){
+  const el=document.getElementById('todayEventCard');if(!el)return;
+  const now=new Date();const m=now.getMonth()+1,d=now.getDate();
+  const ev=TODAY_EVENTS.find(e=>e.m===m&&e.d===d)
+    ||TODAY_EVENTS[Math.floor(Date.now()/86400000)%TODAY_EVENTS.length];
+  el.innerHTML=`<div class="te-label">📅 今日は何の日<span style="color:var(--muted)">（${m}/${d}）</span></div>
+    <div class="te-year">${ev.year}年 — ${ev.title}</div>
+    <div class="te-desc">${ev.desc}</div>`;
+}
+
+// ━━ Yesterday diff ━━
+function renderYesterdayDiff(){
+  const el=document.getElementById('yesterdayDiff');if(!el)return;
+  const history=S.coinHistory||{};
+  const td=today();
+  const yd=new Date(td);yd.setDate(yd.getDate()-1);
+  const yds=yd.toISOString().slice(0,10);
+  const todayCoins=history[td]||S.coins;
+  const yestCoins=history[yds];
+  if(yestCoins==null){el.className='yesterday-diff eq';el.textContent='';return;}
+  const diff=todayCoins-yestCoins;
+  if(diff>0){el.className='yesterday-diff up';el.textContent='↑'+fmt(diff);}
+  else if(diff<0){el.className='yesterday-diff dn';el.textContent='↓'+fmt(Math.abs(diff));}
+  else{el.className='yesterday-diff eq';el.textContent='±0';}
+}
+
+// ━━ Clear done HW ━━
+function clearDoneHW(){
+  const cnt=S.homework.filter(h=>h.done).length;
+  if(!cnt){showToast('完了済みの宿題はありません','');return;}
+  if(!confirm(`完了済み${cnt}件を削除しますか？`))return;
+  S.homework=S.homework.filter(h=>!h.done);save();renderHomework();
+  showToast(`${cnt}件を削除しました`,'good');
+}
+
+// ━━ Quick priority ━━
+let _quickPriority=false;
+function toggleQuickPriority(){
+  _quickPriority=!_quickPriority;
+  const el=document.getElementById('quickPriorityBtn');
+  if(el)el.className='quick-priority-btn'+(_quickPriority?' on':'');
+}
+
+// ━━ Shop tab ━━
+let _shopTab='all';
+function setShopTab(t){
+  _shopTab=t;
+  ['all','owned'].forEach(x=>{
+    const el=document.getElementById('stab-'+x);
+    if(el)el.className='shop-tab'+(x===t?' active':'');
+  });
+  renderVShop();
+}
+
+// ━━ Week report ━━
+function openWeekReport(){
+  const now=new Date(today());
+  const mon=new Date(now);mon.setDate(now.getDate()-((now.getDay()+6)%7));
+  const dates=[];for(let d=new Date(mon);d<=now;d.setDate(d.getDate()+1))dates.push(d.toISOString().slice(0,10));
+  const habitsActive=allHabits().filter(h=>!h.disabled);
+  let habitChecks=0;habitsActive.forEach(h=>{habitChecks+=(S.habitLogs[h.id]||[]).filter(d=>dates.includes(d)).length;});
+  const hwDone=S.homework.filter(h=>h.done&&dates.includes(h.doneAt)).length;
+  const history=S.coinHistory||{};
+  const weekStart=history[dates[0]]||S.coins;const weekEnd=history[dates[dates.length-1]]||S.coins;
+  const earnedThisWeek=Math.max(0,weekEnd-weekStart);
+  const totalLessons=GAMES.filter(g=>g.ready).reduce((s,g)=>s+g.lessons.length,0)||1;
+  const studyPct=Math.round(Object.keys(S.lessonDone).length/totalLessons*100);
+  const el=document.getElementById('wrBody');
+  if(el)el.innerHTML=`
+    <div style="margin-bottom:20px;padding:16px;background:rgba(201,168,76,.06);border:1px solid rgba(201,168,76,.2);border-radius:12px;text-align:center">
+      <div style="font-family:var(--serif);font-size:.7rem;color:var(--muted)">週間スコア</div>
+      <div id="wrScoreLabel" style="font-family:var(--serif);font-size:3rem;font-weight:700;color:var(--acc)">-</div>
+    </div>
+    ${[
+      {label:'📅 習慣チェック数',val:`${habitChecks}回 / ${habitsActive.length*dates.length}回`},
+      {label:'📝 宿題完了数',val:`${hwDone}件`},
+      {label:'📚 学習達成率',val:`${studyPct}%`},
+      {label:'🪙 今週獲得コイン',val:`+${fmt(earnedThisWeek)}コイン`},
+      {label:'🔥 現在連続日数',val:`${S.streak}日`},
+      {label:'🏅 バッジ解除数',val:`${(S.achievements||[]).length} / ${ACHIEVEMENTS.length}個`},
+    ].map(r=>`<div class="wr-stat"><span class="wr-label">${r.label}</span><span class="wr-val">${r.val}</span></div>`).join('')}`;
+  document.getElementById('weekReportOver').className='week-report-over show';
+  // スコア計算
+  const hScore=Math.round(habitChecks/(habitsActive.length*dates.length||1)*50);
+  const hwScore=Math.min(30,hwDone*10);const lScore=Math.round(studyPct/100*20);
+  const total=hScore+hwScore+lScore;
+  const grade=total>=90?'S':total>=70?'A':total>=50?'B':total>=30?'C':'D';
+  setTimeout(()=>{const sl=document.getElementById('wrScoreLabel');if(sl)sl.textContent=grade;},200);
+  closeSettings();
+}
+function closeWeekReport(){document.getElementById('weekReportOver').className='week-report-over';}
+
 // ━━ Virtual shop ━━
 const VSHOP=[
   {id:'book1',ico:'📖',name:'投資入門テキスト',desc:'バフェットから学ぶ長期投資の基本',price:100},
@@ -2668,7 +2833,9 @@ const VSHOP=[
 function renderVShop(){
   const el=document.getElementById('vshopGrid');if(!el)return;
   if(!S.shopOwned)S.shopOwned=[];
-  el.innerHTML=VSHOP.map(item=>{
+  const items=_shopTab==='owned'?VSHOP.filter(i=>S.shopOwned.includes(i.id)):VSHOP;
+  if(!items.length){el.innerHTML='<div style="text-align:center;padding:16px;font-size:.7rem;color:var(--faint)">購入済みの教材はありません</div>';return;}
+  el.innerHTML=items.map(item=>{
     const owned=S.shopOwned.includes(item.id);
     return`<div class="vshop-item${owned?' owned':''}">
       <div class="vs-ico">${item.ico}</div>
@@ -2984,7 +3151,10 @@ function setTheme(acc){
 // ━━ Share progress ━━
 function shareProgress(){
   const lessonCount=Object.keys(S.lessonDone).length;
-  const text=`📚 マネぼうアプリで学習中！\n🪙 コイン: ${fmt(S.coins)}\n🔥 連続: ${S.streak}日\n📖 レッスン完了: ${lessonCount}個\n\nhttps://rainybrainch.github.io/manebou-app/`;
+  const hwDone=S.homework.filter(h=>h.done).length;
+  const habitsActive=allHabits().filter(h=>!h.disabled);
+  const td=today();const habitsDone=habitsActive.filter(h=>(S.habitLogs[h.id]||[]).includes(td)).length;
+  const text=`📚 マネぼうアプリで学習中！\n🪙 コイン: ${fmt(S.coins)}\n🔥 連続: ${S.streak}日\n📖 レッスン完了: ${lessonCount}個\n📝 宿題完了: ${hwDone}件\n📅 今日の習慣: ${habitsDone}/${habitsActive.length}\n\nhttps://rainybrainch.github.io/manebou-app/`;
   if(navigator.share){navigator.share({title:'マネぼうアプリ',text});}
   else{navigator.clipboard?.writeText(text).then(()=>showToast('シェアテキストをコピーしました','good'));}
 }
