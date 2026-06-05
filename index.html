@@ -504,6 +504,44 @@ html,body{width:100%;height:100%;background:#000;overflow:hidden}
 }
 .nav-badge.show{display:flex}
 @keyframes badgePop{0%{transform:scale(0)}60%{transform:scale(1.2)}100%{transform:scale(1)}}
+/* ━━ Welcome overlay ━━ */
+.welcome-over{
+  position:fixed;inset:0;z-index:800;
+  background:rgba(7,8,13,.96);backdrop-filter:blur(16px);
+  display:none;flex-direction:column;align-items:center;justify-content:center;
+  padding:24px;text-align:center;
+}
+.welcome-over.show{display:flex;animation:fadeScaleIn .4s ease}
+.wl-logo{font-size:3.5rem;margin-bottom:12px;filter:drop-shadow(0 4px 20px rgba(201,168,76,.5))}
+.wl-title{font-family:var(--serif);font-size:1.4rem;font-weight:700;color:var(--acc);margin-bottom:8px}
+.wl-sub{font-size:.76rem;color:var(--muted);line-height:1.9;margin-bottom:24px;max-width:300px}
+.wl-chars{display:flex;gap:16px;justify-content:center;margin-bottom:20px}
+.wl-char{display:flex;flex-direction:column;align-items:center;gap:6px}
+.wl-char img{width:60px;height:60px;object-fit:cover;border-radius:50%;border:2px solid rgba(201,168,76,.4)}
+.wl-char-name{font-size:.6rem;color:var(--muted);letter-spacing:.06em}
+/* ━━ Settings modal ━━ */
+.settings-over{
+  position:fixed;inset:0;z-index:750;
+  background:rgba(7,8,13,.92);backdrop-filter:blur(14px);
+  display:none;flex-direction:column;align-items:center;justify-content:flex-end;
+}
+.settings-over.show{display:flex;animation:settingsIn .3s ease}
+.settings-panel{
+  width:100%;max-width:430px;background:var(--bg2);
+  border-radius:18px 18px 0 0;border:1px solid var(--line);
+  padding:20px 18px 36px;
+}
+.settings-handle{width:36px;height:3px;background:var(--line2);border-radius:99px;margin:0 auto 18px}
+.settings-title{font-family:var(--serif);font-size:1rem;font-weight:700;color:var(--text);margin-bottom:16px;letter-spacing:.04em}
+.settings-item{display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:1px solid var(--line)}
+.settings-item:last-child{border-bottom:none}
+.si-label{font-size:.78rem;font-weight:700;color:var(--text)}
+.si-sub{font-size:.6rem;color:var(--muted);margin-top:2px}
+.si-btn{padding:6px 14px;border-radius:7px;font-size:.74rem;font-weight:900;font-family:inherit;cursor:pointer;transition:all .15s}
+.si-btn.danger{border:1px solid rgba(224,85,85,.3);background:rgba(224,85,85,.08);color:var(--red)}
+.si-btn.danger:hover{background:rgba(224,85,85,.18)}
+.si-btn.neutral{border:1px solid var(--line);background:var(--sf);color:var(--muted)}
+@keyframes settingsIn{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:translateY(0)}}
 /* ━━ Game clear overlay ━━ */
 .game-clear{
   position:fixed;inset:0;z-index:700;
@@ -574,7 +612,7 @@ html,body{width:100%;height:100%;background:#000;overflow:hidden}
 <!-- ━━ TopBar ━━ -->
 <div id="topBar">
   <div class="top-streak"><span class="streak-fire">🔥</span><span id="tStreak">0</span></div>
-  <div class="top-brand">マネぼう</div>
+  <div class="top-brand" onclick="openSettings()" style="cursor:pointer">マネぼう</div>
   <div class="top-coins" id="tCoins">🪙 <span id="tCoinsNum">0</span></div>
 </div>
 
@@ -727,6 +765,45 @@ html,body{width:100%;height:100%;background:#000;overflow:hidden}
     </div>
   </div>
   <button class="fb-close" onclick="closeFeedback()">OK →</button>
+</div>
+
+<!-- ━━ Welcome Overlay ━━ -->
+<div id="welcomeOver" class="welcome-over">
+  <div class="wl-logo">💰</div>
+  <div class="wl-title">マネぼうへようこそ！</div>
+  <div class="wl-sub">お金・経済・投資を<br>楽しみながら学べる<br>マネぼう塾の学習アプリです。</div>
+  <div class="wl-chars">
+    <div class="wl-char">
+      <img src="../マネぼうHP/images/img6.webp" alt="えんだ" onerror="this.style.opacity='.2'">
+      <span class="wl-char-name">えんだ</span>
+    </div>
+    <div class="wl-char">
+      <img src="../マネぼうHP/images/img5.webp" alt="ふくろう" onerror="this.style.opacity='.2'">
+      <span class="wl-char-name">ふくろう</span>
+    </div>
+  </div>
+  <button class="btn-acc" style="width:100%;max-width:280px;padding:13px;font-size:.9rem"
+    onclick="startApp()">はじめる →</button>
+</div>
+
+<!-- ━━ Settings ━━ -->
+<div id="settingsOver" class="settings-over" onclick="if(event.target===this)closeSettings()">
+  <div class="settings-panel">
+    <div class="settings-handle"></div>
+    <div class="settings-title">設定</div>
+    <div class="settings-item">
+      <div><div class="si-label">データをリセット</div><div class="si-sub">コイン・習慣・宿題・レッスンを全て削除</div></div>
+      <button class="si-btn danger" onclick="confirmReset()">リセット</button>
+    </div>
+    <div class="settings-item">
+      <div><div class="si-label">バージョン</div><div class="si-sub">マネぼうアプリ v0.3</div></div>
+      <span style="font-size:.64rem;color:var(--faint)">Money Bo App</span>
+    </div>
+    <div class="settings-item">
+      <div><div class="si-label">閉じる</div></div>
+      <button class="si-btn neutral" onclick="closeSettings()">✕ 閉じる</button>
+    </div>
+  </div>
 </div>
 
 <!-- ━━ Game Clear Overlay ━━ -->
@@ -1235,6 +1312,20 @@ function renderChars(){
     </div>`).join('');
 }
 
+// ━━ Welcome / Settings ━━
+function startApp(){
+  S.welcomed=true;save();
+  document.getElementById('welcomeOver').className='welcome-over';
+}
+function openSettings(){document.getElementById('settingsOver').className='settings-over show';}
+function closeSettings(){document.getElementById('settingsOver').className='settings-over';}
+function confirmReset(){
+  if(!confirm('全データを削除しますか？この操作は元に戻せません。'))return;
+  localStorage.removeItem(SAVE_KEY);
+  S={coins:0,streak:0,lastLogin:'',habitLogs:{},lessonDone:{},homework:[],assets:{stocks:[],properties:[]}};
+  save();closeSettings();location.reload();
+}
+
 // ━━ Service Worker (PWA offline) ━━
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});
@@ -1243,6 +1334,8 @@ if('serviceWorker' in navigator){
 // ━━ Init ━━
 function init(){
   load();checkLogin();syncCoins();renderHome();
+  // 初回のみウェルカム表示（スプラッシュ後）
+  if(!S.welcomed){setTimeout(()=>{document.getElementById('welcomeOver').className='welcome-over show';},1700);}
   const di=document.getElementById('hwDateInput');
   if(di)di.value=today();
   setTimeout(()=>{
