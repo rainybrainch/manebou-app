@@ -1,62 +1,60 @@
-import { auth } from '@/lib/auth'
-import { PrismaClient } from '@prisma/client'
 import { NextResponse } from 'next/server'
-
-const prisma = new PrismaClient()
+import { getRepository } from '@/lib/data/repository'
+import { ApiResponse } from '@/types/ApiResponse'
+import { validateUserId, validateAmount, validateReason, validateBalance, ValidationError } from '@/lib/validation'
 
 export async function POST(request: Request) {
   try {
-    const session = await auth()
-
-    if (!session?.user?.id || session.user.role !== 'teacher') {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
     const body = await request.json()
-    const { studentId, amount, reason, memo } = body
+    const { studentId, amount, reason, memo, teacherId, schoolId } = body
 
-    if (!studentId || !amount || amount <= 0) {
-      return NextResponse.json(
-        { error: 'Invalid parameters' },
-        { status: 400 }
-      )
+    validateUserId(studentId)
+    validateAmount(amount)
+    validateReason(reason)
+
+    const repository = getRepository()
+    const student = repository.getUser(studentId)
+
+    if (!student) {
+      const response: ApiResponse<null> = {
+        success: false,
+        error: 'Student not found',
+      }
+      return NextResponse.json(response, { status: 404 })
     }
 
-    // トランザクションで更新
-    const result = await prisma.$transaction(async (tx) => {
-      // ユーザーのマネ残高を更新（減算）
-      const user = await tx.user.update({
-        where: { id: studentId },
-        data: { moneyBalance: { decrement: amount } },
-      })
+    validateBalance(student.moneyBalance, amount)
 
-      // マネログを作成（負数で記録）
-      await tx.moneyLog.create({
-        data: {
-          userId: studentId,
-          schoolId: session.user.schoolId as string,
-          amount: -amount,
-          reason,
-          memo,
-          teacherId: session.user.id,
-        },
-      })
-
-      return user
+    const updatedUser = repository.updateUserBalance(studentId, -amount)
+    repository.addMoneyLog({
+      userId: studentId,
+      schoolId: student.schoolId,
+      amount: -amount,
+      reason,
+      memo: memo || null,
+      teacherId: teacherId || 'unknown',
     })
 
-    return NextResponse.json({
+    const response: ApiResponse<{ newBalance: number }> = {
       success: true,
-      newBalance: result.moneyBalance,
-    })
+      data: {
+        newBalance: updatedUser?.moneyBalance || 0,
+      },
+    }
+    return NextResponse.json(response)
   } catch (error) {
-    console.error('Mane deduct API error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    if (error instanceof ValidationError) {
+      const response: ApiResponse<null> = {
+        success: false,
+        error: error.message,
+      }
+      return NextResponse.json(response, { status: 400 })
+    }
+
+    const response: ApiResponse<null> = {
+      success: false,
+      error: 'Internal server error',
+    }
+    return NextResponse.json(response, { status: 500 })
   }
 }

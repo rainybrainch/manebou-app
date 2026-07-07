@@ -1,53 +1,62 @@
-import { auth } from '@/lib/auth'
-import { PrismaClient } from '@prisma/client'
 import { NextResponse } from 'next/server'
-
-const prisma = new PrismaClient()
+import { getRepository } from '@/lib/data/repository'
+import { ApiResponse } from '@/types/ApiResponse'
+import { validateUserId, ValidationError } from '@/lib/validation'
 
 export async function GET(request: Request) {
   try {
-    const session = await auth()
+    const { searchParams } = new URL(request.url)
+    const userId = searchParams.get('userId')
 
-    if (!session?.user?.id || session.user.role !== 'student') {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
+    if (!userId) {
+      const response: ApiResponse<null> = {
+        success: false,
+        error: 'userId is required',
+      }
+      return NextResponse.json(response, { status: 400 })
     }
 
-    // ユーザー情報を取得
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-    })
+    validateUserId(userId)
+
+    const repository = getRepository()
+    const user = repository.getUser(userId)
 
     if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      )
+      const response: ApiResponse<null> = {
+        success: false,
+        error: 'User not found',
+      }
+      return NextResponse.json(response, { status: 404 })
     }
 
-    // 最近のマネログを取得（5件）
-    const recentLogs = await prisma.moneyLog.findMany({
-      where: { userId: session.user.id },
-      orderBy: { createdAt: 'desc' },
-      take: 5,
-    })
+    const logs = repository.getMoneyLogs(userId).slice(0, 10)
 
-    return NextResponse.json({
-      moneyBalance: user.moneyBalance,
-      recentLogs: recentLogs.map((log) => ({
-        id: log.id,
-        amount: log.amount,
-        reason: log.reason,
-        createdAt: log.createdAt.toISOString(),
-      })),
-    })
+    const response: ApiResponse<{
+      user: typeof user
+      moneyBalance: number
+      logs: typeof logs
+    }> = {
+      success: true,
+      data: {
+        user,
+        moneyBalance: user.moneyBalance,
+        logs,
+      },
+    }
+    return NextResponse.json(response)
   } catch (error) {
-    console.error('Dashboard API error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    if (error instanceof ValidationError) {
+      const response: ApiResponse<null> = {
+        success: false,
+        error: error.message,
+      }
+      return NextResponse.json(response, { status: 400 })
+    }
+
+    const response: ApiResponse<null> = {
+      success: false,
+      error: 'Internal server error',
+    }
+    return NextResponse.json(response, { status: 500 })
   }
 }

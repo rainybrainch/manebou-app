@@ -8,22 +8,18 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const schoolId = searchParams.get('schoolId')
 
-    if (!schoolId) {
-      const response: ApiResponse<null> = {
-        success: false,
-        error: 'schoolId is required',
-      }
-      return NextResponse.json(response, { status: 400 })
+    const repository = getRepository()
+    let teachers
+    if (schoolId) {
+      validateSchoolId(schoolId)
+      teachers = repository.getTeachersBySchool(schoolId)
+    } else {
+      teachers = []
     }
 
-    validateSchoolId(schoolId)
-
-    const repository = getRepository()
-    const students = repository.getStudentsBySchool(schoolId)
-
-    const response: ApiResponse<typeof students> = {
+    const response: ApiResponse<typeof teachers> = {
       success: true,
-      data: students,
+      data: teachers,
     }
     return NextResponse.json(response)
   } catch (error) {
@@ -35,6 +31,29 @@ export async function GET(request: Request) {
       return NextResponse.json(response, { status: 400 })
     }
 
+    const response: ApiResponse<null> = {
+      success: false,
+      error: 'Internal server error',
+    }
+    return NextResponse.json(response, { status: 500 })
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    const body = await request.json()
+    const repository = getRepository()
+    const teacher = repository.createUser({
+      ...body,
+      role: 'teacher',
+    })
+
+    const response: ApiResponse<typeof teacher> = {
+      success: true,
+      data: teacher,
+    }
+    return NextResponse.json(response, { status: 201 })
+  } catch (error) {
     const response: ApiResponse<null> = {
       success: false,
       error: 'Internal server error',
