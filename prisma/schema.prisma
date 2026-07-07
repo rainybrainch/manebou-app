@@ -1,0 +1,72 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 学校情報
+model School {
+  id            String    @id @default(uuid())
+  name          String    @db.VarChar(255)
+  contactEmail  String?   @db.VarChar(255) @map("contact_email")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  users         User[]
+  moneyLogs     MoneyLog[]
+
+  @@map("schools")
+}
+
+// ユーザー（生徒・先生）
+model User {
+  id            String    @id // Supabase Auth の ID
+  schoolId      String    @map("school_id")
+  school        School    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  email         String    @unique @db.VarChar(255)
+  fullName      String    @db.VarChar(255) @map("full_name")
+  role          String    @db.VarChar(50) // 'student' or 'teacher'
+
+  moneyBalance  Int       @default(0) @map("money_balance")
+
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  // リレーション
+  moneyLogs     MoneyLog[]
+  grantedLogs   MoneyLog[] @relation("GrantedBy")
+
+  @@index([schoolId])
+  @@index([role])
+  @@map("users")
+}
+
+// マネ履歴（付与・減算）
+model MoneyLog {
+  id            String    @id @default(uuid())
+  userId        String    @map("user_id")
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  schoolId      String    @map("school_id")
+  school        School    @relation(fields: [schoolId], references: [id])
+
+  amount        Int       // 正数=付与、負数=減算
+  reason        String    @db.VarChar(255)
+  memo          String?   @db.Text
+
+  teacherId     String?   @map("teacher_id")
+  teacher       User?     @relation("GrantedBy", fields: [teacherId], references: [id])
+
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([schoolId])
+  @@index([createdAt])
+  @@map("money_logs")
+}
