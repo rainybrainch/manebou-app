@@ -10,42 +10,62 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
+  const demoUsers = [
+    {
+      email: 'student1@school.jp',
+      name: '学生用',
+      description: '田中花子（学生）',
+      icon: '🎓',
+    },
+    {
+      email: 'teacher@school.jp',
+      name: '先生用',
+      description: '先生太郎（先生）',
+      icon: '👨‍🏫',
+    },
+    {
+      email: 'admin@school.jp',
+      name: '管理者用',
+      description: '管理者太郎（管理者）',
+      icon: '🔐',
+    },
+  ]
+
+  const demoUsersMap: Record<string, any> = {
+    'teacher@school.jp': {
+      id: 'user-teacher-001',
+      email: 'teacher@school.jp',
+      fullName: '先生太郎',
+      role: 'teacher',
+      schoolId: 'school-001',
+      moneyBalance: 5000,
+    },
+    'admin@school.jp': {
+      id: 'user-admin-001',
+      email: 'admin@school.jp',
+      fullName: '管理者太郎',
+      role: 'admin',
+      schoolId: 'school-001',
+      moneyBalance: 10000,
+    },
+    'student1@school.jp': {
+      id: 'student-001',
+      email: 'student1@school.jp',
+      fullName: '田中花子',
+      role: 'student',
+      schoolId: 'school-001',
+      classId: 'class-1a',
+      moneyBalance: 1000,
+    },
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     setLoading(true)
 
     try {
-      // デモユーザー用：メールアドレスで認証を判定
-      const demoUsers: Record<string, any> = {
-        'teacher@school.jp': {
-          id: 'user-teacher-001',
-          email: 'teacher@school.jp',
-          fullName: '先生太郎',
-          role: 'teacher',
-          schoolId: 'school-001',
-          moneyBalance: 5000,
-        },
-        'admin@school.jp': {
-          id: 'user-admin-001',
-          email: 'admin@school.jp',
-          fullName: '管理者太郎',
-          role: 'admin',
-          schoolId: 'school-001',
-          moneyBalance: 10000,
-        },
-        'student1@school.jp': {
-          id: 'student-001',
-          email: 'student1@school.jp',
-          fullName: '田中花子',
-          role: 'student',
-          schoolId: 'school-001',
-          classId: 'class-1a',
-          moneyBalance: 1000,
-        },
-      }
-
-      const user = demoUsers[email]
+      const user = demoUsersMap[email]
       if (user) {
         localStorage.setItem('currentUser', JSON.stringify(user))
         router.push('/app/student/dashboard')
@@ -59,95 +79,148 @@ export default function LoginPage() {
     }
   }
 
+  const quickLogin = (demoEmail: string) => {
+    setEmail(demoEmail)
+    setError('')
+    setLoading(true)
+
+    setTimeout(() => {
+      const user = demoUsersMap[demoEmail]
+      if (user) {
+        localStorage.setItem('currentUser', JSON.stringify(user))
+        router.push('/app/student/dashboard')
+      }
+      setLoading(false)
+    }, 300)
+  }
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        {/* ロゴ・タイトル */}
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      {/* ヘッダー */}
+      <div className="w-full max-w-md mb-8">
         <div className="text-center">
-          <h1 className="text-4xl font-bold text-gray-900">💰 マネぼうアプリ</h1>
-          <p className="mt-2 text-sm text-gray-600">
-            メールアドレスとパスワードでログイン
-          </p>
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full shadow-lg mb-4">
+            <span className="text-3xl">💰</span>
+          </div>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">マネぼう</h1>
+          <p className="text-gray-600 text-lg">学生向け仮想通貨管理アプリ</p>
         </div>
+      </div>
 
-        {/* ログインフォーム */}
-        <form className="space-y-6" onSubmit={handleSubmit}>
-          {/* エラーメッセージ */}
-          {error && (
-            <div className="rounded-md bg-red-50 p-4">
-              <p className="text-sm font-medium text-red-800">{error}</p>
+      {/* メインカード */}
+      <div className="w-full max-w-md">
+        <div className="bg-white rounded-2xl shadow-2xl p-8 space-y-6">
+          {/* ログインフォーム */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* エラーメッセージ */}
+            {error && (
+              <div className="rounded-lg bg-red-50 border border-red-200 p-4">
+                <p className="text-sm font-medium text-red-700">⚠️ {error}</p>
+              </div>
+            )}
+
+            {/* メールアドレス入力 */}
+            <div>
+              <label htmlFor="email" className="block text-sm font-semibold text-gray-800 mb-2">
+                メールアドレス
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="example@school.jp"
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all duration-200"
+              />
             </div>
-          )}
 
-          {/* メールアドレス */}
-          <div>
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium text-gray-700"
+            {/* パスワード入力 */}
+            <div>
+              <label htmlFor="password" className="block text-sm font-semibold text-gray-800 mb-2">
+                パスワード
+              </label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                autoComplete="current-password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all duration-200"
+              />
+            </div>
+
+            {/* ログインボタン */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3 px-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-lg hover:shadow-lg transform hover:scale-105 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
-              メールアドレス
-            </label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              autoComplete="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              placeholder="example@example.com"
-            />
+              {loading ? '✓ ログイン中...' : 'ログイン'}
+            </button>
+          </form>
+
+          {/* または区切り線 */}
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-200"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-3 bg-white text-gray-600 font-medium">デモユーザーでクイックログイン</span>
+            </div>
           </div>
 
-          {/* パスワード */}
-          <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-gray-700"
-            >
-              パスワード
-            </label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete="current-password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              placeholder="••••••••"
-            />
+          {/* デモユーザーボタン */}
+          <div className="grid grid-cols-1 gap-3">
+            {demoUsers.map((demoUser) => (
+              <button
+                key={demoUser.email}
+                type="button"
+                onClick={() => quickLogin(demoUser.email)}
+                disabled={loading}
+                className="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-all duration-200 text-left disabled:opacity-60"
+              >
+                <div className="flex items-start justify-between">
+                  <div>
+                    <div className="text-2xl mb-1">{demoUser.icon}</div>
+                    <p className="font-semibold text-gray-900 text-sm">{demoUser.name}</p>
+                    <p className="text-xs text-gray-600 mt-1">{demoUser.email}</p>
+                  </div>
+                  <span className="text-lg">→</span>
+                </div>
+              </button>
+            ))}
           </div>
-
-          {/* ログインボタン */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? 'ログイン中...' : 'ログイン'}
-          </button>
-        </form>
-
-        {/* フッター */}
-        <div className="text-center mt-6">
-          <p className="text-sm text-gray-600">
-            アカウントをお持ちでない場合は、先生に申請してください。
-          </p>
         </div>
 
-        <div className="text-center mt-4 pt-4 border-t border-gray-200">
+        {/* フッター情報 */}
+        <div className="mt-6 text-center text-xs text-gray-600">
+          <p className="mb-2">💡 デモユーザーで全機能をお試しできます</p>
+          <p>パスワードは不要です。メールアドレスだけでログインできます。</p>
+        </div>
+
+        {/* アカデミーへのリンク */}
+        <div className="mt-6 text-center">
           <a
             href="https://manebou-juku.vercel.app"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sm text-blue-600 hover:text-blue-500"
+            className="inline-flex items-center text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors duration-200"
           >
-            🏠 アカデミーに戻る
+            <span className="mr-1">🏠</span> マネぼう塾に戻る
           </a>
         </div>
+      </div>
+
+      {/* 背景装飾 */}
+      <div className="fixed top-0 left-0 -z-10 w-full h-full overflow-hidden">
+        <div className="absolute top-20 left-10 w-72 h-72 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
+        <div className="absolute top-40 right-10 w-72 h-72 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse animation-delay-2000"></div>
       </div>
     </div>
   )
