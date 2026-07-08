@@ -14,7 +14,14 @@ export async function GET(request: Request) {
       validateSchoolId(schoolId)
       teachers = repository.getTeachersBySchool(schoolId)
     } else {
-      teachers = []
+      const schools = repository.getSchools()
+      const allTeachers = new Map()
+      schools.forEach(school => {
+        repository.getTeachersBySchool(school.id).forEach(t => {
+          allTeachers.set(t.id, t)
+        })
+      })
+      teachers = Array.from(allTeachers.values())
     }
 
     const response: ApiResponse<typeof teachers> = {
