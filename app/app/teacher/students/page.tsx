@@ -1,11 +1,20 @@
 'use client'
 
-import { useSession } from 'next-auth/react'
-import useSWR from 'swr'
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { useState } from 'react'
-
-const fetcher = (url: string) => fetch(url).then((res) => res.json())
+import {
+  PageHeader,
+  Card,
+  SectionTitle,
+  LoadingSpinner,
+  EmptyState,
+  Input,
+  Badge,
+  Button,
+  Table,
+  Alert,
+} from '../../../components/ui'
 
 interface Student {
   id: string
@@ -14,116 +23,183 @@ interface Student {
   moneyBalance: number
 }
 
-interface StudentsData {
-  students: Student[]
-  total: number
-}
-
 export default function StudentsPage() {
-  const { data: session, status } = useSession()
+  const router = useRouter()
+  const [user, setUser] = useState<any>(null)
+  const [students, setStudents] = useState<Student[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
 
-  const { data, isLoading, error } = useSWR<StudentsData>(
-    status === 'authenticated' ? '/api/teacher/students' : null,
-    fetcher
+  useEffect(() => {
+    const userData = localStorage.getItem('currentUser')
+    if (!userData) {
+      router.push('/login')
+      return
+    }
+
+    const parsed = JSON.parse(userData)
+    if (parsed.role !== 'teacher' && parsed.role !== 'admin') {
+      router.push('/app/student/dashboard')
+      return
+    }
+    setUser(parsed)
+
+    const fetchStudents = async () => {
+      try {
+        const res = await fetch('/api/teachers')
+        const data = await res.json()
+        if (data.success) {
+          const allStudents = data.data.filter((u: any) => u.role === 'student')
+          setStudents(allStudents)
+        } else {
+          setError('生徒データの読み込みに失敗しました')
+        }
+      } catch (err) {
+        console.error('Failed to fetch students:', err)
+        setError('データを取得できません')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchStudents()
+  }, [router])
+
+  const filteredStudents = students.filter(
+    (student) =>
+      student.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      student.email.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  const filteredStudents = data?.students.filter((student) =>
-    student.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    student.email.toLowerCase().includes(searchQuery.toLowerCase())
-  ) || []
-
-  if (status === 'loading' || isLoading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <p className="text-gray-500">読み込み中...</p>
-      </div>
-    )
+  if (loading) {
+    return <LoadingSpinner fullscreen text="生徒一覧を読み込み中..." />
   }
 
-  if (error || !data) {
-    return (
-      <div className="rounded-md bg-red-50 p-4">
-        <p className="text-sm font-medium text-red-800">
-          データの読み込みに失敗しました
-        </p>
+  const tableColumns = [
+    { header: '名前', key: 'fullName' },
+    { header: 'メール', key: 'email' },
+    { header: 'マネ残高', key: 'moneyBalance' },
+    { header: 'アクション', key: 'actions' },
+  ]
+
+  const tableData = filteredStudents.map((student) => ({
+    fullName: (
+      <div className="flex items-center gap-2">
+        <span className="text-lg">👤</span>
+        <span className="font-medium text-gray-900">{student.fullName}</span>
       </div>
-    )
-  }
+    ),
+    email: <span className="text-sm text-gray-600">{student.email}</span>,
+    moneyBalance: (
+      <div className="font-bold text-blue-600">{student.moneyBalance.toLocaleString()}</div>
+    ),
+    actions: (
+      <div className="flex gap-2">
+        <Link href={`/app/teacher/mane-management?studentId=${student.id}`}>
+          <Button variant="primary" size="sm">
+            💸 マネ管理
+          </Button>
+        </Link>
+      </div>
+    ),
+  }))
 
   return (
-    <div className="space-y-6">
-      {/* タイトル */}
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">👥 生徒一覧</h1>
-        <p className="text-gray-600 mt-2">
-          合計 {data.total} 人の生徒
-        </p>
-      </div>
-
-      {/* 検索バー */}
-      <div>
-        <input
-          type="text"
-          placeholder="名前またはメールアドレスで検索..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-6xl mx-auto space-y-8">
+        {/* ヘッダー */}
+        <PageHeader
+          icon="👥"
+          title="生徒一覧"
+          description={`全 ${students.length} 人の生徒を管理`}
         />
-      </div>
 
-      {/* 生徒リスト */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {filteredStudents.length === 0 ? (
-          <div className="col-span-full text-center py-12">
-            <p className="text-gray-500">生徒が見つかりません</p>
+        {error && <Alert variant="error">{error}</Alert>}
+
+        {/* 検索バー */}
+        <Card>
+          <SectionTitle icon="🔍" title="検索" subtitle="生徒を検索してマネを管理" />
+          <div className="mt-4">
+            <Input
+              label="名前またはメールアドレス"
+              type="text"
+              placeholder="例: 田中花子 または student@school.jp"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              icon="🔍"
+            />
           </div>
-        ) : (
-          filteredStudents.map((student) => (
-            <div
-              key={student.id}
-              className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow"
-            >
-              <div className="space-y-3">
-                {/* 名前 */}
-                <div>
-                  <h3 className="text-lg font-bold text-gray-900">
-                    👤 {student.fullName}
-                  </h3>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {student.email}
-                  </p>
-                </div>
+        </Card>
 
-                {/* マネ残高 */}
-                <div className="bg-blue-50 rounded p-3">
-                  <p className="text-xs text-blue-600 font-medium">
-                    💰 マネ残高
-                  </p>
-                  <p className="text-2xl font-bold text-blue-600 mt-1">
-                    {student.moneyBalance.toLocaleString()}
-                  </p>
-                </div>
+        {/* 生徒テーブル */}
+        <Card>
+          <div className="mb-6">
+            <SectionTitle
+              icon="📊"
+              title="生徒リスト"
+              subtitle={`検索結果: ${filteredStudents.length} 人`}
+            />
+          </div>
 
-                {/* アクションボタン */}
-                <div className="flex gap-2 pt-2">
-                  <Link
-                    href={`/app/teacher/students/${student.id}`}
-                    className="flex-1 py-2 px-3 bg-gray-100 text-gray-900 rounded hover:bg-gray-200 text-sm font-medium text-center"
-                  >
-                    詳細
-                  </Link>
-                  <Link
-                    href={`/app/teacher/mane-management?studentId=${student.id}`}
-                    className="flex-1 py-2 px-3 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm font-medium text-center"
-                  >
-                    マネ管理
-                  </Link>
-                </div>
+          {filteredStudents.length === 0 ? (
+            <EmptyState
+              icon="👤"
+              title={searchQuery ? '検索結果がありません' : '生徒がまだ登録されていません'}
+              description={
+                searchQuery
+                  ? '別のキーワードで検索してください'
+                  : '生徒が追加されるまでお待ちください'
+              }
+            />
+          ) : (
+            <Table columns={tableColumns} data={tableData} />
+          )}
+        </Card>
+
+        {/* 統計情報 */}
+        {students.length > 0 && (
+          <Card variant="gradient" className="bg-gradient-to-r from-blue-50 to-green-50">
+            <SectionTitle icon="📈" title="統計情報" />
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4 text-sm">
+              <div>
+                <p className="text-gray-600">生徒数</p>
+                <p className="text-2xl font-bold text-blue-600 mt-1">{students.length}</p>
+              </div>
+              <div>
+                <p className="text-gray-600">平均マネ残高</p>
+                <p className="text-2xl font-bold text-green-600 mt-1">
+                  {Math.round(
+                    students.reduce((sum, s) => sum + s.moneyBalance, 0) / students.length
+                  ).toLocaleString()}
+                </p>
+              </div>
+              <div>
+                <p className="text-gray-600">総マネ保有量</p>
+                <p className="text-2xl font-bold text-purple-600 mt-1">
+                  {students.reduce((sum, s) => sum + s.moneyBalance, 0).toLocaleString()}
+                </p>
               </div>
             </div>
-          ))
+          </Card>
         )}
+
+        {/* クイックアクション */}
+        <Card>
+          <SectionTitle icon="🚀" title="クイックアクション" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+            <Link href="/app/teacher/dashboard">
+              <Button variant="secondary" size="md" className="w-full">
+                ← ダッシュボードに戻る
+              </Button>
+            </Link>
+            <Link href="/app/teacher/mane-management">
+              <Button variant="primary" size="md" className="w-full">
+                💸 マネ付与・回収
+              </Button>
+            </Link>
+          </div>
+        </Card>
       </div>
     </div>
   )
