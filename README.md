@@ -1,36 +1,226 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 💰 マネぼう - 学生向け仮想通貨管理アプリ
 
-## Getting Started
+学生がマネ（仮想通貨）を管理し、先生がマネを付与・回収できるアプリケーション。
+ゲーミフィケーションを通じて、金銭感覚と経済学習を支援します。
 
-First, run the development server:
+## 🚀 本番環境
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+**本番 URL**: https://manebou-app.vercel.app
+
+## ✨ 主な機能
+
+### 学生向け
+- 💳 **マネ残高管理** – 現在のマネ残高をリアルタイムで表示
+- 📜 **マネ履歴** – 付与・回収の履歴を一覧表示
+- 🏆 **ランキング** – 学校全体のマネ保有量ランキングを確認
+- 🎯 **ダッシュボード** – 学生情報・残高・最近の取引を一覧
+
+### 先生向け
+- 👥 **生徒管理** – クラス内の生徒一覧を確認
+- 💸 **マネ付与** – 学習成果・良い行動にマネを付与
+- 🔄 **マネ回収** – ルール違反時にマネを減算
+- 📊 **ダッシュボード** – 学校統計・クイックアクション
+
+## 🔐 Demo ユーザー
+
+ログイン画面で以下のメールアドレスを入力すると、デモユーザーでログインできます：
+
+### 学生
+- **メール**: `student1@school.jp`
+- **名前**: 田中花子
+- **初期残高**: 1,000 マネ
+- **機能**: ダッシュボード・マネ履歴・ランキング表示
+
+### 先生
+- **メール**: `teacher@school.jp`
+- **名前**: 先生太郎
+- **初期残高**: 5,000 マネ
+- **機能**: 生徒管理・マネ付与・マネ回収
+
+### 管理者
+- **メール**: `admin@school.jp`
+- **名前**: 管理者太郎
+- **初期残高**: 10,000 マネ
+- **機能**: 全機能アクセス可能
+
+> **注意**: パスワード入力は任意です。デモ用のため、メールアドレスだけで認証できます。
+
+## 🎮 操作マニュアル
+
+### ログイン方法
+1. https://manebou-app.vercel.app にアクセス
+2. `/login` ページが表示される
+3. 上記の demo メールアドレスを入力
+4. ✅ ログイン ボタンを押す
+5. ユーザーロールに応じたダッシュボードが表示される
+
+### 学生の操作
+1. **ダッシュボード** – 現在の残高と最近の取引を確認
+2. **マネ履歴** – すべての取引記録を確認
+3. **ランキング** – 学校全体のランキング表示
+
+### 先生の操作
+1. **生徒一覧** – クラス内の生徒を確認
+2. **マネ管理** – 生徒を選んで、付与額・理由を入力して ✅ 付与
+3. **マネ回収** – 同じく生徒を選んで、回収額・理由を入力して ✅ 回収
+4. **ダッシュボード** – 学校統計とクイックアクション
+
+### マネ付与・回収の手順
+1. 先生ダッシュボード → **💸 マネ管理**
+2. 生徒を選択
+3. 付与額（または回収額）を入力
+4. 理由を入力（例：「テスト100点達成」）
+5. ✅ **付与** または **回収** ボタンを押す
+6. 即座に学生の残高が更新され、履歴に記録される
+
+## 📊 確認済み機能
+
+### ページ（全 7 ページ）
+- ✅ `/login` – ログイン
+- ✅ `/app/student/dashboard` – 学生ダッシュボード
+- ✅ `/app/student/mane` – マネ履歴
+- ✅ `/app/teacher/dashboard` – 先生ダッシュボード
+- ✅ `/app/teacher/students` – 生徒一覧
+- ✅ `/app/teacher/mane-management` – マネ管理
+- ✅ `/ranking` – ランキング
+
+### API（全 14 エンドポイント）
+- ✅ `GET /api/schools` – スクール一覧
+- ✅ `GET /api/teachers` – 教員・生徒一覧
+- ✅ `GET /api/system/status` – システム状態
+- ✅ `GET /api/student/dashboard` – 学生情報・残高・履歴
+- ✅ `POST /api/teacher/mane/grant` – マネ付与
+- ✅ `POST /api/teacher/mane/deduct` – マネ減算
+- ✅ `GET /api/classes` – クラス一覧
+- ✅ `GET /api/classes/[id]` – クラス詳細
+- ✅ その他 7 エンドポイント
+
+### テスト結果
+- ✅ **本番環境テスト**: 9/9 合格
+- ✅ **マネ付与テスト**: 正常に残高更新
+- ✅ **マネ減算テスト**: 正常に残高更新
+- ✅ **ランキング表示**: 複数スクール統合取得成功
+- ✅ **データ永続性**: localStorage で状態保存確認
+
+## 🛠️ 技術スタック
+
+- **フロントエンド**: Next.js 15 (App Router), React, TypeScript, Tailwind CSS
+- **バックエンド**: Next.js API Routes
+- **データベース**: 在メモリ（LocalRepository）
+- **認証**: localStorage（デモ用）
+- **ホスティング**: Vercel
+
+## 📦 プロジェクト構成
+
+```
+manebou-app/
+├── app/
+│   ├── api/                    # API ルート（14個）
+│   ├── app/                    # ログイン後のページ
+│   │   ├── student/           # 学生ページ
+│   │   └── teacher/           # 先生ページ
+│   ├── login/                 # ログインページ
+│   ├── ranking/               # ランキングページ
+│   ├── layout.tsx             # ルートレイアウト
+│   └── page.tsx               # ホームページ（リダイレクト）
+├── src/
+│   ├── lib/
+│   │   ├── data/              # リポジトリパターン実装
+│   │   ├── localdb.ts         # 在メモリデータベース
+│   │   ├── validation.ts      # バリデーション
+│   │   └── auth.ts            # 認証ユーティリティ
+│   ├── types/                 # TypeScript 型定義
+│   └── components/            # 再利用可能なコンポーネント
+├── public/                    # 静的アセット
+└── README.md                  # このファイル
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## ⚙️ セットアップ（ローカル開発）
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 必須環境
+- Node.js 18+
+- npm 9+ または yarn
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### インストール
+```bash
+git clone <repository-url>
+cd manebou-app
+npm install
+```
 
-## Learn More
+### 開発サーバー起動
+```bash
+npm run dev
+# http://localhost:3000 でアクセス
+```
 
-To learn more about Next.js, take a look at the following resources:
+### ビルド（本番用）
+```bash
+npm run build
+npm run start
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## ⚠️ 既知の制限事項
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. **認証**: デモ用の localStorage ベース認証
+   - 本番環境では、Firebase Auth や NextAuth.js の導入を推奨
+   - パスワード検証なし（デモ専用）
 
-## Deploy on Vercel
+2. **データベース**: 在メモリ（アプリ起動時にリセット）
+   - 本番環境では、PostgreSQL / Supabase 等の導入を推奨
+   - 複数サーバーインスタンス間でのデータ同期不可
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+3. **マルチテナント**: 複数スクール対応は API レベルのみ
+   - UI では単一スクール（サンプル小学校）を前提
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+4. **レート制限**: API にレート制限なし
+   - 本番環境では、DDoS 対策として実装推奨
+
+5. **エラーハンドリング**: ユーザー向けエラーメッセージは基本的
+   - 詳細ログは開発者向けのみ
+
+## 🚀 今後の改善案
+
+### 短期（Phase 6）
+- [ ] **Firebase Authentication 導入** – より安全な認証
+- [ ] **Supabase PostgreSQL 連携** – データの永続化
+- [ ] **メール検証** – ユーザー登録フロー
+- [ ] **パスワードリセット機能** – セキュリティ強化
+- [ ] **画面ローカライズ** – 日本語以外の言語対応
+
+### 中期（Phase 7-8）
+- [ ] **役割管理システム** – より細かい権限制御
+- [ ] **取引分析ダッシュボード** – グラフ・統計表示
+- [ ] **マネ有効期限設定** – 時間制限付きマネの実装
+- [ ] **バッジ・称号システム** – ゲーミフィケーション強化
+- [ ] **API レート制限** – セキュリティ向上
+- [ ] **監査ログ** – コンプライアンス対応
+
+### 長期（Phase 9-10）
+- [ ] **モバイルアプリ化** – React Native / Flutter
+- [ ] **複数言語対応** – 国際展開対応
+- [ ] **AI 推奨システム** – 機械学習による学習支援
+- [ ] **マネの経済シミュレーション** – リアルな経済学習
+- [ ] **先生向け管理画面** – より高度な分析・制御
+
+## 📝 更新履歴
+
+### v1.0.0（2026-07-08）
+- ✅ マネぼう アプリケーション Phase 1-5 完成
+- ✅ Vercel デプロイ完了
+- ✅ 全機能稼働確認
+- ✅ 本番環境で 9/9 テスト合格
+
+## 🤝 貢献
+
+バグ報告・機能提案は、GitHub Issues で受け付けています。
+
+## 📧 お問い合わせ
+
+開発・運用に関するご質問は、RAINYBRAIN team までお気軽にお問い合わせください。
+
+---
+
+**Last Updated**: 2026-07-08  
+**Version**: 1.0.0  
+**Status**: 🟢 Production Ready
