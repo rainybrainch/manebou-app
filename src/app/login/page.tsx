@@ -1,18 +1,14 @@
 'use client'
 
-import { signIn } from 'next-auth/react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
 export default function LoginPage() {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-
-  const callbackUrl = searchParams.get('callbackUrl') || '/app'
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -20,16 +16,41 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      const result = await signIn('credentials', {
-        email,
-        password,
-        redirect: false,
-      })
+      // デモユーザー用：メールアドレスで認証を判定
+      const demoUsers: Record<string, any> = {
+        'teacher@school.jp': {
+          id: 'user-teacher-001',
+          email: 'teacher@school.jp',
+          fullName: '先生太郎',
+          role: 'teacher',
+          schoolId: 'school-001',
+          moneyBalance: 5000,
+        },
+        'admin@school.jp': {
+          id: 'user-admin-001',
+          email: 'admin@school.jp',
+          fullName: '管理者太郎',
+          role: 'admin',
+          schoolId: 'school-001',
+          moneyBalance: 10000,
+        },
+        'student1@school.jp': {
+          id: 'student-001',
+          email: 'student1@school.jp',
+          fullName: '田中花子',
+          role: 'student',
+          schoolId: 'school-001',
+          classId: 'class-1a',
+          moneyBalance: 1000,
+        },
+      }
 
-      if (result?.error) {
-        setError('メールアドレスまたはパスワードが正しくありません')
-      } else if (result?.ok) {
-        router.push(callbackUrl)
+      const user = demoUsers[email]
+      if (user) {
+        localStorage.setItem('currentUser', JSON.stringify(user))
+        router.push('/app/student/dashboard')
+      } else {
+        setError('認識されたメールアドレスではありません')
       }
     } catch (err) {
       setError('ログインに失敗しました。もう一度お試しください。')
