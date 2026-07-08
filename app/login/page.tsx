@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { Input, Button, Card, Alert } from '@/app/components/ui'
+import { Input, Button, Card, Alert } from '../components/ui'
 
 export default function LoginPage() {
   const router = useRouter()
