@@ -28,23 +28,34 @@ export default function StudentDashboard() {
   if (status === 'loading' || isLoading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <p className="text-gray-500">読み込み中...</p>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">読み込み中...</p>
+        </div>
       </div>
     )
   }
 
   if (error || !data) {
     return (
-      <div className="rounded-md bg-red-50 p-4">
-        <p className="text-sm font-medium text-red-800">
-          データの読み込みに失敗しました
-        </p>
+      <div className="rounded-lg bg-red-50 border border-red-200 p-6 max-w-md mx-auto">
+        <div className="flex items-start">
+          <div className="text-red-600 text-xl mr-3">⚠️</div>
+          <div>
+            <p className="font-semibold text-red-900">
+              エラー
+            </p>
+            <p className="text-sm text-red-700 mt-1">
+              データの読み込みに失敗しました。ページをリロードしてください。
+            </p>
+          </div>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6 max-w-4xl mx-auto">
       {/* ウェルカムセクション */}
       <div className="bg-white rounded-lg shadow p-6">
         <h1 className="text-3xl font-bold text-gray-900">

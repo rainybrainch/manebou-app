@@ -35,13 +35,24 @@ export default function RankingPage() {
     fetchUsers()
   }, [])
 
-  if (loading) return <div className="p-4">読み込み中...</div>
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-yellow-500 mx-auto mb-4"></div>
+          <p className="text-gray-600 text-lg">ランキングを読み込み中...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <h1 className="text-4xl font-bold text-center mb-2">🏆 マネランキング</h1>
-        <p className="text-center text-gray-600 mb-8">学生・先生のマネ保有量ランキング</p>
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-gray-50">
+      <div className="max-w-4xl mx-auto px-4 py-12">
+        <div className="text-center mb-12">
+          <h1 className="text-5xl font-bold text-gray-900 mb-2">🏆 マネランキング</h1>
+          <p className="text-lg text-gray-600">学生・先生のマネ保有量ランキング</p>
+        </div>
 
         {users.length === 0 ? (
           <div className="bg-white rounded-lg shadow p-8 text-center">
