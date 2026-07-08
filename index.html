@@ -1,0 +1,3762 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#07080d">
+<link rel="manifest" href="manifest.json">
+<title>マネぼうアプリ</title>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&family=Noto+Serif+JP:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* ━━ Reset & Variables ━━ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:   #07080d;
+  --bg2:  #0c0e17;
+  --sf:   rgba(255,255,255,.034);
+  --sf2:  rgba(255,255,255,.06);
+  --line: rgba(255,255,255,.08);
+  --line2:rgba(255,255,255,.13);
+  --acc:  #c9a84c;
+  --acc2: rgba(201,168,76,.12);
+  --acc3: rgba(201,168,76,.04);
+  --grn:  #57c87c;
+  --grn2: rgba(87,200,124,.12);
+  --red:  #e05555;
+  --blue: #6bb6ff;
+  --pur:  #a78bfa;
+  --ora:  #f97316;
+  --text: #f0f2fa;
+  --muted:rgba(240,242,250,.48);
+  --faint:rgba(240,242,250,.18);
+  --nav:  60px;
+  --top:  52px;
+  --font: 'Zen Maru Gothic', system-ui, sans-serif;
+  --serif:'Noto Serif JP', serif;
+}
+html,body{width:100%;height:100%;background:#000;overflow:hidden}
+#app{width:100%;max-width:430px;height:100dvh;margin:0 auto;background:var(--bg);display:flex;flex-direction:column;overflow:hidden;position:relative;font-family:var(--font)}
+
+/* ━━ TopBar ━━ */
+#topBar{
+  height:var(--top);
+  background:rgba(7,8,13,.96);
+  backdrop-filter:blur(16px);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 16px;flex-shrink:0;
+  border-bottom:1px solid var(--line);
+  position:relative;z-index:10;
+}
+#topBar::after{
+  content:'';position:absolute;bottom:-1px;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(201,168,76,.5),transparent);
+}
+.top-brand{font-family:var(--serif);font-size:.85rem;font-weight:700;color:var(--acc);letter-spacing:.06em}
+.top-streak{
+  display:flex;align-items:center;gap:4px;
+  padding:3px 10px;border-radius:999px;
+  border:1px solid rgba(249,115,22,.25);
+  background:rgba(249,115,22,.06);
+  font-size:.68rem;font-weight:900;color:var(--ora);letter-spacing:.04em;
+}
+.streak-fire{display:inline-block;animation:fireFlicker 1.4s ease-in-out infinite}
+.top-coins{
+  display:flex;align-items:center;gap:4px;
+  padding:3px 11px;border-radius:999px;
+  border:1px solid rgba(201,168,76,.28);
+  background:var(--acc3);
+  font-family:var(--serif);font-size:.8rem;font-weight:700;color:var(--acc);
+  transition:transform .2s;
+}
+.top-coins.pop{animation:coinPop .28s ease}
+
+/* ━━ Screens ━━ */
+#screenArea{flex:1;overflow:hidden;position:relative}
+.screen{position:absolute;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;display:none;flex-direction:column}
+.screen.active{display:flex;animation:screenIn .22s ease}
+.screen::-webkit-scrollbar{width:0}
+.inner{padding:16px 14px 80px}
+
+/* ━━ BottomNav ━━ */
+#bottomNav{
+  height:var(--nav);
+  background:rgba(7,8,13,.96);
+  backdrop-filter:blur(16px);
+  border-top:1px solid var(--line);
+  display:flex;flex-shrink:0;z-index:10;
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+.nav-btn{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:1px;background:none;border:none;
+  color:var(--muted);font-size:.48rem;font-weight:900;font-family:inherit;
+  cursor:pointer;transition:color .15s;padding:4px 0;position:relative;
+  letter-spacing:.04em;text-transform:uppercase;
+}
+.nav-btn::before{
+  content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);
+  width:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--acc),transparent);
+  transition:width .2s;
+}
+.nav-btn.active{color:var(--acc)}
+.nav-btn.active::before{width:36px}
+.nav-btn .ni{font-size:1.2rem;line-height:1;transition:transform .2s}
+.nav-btn.active .ni{transform:scale(1.1) translateY(-1px)}
+
+/* ━━ Shared ━━ */
+/* セクションラベル（Channel OS スタイル） */
+.slabel{
+  display:flex;align-items:center;gap:10px;
+  font-size:.56rem;font-weight:900;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:12px;
+}
+.slabel::after{
+  content:'';flex:1;height:1px;
+  background:linear-gradient(to right,rgba(255,255,255,.07),transparent);
+}
+/* ディバイダー（グラデーション線） */
+.divider{
+  display:flex;align-items:center;margin:16px 0;
+}
+.divider::before,.divider::after{
+  content:'';flex:1;height:1px;
+  background:linear-gradient(to right,transparent,rgba(255,255,255,.07),transparent);
+}
+
+/* カード */
+.card{
+  background:var(--sf);border:1px solid var(--line);border-radius:10px;
+  padding:14px;position:relative;overflow:hidden;
+  transition:background .15s,border-color .15s,transform .13s,box-shadow .15s;
+}
+.card:hover{background:var(--sf2);transform:translateY(-1px);box-shadow:0 6px 24px rgba(0,0,0,.3)}
+.card::before{
+  content:'';position:absolute;inset:0;opacity:0;
+  background:radial-gradient(ellipse at top,var(--acc),transparent 70%);
+  transition:opacity .25s;pointer-events:none;
+}
+.card:hover::before{opacity:.04}
+
+/* ボタン */
+.btn-acc{
+  display:inline-flex;align-items:center;justify-content:center;gap:5px;
+  padding:9px 18px;border-radius:8px;
+  border:1px solid rgba(201,168,76,.32);
+  background:rgba(201,168,76,.1);
+  color:var(--acc);font-family:inherit;font-size:.82rem;font-weight:900;
+  cursor:pointer;transition:all .15s;
+}
+.btn-acc:hover{background:rgba(201,168,76,.2)}
+.btn-acc:active{transform:scale(.97)}
+.btn-grn{
+  display:inline-flex;align-items:center;justify-content:center;gap:5px;
+  padding:9px 18px;border-radius:8px;
+  border:1px solid rgba(87,200,124,.3);
+  background:rgba(87,200,124,.08);
+  color:var(--grn);font-family:inherit;font-size:.82rem;font-weight:900;
+  cursor:pointer;transition:all .15s;
+}
+.btn-grn:hover{background:rgba(87,200,124,.18)}
+.btn-grn:active{transform:scale(.97)}
+
+/* プレースホルダー */
+.ph-card{
+  background:var(--sf);border:1px dashed rgba(255,255,255,.06);
+  border-radius:10px;padding:22px 14px;text-align:center;
+  color:var(--faint);font-size:.68rem;line-height:1.8;
+}
+.ph-ico{font-size:1.5rem;display:block;margin-bottom:8px;opacity:.3}
+
+/* ━━ Character bubble ━━ */
+.char-bubble-wrap{display:flex;align-items:flex-start;gap:10px;margin-bottom:16px}
+.char-avatar{
+  width:48px;height:48px;object-fit:cover;
+  border-radius:50%;border:1.5px solid var(--line2);
+  flex-shrink:0;background:var(--bg2);
+  transition:box-shadow .2s;
+}
+.char-avatar.enda  {border-color:rgba(107,182,255,.4);filter:drop-shadow(0 3px 8px rgba(107,182,255,.3))}
+.char-avatar.fukurou{border-color:rgba(201,168,76,.5);filter:drop-shadow(0 3px 8px rgba(201,168,76,.3))}
+.char-bubble{
+  flex:1;background:var(--sf);border:1px solid var(--line);
+  border-radius:4px 12px 12px 12px;
+  padding:9px 13px;position:relative;
+}
+.char-bubble::before{content:'';position:absolute;left:-7px;top:12px;border:6px solid transparent;border-right-color:var(--line)}
+.char-bubble::after{content:'';position:absolute;left:-5px;top:13px;border:5px solid transparent;border-right-color:var(--sf)}
+.char-nametag{font-size:.54rem;font-weight:900;color:var(--muted);margin-bottom:4px;letter-spacing:.1em;text-transform:uppercase}
+.char-msg{font-size:.76rem;color:var(--text);line-height:1.55;font-weight:700}
+
+/* ━━ Home ━━ */
+.home-stats-row{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:0;
+  border:1px solid var(--line);border-radius:12px;overflow:hidden;
+  margin-bottom:16px;
+}
+.hs-cell{
+  padding:14px 10px;text-align:center;
+  border-right:1px solid var(--line);
+  background:var(--sf);
+}
+.hs-cell:last-child{border-right:none}
+.hs-val{font-family:var(--serif);font-size:1.4rem;font-weight:700;line-height:1;color:var(--text)}
+.hs-val.acc{color:var(--acc)}
+.hs-val.grn{color:var(--grn)}
+.hs-val.ora{color:var(--ora)}
+.hs-lbl{font-size:.5rem;color:var(--muted);margin-top:4px;letter-spacing:.1em;text-transform:uppercase}
+/* コインバナー */
+.coin-banner{
+  background:linear-gradient(135deg,rgba(201,168,76,.06),rgba(201,168,76,.02));
+  border:1px solid rgba(201,168,76,.18);
+  border-radius:12px;padding:14px 16px;
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:16px;
+}
+.coin-banner-val{font-family:var(--serif);font-size:1.7rem;font-weight:700;color:var(--acc);line-height:1}
+.coin-banner-sub{font-size:.56rem;color:var(--muted);margin-top:3px;letter-spacing:.08em}
+.coin-banner-right{text-align:right}
+.streak-big{font-family:var(--serif);font-size:1.4rem;font-weight:700;color:var(--ora);line-height:1}
+/* 今日リスト */
+.today-list{display:flex;flex-direction:column;gap:5px}
+.today-item{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 12px;
+  background:var(--sf);border:1px solid var(--line);border-radius:8px;
+  cursor:pointer;transition:all .15s;
+}
+.today-item:hover{background:var(--sf2);border-color:var(--line2);transform:translateX(2px)}
+.today-item:active{transform:scale(.98)}
+.today-item.done{opacity:.35;cursor:default;transform:none}
+.ti-ico{font-size:1rem;flex-shrink:0;width:28px;text-align:center}
+.ti-text{flex:1;font-size:.74rem;font-weight:700;color:var(--text)}
+.ti-badge{
+  font-size:.5rem;font-weight:900;padding:2px 7px;border-radius:999px;
+  border:1px solid;white-space:nowrap;flex-shrink:0;letter-spacing:.06em;
+}
+.ti-check{color:var(--grn);font-size:.85rem;flex-shrink:0}
+
+/* ━━ Study ━━ */
+.game-block{
+  background:var(--sf);border:1px solid var(--line);border-radius:10px;
+  overflow:hidden;margin-bottom:8px;
+  transition:border-color .15s;
+}
+.game-block.expanded{border-color:rgba(201,168,76,.32)}
+.game-block-head{
+  display:flex;align-items:center;gap:12px;padding:13px;
+  cursor:pointer;transition:background .15s;
+}
+.game-block-head:hover{background:var(--sf2)}
+.game-block-head:active{opacity:.8}
+.gb-ico{
+  width:40px;height:40px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;
+}
+.gb-info{flex:1;min-width:0}
+.gb-name{font-size:.85rem;font-weight:900;color:var(--text)}
+.gb-meta{font-size:.58rem;color:var(--muted);margin-top:2px;letter-spacing:.04em}
+.gb-prog{font-size:.56rem;font-weight:900;color:var(--grn);margin-top:2px}
+.gb-arrow{color:var(--muted);font-size:.65rem;flex-shrink:0;transition:transform .2s}
+.game-block.expanded .gb-arrow{transform:rotate(90deg)}
+.game-block-body{display:none;border-top:1px solid var(--line);padding:10px 13px 13px}
+.game-block.expanded .game-block-body{display:block}
+/* レッスン */
+.lesson-list{display:flex;flex-direction:column;gap:3px;margin-top:8px}
+.lesson-row{
+  display:flex;align-items:center;gap:9px;
+  padding:8px 10px;border-radius:7px;
+  background:rgba(255,255,255,.02);border:1px solid var(--line);
+  cursor:pointer;transition:all .12s;
+}
+.lesson-row:hover{background:rgba(201,168,76,.05);border-color:rgba(201,168,76,.22)}
+.lesson-row:active{transform:scale(.98)}
+.lesson-row.done{border-color:rgba(87,200,124,.25);background:rgba(87,200,124,.04)}
+.lesson-row.done .lr-title{color:var(--muted)}
+.lr-num{font-size:.58rem;font-weight:900;color:var(--muted);min-width:26px;font-family:var(--serif);flex-shrink:0}
+.lr-title{flex:1;font-size:.74rem;font-weight:700;color:var(--text)}
+.lr-status{font-size:.85rem;flex-shrink:0}
+.coming-pill{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:4px 10px;border-radius:999px;margin-top:8px;
+  border:1px solid rgba(249,115,22,.2);
+  background:rgba(249,115,22,.05);
+  color:var(--ora);font-size:.56rem;font-weight:900;letter-spacing:.08em;
+}
+
+/* ━━ Habits ━━ */
+.habit-row{
+  display:flex;align-items:center;gap:11px;
+  padding:13px;
+  background:var(--sf);border:1px solid var(--line);border-radius:10px;
+  margin-bottom:7px;transition:border-color .15s;
+}
+.habit-row.done{border-color:rgba(87,200,124,.3)}
+.habit-row.disabled{opacity:.28}
+.hr-ico{
+  width:38px;height:38px;border-radius:8px;
+  background:rgba(255,255,255,.04);border:1px solid var(--line);
+  display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;
+}
+.hr-info{flex:1;min-width:0}
+.hr-name{font-size:.8rem;font-weight:900;color:var(--text)}
+.hr-reward{font-size:.56rem;color:var(--acc);font-weight:900;margin-top:2px;letter-spacing:.04em}
+.hr-streak{font-size:.54rem;color:var(--ora);margin-top:1px}
+.hr-desc{font-size:.58rem;color:var(--muted);margin-top:2px;line-height:1.4}
+.hr-btn{
+  width:36px;height:36px;border-radius:50%;
+  border:1.5px solid var(--line);
+  background:rgba(255,255,255,.03);
+  font-size:.95rem;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;flex-shrink:0;transition:all .15s;color:transparent;
+}
+.hr-btn.done{
+  background:var(--grn);border-color:var(--grn);color:#fff;
+  box-shadow:0 0 0 3px rgba(87,200,124,.25);
+  animation:checkPop .3s ease;
+}
+
+/* ━━ Homework ━━ */
+.hw-form{
+  background:var(--sf);border:1px solid var(--line);border-radius:10px;
+  padding:13px;margin-bottom:14px;
+}
+.hw-input{
+  width:100%;background:rgba(0,0,0,.3);
+  border:1px solid var(--line);border-radius:8px;
+  padding:9px 12px;font-size:.8rem;font-weight:700;
+  color:var(--text);font-family:inherit;outline:none;
+  margin-bottom:8px;transition:border-color .15s;
+}
+.hw-input::placeholder{color:var(--faint)}
+.hw-input:focus{border-color:rgba(201,168,76,.4)}
+.hw-row{display:flex;gap:7px;align-items:center}
+.hw-date{
+  flex:1;background:rgba(0,0,0,.3);
+  border:1px solid var(--line);border-radius:8px;
+  padding:8px 11px;font-size:.76rem;font-weight:700;
+  color:var(--muted);font-family:inherit;outline:none;
+  transition:border-color .15s;
+}
+.hw-date:focus{border-color:rgba(201,168,76,.4);color:var(--text)}
+.hw-item{
+  display:flex;align-items:flex-start;gap:9px;
+  padding:11px 12px;
+  background:var(--sf);border:1px solid var(--line);border-radius:10px;
+  margin-bottom:6px;transition:border-color .15s;
+}
+.hw-item.done{border-color:rgba(87,200,124,.22);opacity:.5}
+.hw-chk{
+  width:26px;height:26px;border-radius:7px;
+  border:1.5px solid var(--line);background:rgba(255,255,255,.03);
+  font-size:.85rem;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;flex-shrink:0;margin-top:1px;transition:all .15s;color:transparent;
+}
+.hw-chk.done{background:var(--grn);border-color:var(--grn);color:#fff}
+.hw-body{flex:1;min-width:0}
+.hw-title{font-size:.78rem;font-weight:900;color:var(--text);line-height:1.3}
+.hw-due{font-size:.58rem;color:var(--muted);margin-top:3px;letter-spacing:.04em}
+.hw-due.overdue{color:var(--red)}
+.hw-del{
+  background:none;border:none;color:var(--faint);
+  font-size:.82rem;cursor:pointer;padding:2px;flex-shrink:0;
+  transition:color .15s;
+}
+.hw-del:hover{color:var(--red)}
+.empty-state{
+  text-align:center;padding:28px 0;
+  color:var(--faint);font-size:.72rem;line-height:2;
+}
+.es-ico{font-size:1.8rem;display:block;margin-bottom:6px;opacity:.25}
+
+/* ━━ Market ━━ */
+.mkt-header{
+  border:1px solid rgba(201,168,76,.2);border-radius:12px;
+  background:linear-gradient(135deg,rgba(201,168,76,.05),rgba(201,168,76,.01));
+  padding:18px 16px;margin-bottom:14px;
+  display:flex;align-items:flex-end;justify-content:space-between;
+}
+.mkt-coin-val{font-family:var(--serif);font-size:2rem;font-weight:700;color:var(--acc);line-height:1}
+.mkt-coin-lbl{font-size:.54rem;color:var(--muted);margin-bottom:4px;letter-spacing:.1em;text-transform:uppercase}
+.asset-box{background:var(--sf);border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:9px}
+.asset-box-hd{
+  padding:10px 13px;border-bottom:1px solid var(--line);
+  font-size:.62rem;font-weight:900;color:var(--muted);
+  letter-spacing:.12em;text-transform:uppercase;
+  display:flex;align-items:center;gap:7px;
+}
+.asset-box-empty{padding:14px;text-align:center;color:var(--faint);font-size:.7rem;font-style:italic}
+.mkt-shop{
+  background:var(--sf);border:1px dashed rgba(201,168,76,.15);
+  border-radius:10px;padding:22px 14px;text-align:center;
+}
+.mkt-shop-title{font-family:var(--serif);font-size:.9rem;font-weight:700;color:var(--acc);margin-bottom:7px}
+.mkt-shop-sub{font-size:.68rem;color:var(--muted);line-height:1.8}
+
+/* ━━ Characters ━━ */
+.char-card-full{
+  background:var(--sf);border:1px solid rgba(201,168,76,.22);
+  border-radius:12px;overflow:hidden;margin-bottom:10px;
+}
+.ccf-top{
+  padding:16px;
+  background:linear-gradient(135deg,rgba(201,168,76,.05),rgba(107,182,255,.02));
+  display:flex;align-items:center;gap:13px;
+  border-bottom:1px solid var(--line);
+}
+.ccf-avatar{
+  width:64px;height:64px;object-fit:cover;border-radius:50%;
+  border:2px solid;flex-shrink:0;
+}
+.ccf-avatar.enda  {border-color:rgba(107,182,255,.5);filter:drop-shadow(0 3px 12px rgba(107,182,255,.35))}
+.ccf-avatar.fukurou{border-color:rgba(201,168,76,.6);filter:drop-shadow(0 3px 12px rgba(201,168,76,.35))}
+.ccf-role{font-size:.52rem;font-weight:900;letter-spacing:.14em;color:var(--muted);text-transform:uppercase;margin-bottom:3px}
+.ccf-name{font-family:var(--serif);font-size:.95rem;font-weight:700;color:var(--text)}
+.ccf-realname{font-size:.58rem;color:var(--muted);margin-top:2px}
+.ccf-body{padding:12px 14px}
+.ccf-quote{
+  font-size:.72rem;color:var(--muted);line-height:1.7;
+  padding:9px 12px;border-radius:7px;
+  background:rgba(255,255,255,.02);border-left:2.5px solid rgba(201,168,76,.35);
+}
+.char-locked{
+  background:var(--sf);border:1px dashed rgba(255,255,255,.05);
+  border-radius:10px;padding:14px;
+  display:flex;align-items:center;gap:11px;
+  margin-bottom:7px;opacity:.28;
+}
+.cl-ico{font-size:1.5rem;filter:grayscale(1) brightness(.4)}
+.cl-text{font-size:.72rem;font-weight:900;color:var(--muted)}
+
+/* ━━ Feedback Bar ━━ */
+#feedbackBar{
+  position:fixed;
+  bottom:calc(var(--nav) - 2px);left:50%;transform:translateX(-50%);
+  width:calc(min(430px,100vw));
+  padding:14px 16px 18px;border-radius:18px 18px 0 0;
+  z-index:200;display:none;
+  border-top:1px solid rgba(255,255,255,.15);
+}
+#feedbackBar.show{display:block;animation:fbSlideUp .32s cubic-bezier(.34,1.2,.64,1)}
+#feedbackBar.good-fb{background:rgba(87,200,124,.92);backdrop-filter:blur(12px);box-shadow:0 -8px 30px rgba(87,200,124,.3)}
+#feedbackBar.bad-fb {background:rgba(224,85,85,.9); backdrop-filter:blur(12px);box-shadow:0 -8px 30px rgba(224,85,85,.25)}
+.fb-inner{display:flex;align-items:center;gap:11px;margin-bottom:10px}
+.fb-ico{font-size:1.8rem;flex-shrink:0}
+.fb-title{font-size:.9rem;font-weight:900;color:#fff}
+.fb-sub{font-size:.68rem;color:rgba(255,255,255,.8);margin-top:2px}
+.fb-close{
+  width:100%;padding:10px;border-radius:8px;
+  background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);
+  font-size:.82rem;font-weight:900;color:#fff;
+  font-family:inherit;cursor:pointer;transition:background .15s;
+}
+.fb-close:active{background:rgba(255,255,255,.3)}
+
+/* ━━ Toast (Channel OS style: bottom-right) ━━ */
+#toast{
+  position:fixed;bottom:calc(var(--nav)+14px);right:14px;
+  background:var(--bg2);border:1px solid rgba(201,168,76,.32);
+  color:var(--acc);border-radius:9px;padding:8px 14px;
+  font-size:.74rem;font-weight:900;z-index:500;
+  display:none;white-space:nowrap;
+  box-shadow:0 8px 24px rgba(0,0,0,.5);
+}
+#toast.show{display:block;animation:toastAnim 2.4s forwards}
+#toast.coin{background:rgba(201,168,76,.12);border-color:rgba(201,168,76,.4);color:var(--acc)}
+#toast.good{background:rgba(87,200,124,.1);border-color:rgba(87,200,124,.3);color:var(--grn)}
+
+/* ━━ Confetti ━━ */
+.confetti-wrap{position:fixed;inset:0;pointer-events:none;z-index:400;overflow:hidden}
+.cp{position:absolute;opacity:0;animation:confettiFloat var(--d,1.2s) var(--del,0s) ease-in forwards}
+
+/* ━━ Splash ━━ */
+#splash{
+  position:fixed;inset:0;background:var(--bg);z-index:999;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;
+  transition:opacity .5s .1s;
+}
+#splash.fade{opacity:0;pointer-events:none}
+.spl-ico{font-size:4rem;filter:drop-shadow(0 4px 20px rgba(201,168,76,.45))}
+.spl-title{font-family:var(--serif);font-size:1.5rem;font-weight:700;color:var(--acc);letter-spacing:.06em}
+.spl-sub{font-size:.62rem;color:var(--muted);letter-spacing:.2em;text-transform:uppercase}
+.spl-bar{width:100px;height:2px;background:rgba(255,255,255,.06);border-radius:99px;overflow:hidden;margin-top:8px}
+.spl-fill{height:100%;background:linear-gradient(90deg,var(--acc),var(--blue));border-radius:99px;animation:splLoad 1.3s ease forwards}
+
+/* ━━ Animations ━━ */
+@keyframes screenIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes fireFlicker{0%,100%{transform:scaleY(1) rotate(-1deg)}50%{transform:scaleY(1.1) rotate(2deg)}}
+@keyframes toastAnim{0%{opacity:0;transform:translateY(8px)}12%{opacity:1;transform:translateY(0)}80%{opacity:1}100%{opacity:0;transform:translateY(4px)}}
+@keyframes fbSlideUp{from{opacity:0;transform:translateX(-50%) translateY(30px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+@keyframes splLoad{from{width:0}to{width:100%}}
+@keyframes coinPop{0%,100%{transform:scale(1)}50%{transform:scale(1.2)}}
+@keyframes checkPop{0%{transform:scale(.7)}60%{transform:scale(1.15)}100%{transform:scale(1)}}
+@keyframes confettiFloat{0%{opacity:1;transform:translate(0,0) rotate(0deg)}100%{opacity:0;transform:translate(var(--dx,0px),220px) rotate(720deg)}}
+/* ━━ Ripple ━━ */
+.ripple-wrap{position:relative;overflow:hidden}
+.ripple{position:absolute;border-radius:50%;background:rgba(87,200,124,.35);transform:scale(0);animation:rippleAnim .5s ease-out forwards;pointer-events:none}
+@keyframes rippleAnim{to{transform:scale(4);opacity:0}}
+/* ━━ Sound toggle ━━ */
+.sound-toggle{display:flex;align-items:center;gap:8px}
+.toggle-track{width:36px;height:20px;border-radius:99px;border:1px solid var(--line);background:rgba(255,255,255,.06);position:relative;cursor:pointer;transition:background .2s}
+.toggle-track.on{background:rgba(87,200,124,.4);border-color:rgba(87,200,124,.5)}
+.toggle-thumb{width:14px;height:14px;border-radius:50%;background:var(--muted);position:absolute;top:2px;left:2px;transition:all .2s;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+.toggle-track.on .toggle-thumb{left:18px;background:#fff}
+/* ━━ Study filter ━━ */
+.study-filter-btn{
+  padding:4px 10px;border-radius:999px;border:1px solid var(--line);
+  background:var(--sf);font-size:.56rem;font-weight:900;color:var(--muted);
+  font-family:inherit;cursor:pointer;transition:all .15s;letter-spacing:.06em;
+}
+.study-filter-btn.active{border-color:rgba(201,168,76,.4);background:rgba(201,168,76,.1);color:var(--acc)}
+/* ━━ Total earned display ━━ */
+.total-earned-row{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 12px;background:rgba(201,168,76,.04);
+  border:1px solid rgba(201,168,76,.12);border-radius:8px;margin-top:8px;
+}
+.te-label{font-size:.58rem;color:var(--muted);letter-spacing:.08em}
+.te-val{font-family:var(--serif);font-size:.9rem;font-weight:700;color:var(--acc)}
+/* ━━ Tsumitate sim ━━ */
+.tsum-wrap{background:var(--sf);border:1px solid rgba(201,168,76,.15);border-radius:10px;padding:13px;margin-bottom:10px}
+.tsum-title{font-size:.58rem;font-weight:900;color:var(--acc);letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px}
+.tsum-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.tsum-lbl{font-size:.65rem;color:var(--muted);flex-shrink:0;width:64px}
+.tsum-input{flex:1;background:rgba(0,0,0,.3);border:1px solid var(--line);border-radius:7px;padding:6px 10px;font-size:.8rem;font-weight:700;color:var(--text);font-family:var(--serif);outline:none;text-align:right;transition:border-color .15s}
+.tsum-input:focus{border-color:rgba(201,168,76,.4)}
+.tsum-results{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
+.tsum-cell{background:rgba(255,255,255,.03);border-radius:7px;padding:8px 10px;text-align:center;border:1px solid var(--line)}
+.tsum-val{font-family:var(--serif);font-size:.95rem;font-weight:700;color:var(--acc)}
+.tsum-sub{font-size:.5rem;color:var(--muted);margin-top:2px;letter-spacing:.06em}
+/* ━━ Coin log ━━ */
+.coin-log-list{display:flex;flex-direction:column;gap:3px;max-height:200px;overflow-y:auto}
+.cl-item{display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--sf);border-radius:7px;font-size:.68rem}
+.cl-label{color:var(--muted);flex:1}
+.cl-amount{font-family:var(--serif);font-weight:700;color:var(--acc)}
+.cl-time{font-size:.54rem;color:var(--faint);margin-left:8px}
+/* ━━ HW game tag ━━ */
+.hw-game-select{
+  background:rgba(0,0,0,.3);border:1px solid var(--line);border-radius:7px;
+  padding:6px 8px;font-size:.7rem;color:var(--muted);font-family:inherit;
+  outline:none;transition:border-color .15s;flex:1;
+}
+.hw-game-select:focus{border-color:rgba(201,168,76,.35)}
+.hw-tag{font-size:.52rem;font-weight:900;padding:2px 7px;border-radius:999px;border:1px solid;white-space:nowrap;margin-top:2px;display:inline-block}
+/* ━━ Achievement badges ━━ */
+.badge-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:4px}
+.ach-badge{background:var(--sf);border:1px solid var(--line);border-radius:10px;padding:10px 4px;text-align:center;transition:all .15s}
+.ach-badge.unlocked{border-color:rgba(201,168,76,.4);background:rgba(201,168,76,.06)}
+.ach-badge:hover{transform:translateY(-2px)}
+.ach-ico{font-size:1.3rem;display:block;margin-bottom:4px;filter:grayscale(1) brightness(.3)}
+.ach-badge.unlocked .ach-ico{filter:none}
+.ach-name{font-size:.46rem;color:var(--muted);font-weight:900;letter-spacing:.04em;line-height:1.3}
+.ach-badge.unlocked .ach-name{color:var(--acc)}
+/* ━━ Nav badge ━━ */
+.nav-badge{
+  position:absolute;top:5px;right:calc(50% - 16px);
+  min-width:14px;height:14px;border-radius:99px;
+  background:var(--red);color:#fff;
+  font-size:.48rem;font-weight:900;
+  display:none;align-items:center;justify-content:center;
+  padding:0 3px;border:1.5px solid var(--bg);
+  animation:badgePop .3s ease;
+}
+.nav-badge.show{display:flex}
+@keyframes badgePop{0%{transform:scale(0)}60%{transform:scale(1.2)}100%{transform:scale(1)}}
+/* ━━ Welcome overlay ━━ */
+.welcome-over{
+  position:fixed;inset:0;z-index:800;
+  background:rgba(7,8,13,.96);backdrop-filter:blur(16px);
+  display:none;flex-direction:column;align-items:center;justify-content:center;
+  padding:24px;text-align:center;
+}
+.welcome-over.show{display:flex;animation:fadeScaleIn .4s ease}
+.wl-logo{font-size:3.5rem;margin-bottom:12px;filter:drop-shadow(0 4px 20px rgba(201,168,76,.5))}
+.wl-title{font-family:var(--serif);font-size:1.4rem;font-weight:700;color:var(--acc);margin-bottom:8px}
+.wl-sub{font-size:.76rem;color:var(--muted);line-height:1.9;margin-bottom:24px;max-width:300px}
+.wl-chars{display:flex;gap:16px;justify-content:center;margin-bottom:20px}
+.wl-char{display:flex;flex-direction:column;align-items:center;gap:6px}
+.wl-char img{width:60px;height:60px;object-fit:cover;border-radius:50%;border:2px solid rgba(201,168,76,.4)}
+.wl-char-name{font-size:.6rem;color:var(--muted);letter-spacing:.06em}
+/* ━━ Settings modal ━━ */
+.settings-over{
+  position:fixed;inset:0;z-index:750;
+  background:rgba(7,8,13,.92);backdrop-filter:blur(14px);
+  display:none;flex-direction:column;align-items:center;justify-content:flex-end;
+}
+.settings-over.show{display:flex;animation:settingsIn .3s ease}
+.settings-panel{
+  width:100%;max-width:430px;background:var(--bg2);
+  border-radius:18px 18px 0 0;border:1px solid var(--line);
+  padding:20px 18px 36px;
+}
+.settings-handle{width:36px;height:3px;background:var(--line2);border-radius:99px;margin:0 auto 18px}
+.settings-title{font-family:var(--serif);font-size:1rem;font-weight:700;color:var(--text);margin-bottom:16px;letter-spacing:.04em}
+.settings-item{display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:1px solid var(--line)}
+.settings-item:last-child{border-bottom:none}
+.si-label{font-size:.78rem;font-weight:700;color:var(--text)}
+.si-sub{font-size:.6rem;color:var(--muted);margin-top:2px}
+.si-btn{padding:6px 14px;border-radius:7px;font-size:.74rem;font-weight:900;font-family:inherit;cursor:pointer;transition:all .15s}
+.si-btn.danger{border:1px solid rgba(224,85,85,.3);background:rgba(224,85,85,.08);color:var(--red)}
+.si-btn.danger:hover{background:rgba(224,85,85,.18)}
+.si-btn.neutral{border:1px solid var(--line);background:var(--sf);color:var(--muted)}
+@keyframes settingsIn{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:translateY(0)}}
+/* ━━ Greeting ━━ */
+.greeting-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.greeting-text{font-family:var(--serif);font-size:1.05rem;font-weight:700;color:var(--text);line-height:1.3}
+.greeting-sub{font-size:.58rem;color:var(--muted);margin-top:2px;letter-spacing:.06em}
+/* ━━ HW filter ━━ */
+.hw-filter-row{display:flex;gap:5px;margin-bottom:10px}
+.hw-filter-btn{padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:var(--sf);font-size:.56rem;font-weight:900;color:var(--muted);font-family:inherit;cursor:pointer;transition:all .15s;letter-spacing:.06em}
+.hw-filter-btn.active{border-color:rgba(201,168,76,.4);background:rgba(201,168,76,.1);color:var(--acc)}
+/* ━━ Snooze button ━━ */
+.hw-snooze{background:none;border:none;color:var(--muted);font-size:.65rem;cursor:pointer;padding:2px 4px;flex-shrink:0;transition:color .15s;white-space:nowrap}
+.hw-snooze:hover{color:var(--blue)}
+/* ━━ Market advice ━━ */
+.mkt-advice{background:linear-gradient(135deg,rgba(107,182,255,.06),rgba(107,182,255,.02));border:1px solid rgba(107,182,255,.15);border-radius:10px;padding:12px 14px;margin-bottom:12px}
+.mkt-advice-label{font-size:.54rem;font-weight:900;color:var(--blue);letter-spacing:.14em;text-transform:uppercase;margin-bottom:6px}
+.mkt-advice-text{font-family:var(--serif);font-size:.76rem;color:var(--text);line-height:1.7;font-style:italic}
+.mkt-advice-author{font-size:.56rem;color:var(--muted);text-align:right;margin-top:4px}
+/* ━━ Chart period toggle ━━ */
+.chart-period-row{display:flex;justify-content:flex-end;gap:4px;margin-bottom:6px}
+.chart-period-btn{padding:3px 8px;border-radius:999px;border:1px solid var(--line);background:var(--sf);font-size:.54rem;font-weight:900;color:var(--muted);cursor:pointer;font-family:inherit;transition:all .15s}
+.chart-period-btn.active{border-color:rgba(201,168,76,.4);background:rgba(201,168,76,.1);color:var(--acc)}
+/* ━━ Heatmap nav ━━ */
+.heatmap-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.hm-nav-btn{background:none;border:1px solid var(--line);border-radius:6px;padding:3px 8px;font-size:.68rem;color:var(--muted);cursor:pointer;transition:all .15s}
+.hm-nav-btn:hover{border-color:var(--line2);color:var(--text)}
+/* ━━ Weekly coin summary ━━ */
+.week-coin-row{display:flex;gap:4px;margin-top:6px}
+.wc-bar{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px}
+.wc-bar-bg{width:100%;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;position:relative}
+.wc-bar-fill{width:100%;border-radius:3px;transition:height .5s cubic-bezier(.34,1.2,.64,1)}
+.wc-bar-label{font-size:.44rem;color:var(--faint);letter-spacing:.04em}
+.wc-bar-val{font-size:.52rem;font-weight:900;color:var(--acc)}
+/* ━━ Due soon highlight ━━ */
+.hw-item.due-soon{border-color:rgba(249,115,22,.3);background:rgba(249,115,22,.03)}
+.hw-due-soon-tag{font-size:.52rem;font-weight:900;color:var(--ora);border:1px solid rgba(249,115,22,.3);border-radius:999px;padding:1px 6px;margin-top:3px;display:inline-block}
+/* ━━ All badges cleared ━━ */
+.all-clear-over{
+  position:fixed;inset:0;z-index:900;
+  background:rgba(7,8,13,.94);backdrop-filter:blur(16px);
+  display:none;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;padding:24px;
+}
+.all-clear-over.show{display:flex;animation:fadeScaleIn .4s ease}
+.ac-ico{font-size:4rem;animation:gcBounce 1s ease infinite;filter:drop-shadow(0 4px 24px rgba(201,168,76,.6))}
+.ac-title{font-family:var(--serif);font-size:1.5rem;font-weight:700;color:var(--acc)}
+.ac-sub{font-size:.76rem;color:var(--muted);line-height:1.8;max-width:280px}
+/* ━━ Char messages ━━ */
+.char-msg-list{display:flex;flex-direction:column;gap:5px;margin-top:10px}
+.char-msg-item{background:var(--sf);border:1px solid var(--line);border-radius:8px;padding:9px 12px;font-size:.72rem;color:var(--muted);line-height:1.6;font-style:italic;position:relative;padding-left:20px}
+.char-msg-item::before{content:'❝';position:absolute;left:8px;top:6px;font-size:.9rem;color:var(--acc);opacity:.5}
+/* ━━ Habit month badge ━━ */
+.habit-month-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;font-size:.54rem;font-weight:900;border:1px solid;margin-top:3px}
+/* ━━ Coin countup ━━ */
+.coin-anim{transition:all .4s cubic-bezier(.34,1.56,.64,1)}
+/* ━━ Edit modal ━━ */
+.edit-modal{
+  position:fixed;inset:0;z-index:800;
+  background:rgba(7,8,13,.9);backdrop-filter:blur(14px);
+  display:none;align-items:center;justify-content:center;padding:20px;
+}
+.edit-modal.show{display:flex;animation:fadeScaleIn .3s ease}
+.edit-panel{
+  width:100%;max-width:380px;background:var(--bg2);
+  border:1px solid var(--line);border-radius:16px;padding:20px;
+}
+.edit-title{font-family:var(--serif);font-size:1rem;font-weight:700;color:var(--text);margin-bottom:14px}
+/* ━━ Game popup ━━ */
+.game-popup{
+  position:fixed;inset:0;z-index:750;
+  background:rgba(7,8,13,.88);backdrop-filter:blur(12px);
+  display:none;align-items:flex-end;justify-content:center;
+}
+.game-popup.show{display:flex;animation:fbSlideUp .3s ease}
+.game-popup-panel{
+  width:100%;max-width:430px;background:var(--bg2);
+  border-radius:18px 18px 0 0;border:1px solid var(--line);
+  padding:20px 18px 40px;
+}
+.gpp-handle{width:36px;height:3px;background:var(--line2);border-radius:99px;margin:0 auto 16px}
+.gpp-head{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.gpp-ico{width:48px;height:48px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.6rem;flex-shrink:0}
+.gpp-name{font-family:var(--serif);font-size:1.05rem;font-weight:700;color:var(--text)}
+.gpp-meta{font-size:.6rem;color:var(--muted);margin-top:3px;letter-spacing:.06em}
+.gpp-desc{font-size:.76rem;color:var(--muted);line-height:1.8;margin-bottom:14px}
+.gpp-lessons{display:flex;flex-direction:column;gap:3px;max-height:200px;overflow-y:auto}
+/* ━━ Light mode ━━ */
+body.light{
+  --bg:#f5f5f0;--bg2:#ebebea;--sf:rgba(0,0,0,.04);--sf2:rgba(0,0,0,.07);
+  --line:rgba(0,0,0,.1);--line2:rgba(0,0,0,.18);
+  --text:#1a1a2a;--muted:rgba(26,26,42,.5);--faint:rgba(26,26,42,.2);
+  --acc:#9a7c28;--grn:#2d9e55;--red:#c43030;--ora:#c45c10;
+}
+body.light #app,body.light #splash{background:var(--bg)}
+body.light #topBar,body.light #bottomNav{background:rgba(245,245,240,.97)}
+body.light #toast{background:#fff;color:var(--text)}
+/* ━━ Offline banner ━━ */
+#offlineBanner{
+  position:fixed;top:var(--top);left:50%;transform:translateX(-50%);
+  width:calc(min(430px,100vw));
+  background:rgba(224,85,85,.95);backdrop-filter:blur(8px);
+  padding:7px 16px;text-align:center;z-index:300;
+  font-size:.68rem;font-weight:900;color:#fff;
+  display:none;border-bottom:1px solid rgba(255,255,255,.2);
+  letter-spacing:.06em;
+}
+#offlineBanner.show{display:block}
+/* ━━ Motivational quote ━━ */
+.quote-card{
+  background:linear-gradient(135deg,rgba(201,168,76,.06),rgba(107,182,255,.03));
+  border:1px solid rgba(201,168,76,.15);border-radius:10px;
+  padding:12px 14px;margin-bottom:14px;position:relative;overflow:hidden;
+}
+.quote-card::before{content:'❝';position:absolute;right:10px;top:4px;font-size:2rem;color:rgba(201,168,76,.12);line-height:1;pointer-events:none}
+.quote-text{font-family:var(--serif);font-size:.76rem;color:var(--text);line-height:1.7;font-style:italic}
+.quote-author{font-size:.56rem;color:var(--muted);margin-top:5px;letter-spacing:.06em;text-align:right}
+/* ━━ Date display ━━ */
+.date-chip{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:3px 10px;border-radius:999px;
+  border:1px solid var(--line);background:var(--sf);
+  font-size:.56rem;font-weight:900;color:var(--muted);letter-spacing:.06em;
+  margin-bottom:10px;
+}
+/* ━━ HW priority ━━ */
+.hw-star{background:none;border:none;font-size:1rem;cursor:pointer;padding:2px;flex-shrink:0;transition:transform .15s;filter:grayscale(1) brightness(.4)}
+.hw-star.on{filter:none;animation:starPop .3s ease}
+@keyframes starPop{0%{transform:scale(0)}60%{transform:scale(1.3)}100%{transform:scale(1)}}
+.hw-item.priority{border-color:rgba(201,168,76,.35);background:rgba(201,168,76,.03)}
+/* ━━ Coin rank ━━ */
+.coin-rank-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:8px 16px;border-radius:99px;
+  border:1px solid;font-weight:900;font-size:.8rem;
+  letter-spacing:.06em;margin-top:10px;
+}
+/* ━━ Virtual shop ━━ */
+.vshop-grid{display:flex;flex-direction:column;gap:7px;margin-bottom:10px}
+.vshop-item{
+  display:flex;align-items:center;gap:11px;
+  padding:12px 13px;background:var(--sf);border:1px solid var(--line);
+  border-radius:10px;transition:all .15s;
+}
+.vshop-item:hover{background:var(--sf2)}
+.vshop-item.owned{border-color:rgba(87,200,124,.3);background:rgba(87,200,124,.04)}
+.vs-ico{font-size:1.4rem;flex-shrink:0}
+.vs-info{flex:1}
+.vs-name{font-size:.8rem;font-weight:900;color:var(--text)}
+.vs-desc{font-size:.6rem;color:var(--muted);margin-top:2px}
+.vs-price{font-family:var(--serif);font-size:.78rem;font-weight:700;color:var(--acc);white-space:nowrap;flex-shrink:0}
+.vs-btn{padding:6px 12px;border-radius:7px;font-size:.68rem;font-weight:900;font-family:inherit;cursor:pointer;transition:all .15s;flex-shrink:0}
+.vs-btn.buy{border:1px solid rgba(201,168,76,.35);background:rgba(201,168,76,.1);color:var(--acc)}
+.vs-btn.buy:hover{background:rgba(201,168,76,.22)}
+.vs-btn.owned{border:1px solid rgba(87,200,124,.3);background:rgba(87,200,124,.08);color:var(--grn)}
+/* ━━ HW progress ring ━━ */
+.hw-progress-section{
+  display:flex;align-items:center;gap:12px;padding:10px 13px;
+  background:var(--sf);border:1px solid var(--line);border-radius:10px;
+  margin-bottom:10px;
+}
+.hw-ring{flex-shrink:0}
+.hw-progress-info{flex:1}
+.hw-progress-label{font-size:.62rem;color:var(--muted);margin-bottom:3px;letter-spacing:.06em}
+.hw-progress-pct{font-family:var(--serif);font-size:1.1rem;font-weight:700;color:var(--grn)}
+/* ━━ Coin shower ━━ */
+.coin-shower-wrap{position:fixed;inset:0;pointer-events:none;z-index:401;overflow:hidden}
+.cs-coin{position:absolute;font-size:1.2rem;animation:coinShower var(--d,1s) var(--del,0s) ease-in forwards}
+@keyframes coinShower{0%{opacity:1;transform:translate(0,0) rotate(0)}100%{opacity:0;transform:translate(var(--dx,0px),80vh) rotate(360deg)}}
+/* ━━ Skip log ━━ */
+.skip-log-list{display:flex;flex-direction:column;gap:3px;max-height:140px;overflow-y:auto;margin-top:8px}
+.skip-log-item{display:flex;align-items:center;justify-content:space-between;padding:5px 9px;background:var(--sf);border:1px solid var(--line);border-radius:7px;font-size:.64rem}
+.skip-log-habit{color:var(--muted)}
+.skip-log-date{color:var(--faint);font-size:.56rem}
+/* ━━ Fixed char chip ━━ */
+.fixed-char-chip{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:3px 9px;border-radius:999px;
+  border:1px solid var(--line);background:var(--sf);
+  font-size:.6rem;font-weight:900;color:var(--muted);
+  cursor:pointer;transition:all .15s;margin-top:6px;
+}
+.fixed-char-chip.on{border-color:rgba(201,168,76,.4);background:rgba(201,168,76,.1);color:var(--acc)}
+/* ━━ Lesson check anim ━━ */
+@keyframes lessonCheck{0%{transform:scale(0)}50%{transform:scale(1.5)}80%{transform:scale(1.1)}100%{transform:scale(1)}}
+.lr-status.animating{animation:lessonCheck .35s ease forwards}
+/* ━━ Tsumitate month toggle ━━ */
+.tsum-period-row{display:flex;gap:4px;margin-bottom:8px}
+.tsum-period-btn{padding:3px 8px;border-radius:999px;border:1px solid var(--line);background:var(--sf);font-size:.54rem;font-weight:900;color:var(--muted);cursor:pointer;font-family:inherit;transition:all .15s}
+.tsum-period-btn.active{border-color:rgba(201,168,76,.35);background:rgba(201,168,76,.1);color:var(--acc)}
+/* ━━ Today event ━━ */
+.today-event{
+  background:linear-gradient(135deg,rgba(224,85,85,.06),rgba(224,85,85,.02));
+  border:1px solid rgba(224,85,85,.15);border-radius:10px;
+  padding:10px 13px;margin-bottom:12px;
+}
+.te-label{font-size:.52rem;font-weight:900;color:var(--red);letter-spacing:.12em;text-transform:uppercase;margin-bottom:5px;display:flex;align-items:center;gap:5px}
+.te-year{font-family:var(--serif);font-size:.85rem;font-weight:700;color:var(--text);margin-bottom:2px}
+.te-desc{font-size:.68rem;color:var(--muted);line-height:1.6}
+/* ━━ Yesterday diff ━━ */
+.yesterday-diff{font-size:.58rem;font-weight:900;display:inline-flex;align-items:center;gap:3px;margin-left:8px}
+.yesterday-diff.up{color:var(--grn)}.yesterday-diff.dn{color:var(--red)}.yesterday-diff.eq{color:var(--muted)}
+/* ━━ Shop tabs ━━ */
+.shop-tab-row{display:flex;gap:0;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:10px}
+.shop-tab{flex:1;padding:8px;text-align:center;font-size:.62rem;font-weight:900;cursor:pointer;transition:all .15s;border:none;font-family:inherit;color:var(--muted);background:var(--sf)}
+.shop-tab.active{background:rgba(201,168,76,.12);color:var(--acc)}
+/* ━━ Week report modal ━━ */
+.week-report-over{
+  position:fixed;inset:0;z-index:800;background:rgba(7,8,13,.94);backdrop-filter:blur(14px);
+  display:none;flex-direction:column;
+}
+.week-report-over.show{display:flex;animation:fadeScaleIn .3s ease}
+.wr-header{padding:16px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;background:rgba(7,8,13,.96);flex-shrink:0}
+.wr-body{flex:1;overflow-y:auto;padding:18px}
+.wr-stat{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--line)}
+.wr-stat:last-child{border-bottom:none}
+.wr-label{font-size:.78rem;color:var(--muted)}
+.wr-val{font-family:var(--serif);font-size:1.1rem;font-weight:700;color:var(--text)}
+/* ━━ Quick priority ━━ */
+.quick-priority-btn{
+  padding:9px 14px;border-radius:8px;border:1px solid rgba(201,168,76,.25);
+  background:rgba(201,168,76,.06);color:var(--acc);
+  font-size:.8rem;font-weight:900;font-family:inherit;cursor:pointer;transition:all .15s;
+}
+.quick-priority-btn.on{background:rgba(201,168,76,.18);border-color:rgba(201,168,76,.5)}
+/* ━━ Week score ━━ */
+.week-score-card{
+  background:linear-gradient(135deg,rgba(167,139,250,.08),rgba(167,139,250,.02));
+  border:1px solid rgba(167,139,250,.2);border-radius:12px;
+  padding:14px 16px;margin-bottom:14px;
+}
+.ws-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.ws-title{font-size:.58rem;font-weight:900;color:var(--pur);letter-spacing:.12em;text-transform:uppercase}
+.ws-score{font-family:var(--serif);font-size:1.8rem;font-weight:700;color:var(--pur);line-height:1}
+.ws-max{font-size:.58rem;color:var(--muted)}
+.ws-bars{display:flex;flex-direction:column;gap:5px}
+.ws-bar-row{display:flex;align-items:center;gap:8px}
+.ws-bar-label{font-size:.58rem;color:var(--muted);width:44px;text-align:right;flex-shrink:0}
+.ws-bar-bg{flex:1;height:4px;background:rgba(255,255,255,.06);border-radius:99px;overflow:hidden}
+.ws-bar-fill{height:100%;border-radius:99px;transition:width .5s cubic-bezier(.34,1.2,.64,1)}
+.ws-bar-num{font-size:.56rem;font-weight:900;width:24px;text-align:right;flex-shrink:0}
+/* ━━ Habit week summary ━━ */
+.habit-week-summary{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px;
+}
+.hws-cell{background:var(--sf);border:1px solid var(--line);border-radius:9px;padding:8px 6px;text-align:center}
+.hws-val{font-family:var(--serif);font-size:1.1rem;font-weight:700;color:var(--grn)}
+.hws-lbl{font-size:.5rem;color:var(--muted);margin-top:2px;letter-spacing:.06em}
+/* ━━ Char zoom ━━ */
+.char-zoom-over{
+  position:fixed;inset:0;z-index:850;background:rgba(7,8,13,.94);backdrop-filter:blur(16px);
+  display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px;
+}
+.char-zoom-over.show{display:flex;animation:fadeScaleIn .3s ease}
+.char-zoom-img{width:160px;height:160px;object-fit:cover;border-radius:50%;border:3px solid;box-shadow:0 8px 40px rgba(0,0,0,.5)}
+.char-zoom-img.enda{border-color:var(--blue);box-shadow:0 8px 40px rgba(107,182,255,.3)}
+.char-zoom-img.fukurou{border-color:var(--acc);box-shadow:0 8px 40px rgba(201,168,76,.3)}
+.char-zoom-name{font-family:var(--serif);font-size:1.2rem;font-weight:700;color:var(--text)}
+.char-zoom-quote{font-size:.76rem;color:var(--muted);max-width:280px;text-align:center;line-height:1.7;font-style:italic}
+/* ━━ Notification setting ━━ */
+.notif-status{font-size:.6rem;padding:4px 10px;border-radius:999px;border:1px solid;white-space:nowrap}
+.notif-status.granted{color:var(--grn);border-color:rgba(87,200,124,.3)}
+.notif-status.denied{color:var(--red);border-color:rgba(224,85,85,.3)}
+.notif-status.default{color:var(--muted);border-color:var(--line)}
+/* ━━ Partial reset ━━ */
+.partial-reset-row{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}
+.pr-btn{padding:4px 9px;border-radius:6px;border:1px solid rgba(224,85,85,.25);background:rgba(224,85,85,.06);color:var(--red);font-size:.6rem;font-weight:900;font-family:inherit;cursor:pointer;transition:all .15s}
+.pr-btn:hover{background:rgba(224,85,85,.16)}
+/* ━━ Milestone progress ━━ */
+.milestone-bar-wrap{margin-top:10px}
+.milestone-bar-label{display:flex;justify-content:space-between;font-size:.58rem;color:var(--muted);margin-bottom:4px}
+.milestone-bar-bg{height:6px;background:rgba(255,255,255,.06);border-radius:99px;overflow:hidden}
+.milestone-bar-fill{height:100%;border-radius:99px;transition:width .6s cubic-bezier(.34,1.2,.64,1)}
+/* ━━ Coin pace ━━ */
+.coin-pace-row{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--sf);border:1px solid var(--line);border-radius:8px;margin-top:8px;font-size:.68rem}
+.coin-pace-val{font-family:var(--serif);font-weight:700;color:var(--acc)}
+/* ━━ Coin log day group ━━ */
+.cl-day-header{font-size:.56rem;font-weight:900;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;padding:5px 0 3px;border-top:1px solid var(--line);margin-top:4px;display:flex;justify-content:space-between}
+.cl-day-header:first-child{border-top:none;margin-top:0}
+.cl-day-total{color:var(--acc)}
+/* ━━ Days streak ━━ */
+.days-since{font-size:.5rem;color:var(--faint);margin-top:2px;letter-spacing:.06em}
+/* ━━ Char screen messages ━━ */
+.char-today-msg{background:linear-gradient(135deg,rgba(201,168,76,.08),rgba(201,168,76,.02));border:1px solid rgba(201,168,76,.2);border-radius:10px;padding:11px 13px;margin-top:10px}
+.ctm-label{font-size:.52rem;font-weight:900;color:var(--acc);letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px}
+.ctm-text{font-family:var(--serif);font-size:.78rem;color:var(--text);line-height:1.6;font-style:italic}
+/* ━━ Streak ranking ━━ */
+.streak-rank-list{display:flex;flex-direction:column;gap:5px;margin-top:8px}
+.streak-rank-item{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 12px;background:var(--sf);border:1px solid var(--line);border-radius:9px;
+}
+.sr-rank{font-family:var(--serif);font-size:.9rem;font-weight:700;color:var(--muted);min-width:20px}
+.sr-rank.gold{color:#ffd700}.sr-rank.silver{color:#c0c0c0}.sr-rank.bronze{color:#cd7f32}
+.sr-ico{font-size:1.1rem;flex-shrink:0}
+.sr-name{flex:1;font-size:.74rem;font-weight:900;color:var(--text)}
+.sr-streak{font-family:var(--serif);font-size:.82rem;font-weight:700;color:var(--ora)}
+/* ━━ News ticker ━━ */
+.news-ticker{
+  background:rgba(107,182,255,.05);border:1px solid rgba(107,182,255,.12);
+  border-radius:8px;padding:7px 12px;margin-bottom:12px;
+  display:flex;align-items:center;gap:8px;overflow:hidden;
+}
+.ticker-label{font-size:.52rem;font-weight:900;color:var(--blue);letter-spacing:.1em;white-space:nowrap;flex-shrink:0}
+.ticker-text{font-size:.68rem;color:var(--muted);white-space:nowrap;overflow:hidden;
+  animation:tickerScroll 18s linear infinite}
+@keyframes tickerScroll{0%{transform:translateX(100%)}100%{transform:translateX(-100%)}}
+/* ━━ Next lesson suggestion ━━ */
+.next-lesson-card{
+  background:linear-gradient(135deg,rgba(87,200,124,.08),rgba(87,200,124,.02));
+  border:1px solid rgba(87,200,124,.2);border-radius:10px;padding:11px 13px;
+  margin-bottom:10px;display:flex;align-items:center;gap:10px;cursor:pointer;
+  transition:all .15s;
+}
+.next-lesson-card:hover{background:rgba(87,200,124,.14);transform:translateX(2px)}
+.nl-ico{font-size:1.3rem;flex-shrink:0}
+.nl-info{flex:1}
+.nl-label{font-size:.54rem;font-weight:900;color:var(--grn);letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px}
+.nl-title{font-size:.8rem;font-weight:900;color:var(--text)}
+.nl-game{font-size:.6rem;color:var(--muted);margin-top:2px}
+/* ━━ HW calendar view ━━ */
+.hw-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:8px}
+.hwcal-hd{font-size:.46rem;color:var(--faint);text-align:center;padding:2px 0}
+.hwcal-cell{min-height:36px;border-radius:5px;background:rgba(255,255,255,.02);border:1px solid transparent;padding:2px;cursor:default;position:relative}
+.hwcal-cell.has-hw{border-color:rgba(201,168,76,.2);cursor:pointer}
+.hwcal-cell.today-cell{border-color:rgba(201,168,76,.5);background:rgba(201,168,76,.04)}
+.hwcal-date{font-size:.46rem;color:var(--faint);text-align:right;line-height:1}
+.hwcal-dot{width:5px;height:5px;border-radius:50%;margin:2px auto 0}
+.hwcal-view-btn{padding:5px 12px;border-radius:7px;border:1px solid var(--line);background:var(--sf);font-size:.6rem;font-weight:900;color:var(--muted);cursor:pointer;font-family:inherit;transition:all .15s}
+.hwcal-view-btn.active{border-color:rgba(201,168,76,.35);background:rgba(201,168,76,.08);color:var(--acc)}
+/* ━━ Diff stats ━━ */
+.diff-stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px}
+.diff-stat-cell{background:var(--sf);border:1px solid var(--line);border-radius:9px;padding:9px 6px;text-align:center}
+.ds-val{font-family:var(--serif);font-size:1.1rem;font-weight:700}
+.ds-lbl{font-size:.5rem;color:var(--muted);margin-top:2px;letter-spacing:.06em}
+/* ━━ Char reaction ━━ */
+.char-reaction{
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);
+  z-index:600;font-size:3rem;text-align:center;pointer-events:none;
+  transition:transform .25s cubic-bezier(.34,1.56,.64,1);
+}
+.char-reaction.show{transform:translate(-50%,-50%) scale(1);animation:reactionFloat 1.4s ease forwards}
+@keyframes reactionFloat{0%{opacity:1;transform:translate(-50%,-50%) scale(1.2)}70%{opacity:1;transform:translate(-50%,-75%) scale(1)}100%{opacity:0;transform:translate(-50%,-90%) scale(.8)}}
+/* ━━ Guide modal ━━ */
+.guide-over{
+  position:fixed;inset:0;z-index:800;background:rgba(7,8,13,.94);backdrop-filter:blur(14px);
+  display:none;flex-direction:column;
+}
+.guide-over.show{display:flex;animation:fadeScaleIn .3s ease}
+.guide-panel{flex:1;overflow-y:auto;padding:20px 18px 40px}
+.guide-section{margin-bottom:20px}
+.guide-title{font-family:var(--serif);font-size:1.1rem;font-weight:700;color:var(--acc);margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid rgba(201,168,76,.2)}
+.guide-item{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+.guide-item:last-child{border-bottom:none}
+.guide-ico{font-size:1.2rem;flex-shrink:0;width:28px;text-align:center}
+.guide-text{flex:1}
+.guide-name{font-size:.76rem;font-weight:900;color:var(--text);margin-bottom:2px}
+.guide-desc{font-size:.64rem;color:var(--muted);line-height:1.55}
+.guide-close-btn{padding:12px;text-align:center;flex-shrink:0;border-top:1px solid var(--line);background:rgba(7,8,13,.96)}
+/* ━━ Custom habit form ━━ */
+.custom-habit-form{
+  background:var(--sf);border:1px solid var(--line);border-radius:10px;
+  padding:12px;margin-top:12px;
+}
+.habit-emoji-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.habit-emoji-btn{
+  width:34px;height:34px;border-radius:7px;border:1px solid var(--line);
+  background:var(--sf);font-size:1.1rem;cursor:pointer;
+  transition:all .15s;display:flex;align-items:center;justify-content:center;
+}
+.habit-emoji-btn.selected{border-color:rgba(201,168,76,.5);background:rgba(201,168,76,.1)}
+/* ━━ A2HS ━━ */
+#a2hsBanner{
+  position:fixed;bottom:calc(var(--nav)+8px);left:50%;transform:translateX(-50%);
+  width:calc(min(398px,calc(100vw - 32px)));
+  background:rgba(7,8,13,.96);border:1px solid rgba(201,168,76,.3);
+  border-radius:12px;padding:12px 16px;z-index:300;
+  display:none;align-items:center;gap:12px;
+  box-shadow:0 8px 30px rgba(0,0,0,.5);backdrop-filter:blur(12px);
+}
+#a2hsBanner.show{display:flex;animation:fbSlideUp .3s ease}
+.a2hs-ico{font-size:1.6rem;flex-shrink:0}
+.a2hs-text{flex:1}
+.a2hs-title{font-size:.78rem;font-weight:900;color:var(--text)}
+.a2hs-sub{font-size:.6rem;color:var(--muted);margin-top:2px}
+.a2hs-btn{padding:6px 12px;border-radius:7px;border:1px solid rgba(201,168,76,.35);background:rgba(201,168,76,.1);color:var(--acc);font-size:.72rem;font-weight:900;font-family:inherit;cursor:pointer;white-space:nowrap;flex-shrink:0}
+.a2hs-close{background:none;border:none;color:var(--muted);font-size:.9rem;cursor:pointer;flex-shrink:0}
+/* ━━ Lesson memo ━━ */
+.lesson-memo-wrap{margin-top:6px;border-top:1px solid var(--line);padding-top:8px}
+.lesson-memo-input{width:100%;background:rgba(0,0,0,.25);border:1px solid var(--line);border-radius:7px;padding:7px 10px;font-size:.7rem;color:var(--text);font-family:inherit;outline:none;resize:none;min-height:52px;line-height:1.5;transition:border-color .15s}
+.lesson-memo-input::placeholder{color:var(--faint)}
+.lesson-memo-input:focus{border-color:rgba(201,168,76,.35)}
+.lesson-memo-save{margin-top:5px;padding:5px 12px;border-radius:6px;border:1px solid rgba(201,168,76,.28);background:rgba(201,168,76,.08);color:var(--acc);font-size:.62rem;font-weight:900;font-family:inherit;cursor:pointer;transition:all .15s}
+.lesson-memo-save:hover{background:rgba(201,168,76,.18)}
+.lesson-memo-text{font-size:.66rem;color:var(--muted);line-height:1.6;font-style:italic;padding:5px 8px;background:rgba(255,255,255,.02);border-radius:6px;border-left:2px solid rgba(201,168,76,.3)}
+/* ━━ HW difficulty ━━ */
+.hw-diff-badge{display:inline-flex;align-items:center;padding:1px 6px;border-radius:999px;font-size:.5rem;font-weight:900;border:1px solid;margin-top:2px}
+.hw-diff-easy  {color:#57c87c;border-color:rgba(87,200,124,.3)}
+.hw-diff-normal{color:var(--acc);border-color:rgba(201,168,76,.3)}
+.hw-diff-hard  {color:var(--red);border-color:rgba(224,85,85,.3)}
+/* ━━ Coin tips ━━ */
+.coin-tips{display:flex;flex-direction:column;gap:6px}
+.coin-tip{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:var(--sf);border:1px solid var(--line);border-radius:9px;transition:all .15s}
+.coin-tip:hover{background:var(--sf2);transform:translateX(2px)}
+.ct-ico{font-size:1.2rem;flex-shrink:0;width:32px;text-align:center}
+.ct-info{flex:1}
+.ct-title{font-size:.74rem;font-weight:900;color:var(--text)}
+.ct-sub{font-size:.6rem;color:var(--muted);margin-top:2px;line-height:1.5}
+/* ━━ Progress bar under TopBar ━━ */
+#topProgress{
+  height:2px;background:var(--bg);flex-shrink:0;position:relative;z-index:9;
+}
+#topProgressFill{
+  height:100%;background:linear-gradient(90deg,var(--acc),var(--grn));
+  border-radius:99px;transition:width .6s cubic-bezier(.34,1.2,.64,1);
+  box-shadow:0 0 6px rgba(201,168,76,.4);
+}
+/* ━━ Streak popup ━━ */
+.streak-popup{
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);
+  z-index:600;background:linear-gradient(135deg,rgba(249,115,22,.95),rgba(201,168,76,.9));
+  border-radius:20px;padding:20px 28px;text-align:center;
+  box-shadow:0 20px 60px rgba(249,115,22,.4);
+  transition:transform .35s cubic-bezier(.34,1.56,.64,1);pointer-events:none;
+}
+.streak-popup.show{transform:translate(-50%,-50%) scale(1)}
+.sp-ico{font-size:2.5rem;display:block;animation:fireFlicker 1s infinite}
+.sp-num{font-family:var(--serif);font-size:2.2rem;font-weight:700;color:#fff;line-height:1}
+.sp-lbl{font-size:.7rem;color:rgba(255,255,255,.85);margin-top:4px;letter-spacing:.08em}
+/* ━━ User name ━━ */
+.si-input{
+  flex:1;background:rgba(0,0,0,.3);border:1px solid var(--line);
+  border-radius:7px;padding:6px 10px;font-size:.8rem;font-weight:700;
+  color:var(--text);font-family:inherit;outline:none;transition:border-color .15s;
+  min-width:0;
+}
+.si-input:focus{border-color:rgba(201,168,76,.4)}
+/* ━━ Bulk complete ━━ */
+.hw-bulk-btn{
+  width:100%;padding:10px;border-radius:9px;margin-bottom:10px;
+  border:1px solid rgba(87,200,124,.3);background:rgba(87,200,124,.06);
+  color:var(--grn);font-size:.78rem;font-weight:900;font-family:inherit;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:6px;transition:all .15s;
+}
+.hw-bulk-btn:hover{background:rgba(87,200,124,.16)}
+.hw-bulk-btn:active{transform:scale(.97)}
+/* ━━ Theme color picker ━━ */
+.theme-colors{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.theme-dot{width:22px;height:22px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all .15s;flex-shrink:0}
+.theme-dot.active{border-color:#fff;transform:scale(1.2)}
+/* ━━ Study donut ━━ */
+.study-progress-bar{
+  background:var(--sf);border:1px solid var(--line);border-radius:10px;
+  padding:12px 14px;margin-bottom:10px;
+  display:flex;align-items:center;gap:14px;
+}
+.spb-canvas{flex-shrink:0}
+.spb-info{flex:1}
+.spb-title{font-size:.7rem;font-weight:900;color:var(--text);margin-bottom:4px}
+.spb-sub{font-size:.6rem;color:var(--muted);line-height:1.6}
+/* ━━ HW category summary ━━ */
+.hw-cat-row{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px}
+.hw-cat-chip{padding:3px 8px;border-radius:999px;font-size:.54rem;font-weight:900;border:1px solid;cursor:pointer;transition:all .15s}
+/* ━━ Share button ━━ */
+.share-btn{
+  display:flex;align-items:center;gap:5px;padding:6px 12px;
+  border-radius:7px;border:1px solid rgba(107,182,255,.28);
+  background:rgba(107,182,255,.07);color:var(--blue);
+  font-size:.7rem;font-weight:900;font-family:inherit;cursor:pointer;transition:all .15s;
+}
+.share-btn:hover{background:rgba(107,182,255,.16)}
+/* ━━ Badge tooltip ━━ */
+.ach-badge-h{position:relative}
+.ach-tooltip{
+  position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%) scale(0);
+  background:rgba(7,8,13,.95);border:1px solid var(--line2);border-radius:8px;
+  padding:6px 10px;white-space:nowrap;font-size:.6rem;color:var(--text);
+  z-index:50;pointer-events:none;transition:transform .15s;
+  box-shadow:0 4px 16px rgba(0,0,0,.5);
+}
+.ach-badge-h:hover .ach-tooltip{transform:translateX(-50%) scale(1)}
+/* ━━ Sort btn ━━ */
+.sort-btn{
+  padding:4px 9px;border-radius:999px;border:1px solid var(--line);
+  background:var(--sf);font-size:.54rem;font-weight:900;color:var(--muted);
+  font-family:inherit;cursor:pointer;transition:all .15s;letter-spacing:.04em;
+}
+.sort-btn.active{border-color:rgba(201,168,76,.4);background:rgba(201,168,76,.1);color:var(--acc)}
+/* ━━ Tomorrow reminder ━━ */
+.tomorrow-card{
+  background:rgba(107,182,255,.04);border:1px solid rgba(107,182,255,.15);
+  border-radius:10px;padding:11px 13px;margin-bottom:0;
+}
+.tm-label{font-size:.54rem;font-weight:900;color:var(--blue);letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px}
+.tm-list{display:flex;flex-direction:column;gap:4px}
+.tm-item{font-size:.7rem;color:var(--muted);display:flex;align-items:center;gap:6px}
+/* ━━ Week hw counter ━━ */
+.week-hw-row{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px 12px;background:var(--sf);border:1px solid var(--line);
+  border-radius:8px;margin-bottom:8px;
+}
+.wh-label{font-size:.6rem;color:var(--muted);letter-spacing:.06em}
+.wh-val{font-family:var(--serif);font-size:1rem;font-weight:700;color:var(--grn)}
+/* ━━ Rich splash ━━ */
+.spl-chars{display:flex;gap:12px;justify-content:center;margin-top:8px}
+.spl-char{width:40px;height:40px;object-fit:cover;border-radius:50%;border:1.5px solid rgba(201,168,76,.4);opacity:.7}
+/* ━━ Donut chart ━━ */
+.donut-wrap{display:flex;align-items:center;gap:16px;margin-top:10px}
+.donut-legend{display:flex;flex-direction:column;gap:5px;flex:1}
+.donut-leg-item{display:flex;align-items:center;gap:7px;font-size:.64rem;color:var(--muted)}
+.donut-leg-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.donut-leg-val{margin-left:auto;font-family:var(--serif);font-weight:700;color:var(--text)}
+/* ━━ Empty state art ━━ */
+.empty-art{text-align:center;padding:32px 20px}
+.empty-art-ico{font-size:3rem;display:block;margin-bottom:10px;opacity:.5;animation:gcBounce 2s ease infinite}
+.empty-art-title{font-family:var(--serif);font-size:.9rem;font-weight:700;color:var(--text);margin-bottom:6px}
+.empty-art-sub{font-size:.68rem;color:var(--muted);line-height:1.8}
+/* ━━ Today earned chip ━━ */
+.today-earned{
+  font-size:.54rem;font-weight:900;color:var(--grn);
+  border:1px solid rgba(87,200,124,.25);border-radius:999px;
+  padding:2px 7px;background:rgba(87,200,124,.06);
+  display:none;margin-left:4px;
+}
+.today-earned.show{display:inline-flex;align-items:center}
+/* ━━ Gear icon ━━ */
+.top-gear{
+  background:none;border:none;color:var(--muted);font-size:.9rem;
+  cursor:pointer;padding:4px;transition:all .2s;line-height:1;
+}
+.top-gear:hover{color:var(--acc);transform:rotate(45deg)}
+/* ━━ Encouragement overlay ━━ */
+.enc-over{
+  position:fixed;inset:0;z-index:750;
+  background:rgba(7,8,13,.88);backdrop-filter:blur(14px);
+  display:none;flex-direction:column;align-items:center;justify-content:center;
+  gap:10px;text-align:center;padding:24px;
+}
+.enc-over.show{display:flex;animation:fadeScaleIn .3s ease}
+.enc-ico{font-size:3.5rem;animation:gcBounce 1s ease infinite}
+.enc-title{font-family:var(--serif);font-size:1.3rem;font-weight:700;color:var(--grn)}
+.enc-msg{font-size:.8rem;color:var(--muted);line-height:1.8;max-width:280px}
+/* ━━ Badge scroll ━━ */
+.badge-scroll{display:flex;gap:7px;overflow-x:auto;padding-bottom:6px;-webkit-overflow-scrolling:touch}
+.badge-scroll::-webkit-scrollbar{height:0}
+.ach-badge-h{
+  background:var(--sf);border:1px solid var(--line);border-radius:10px;
+  padding:10px 8px;text-align:center;flex-shrink:0;width:72px;
+  transition:all .15s;
+}
+.ach-badge-h.unlocked{border-color:rgba(201,168,76,.4);background:rgba(201,168,76,.06)}
+.ach-badge-h:hover{transform:translateY(-2px)}
+.ach-ico-h{font-size:1.3rem;display:block;margin-bottom:4px;filter:grayscale(1) brightness(.3)}
+.ach-badge-h.unlocked .ach-ico-h{filter:none}
+.ach-name-h{font-size:.44rem;color:var(--muted);font-weight:900;letter-spacing:.04em;line-height:1.3}
+.ach-badge-h.unlocked .ach-name-h{color:var(--acc)}
+/* ━━ Clickable stat card ━━ */
+.qs-card{cursor:pointer;transition:all .15s}
+.qs-card:hover{background:var(--sf2);transform:translateY(-1px);border-color:rgba(201,168,76,.25)}
+.qs-card:active{transform:scale(.96)}
+/* ━━ Game card gradient ━━ */
+.game-block-head-grad{background-size:cover}
+/* ━━ Game clear overlay ━━ */
+.game-clear{
+  position:fixed;inset:0;z-index:700;
+  background:rgba(7,8,13,.92);backdrop-filter:blur(12px);
+  display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;
+  animation:fadeScaleIn .35s cubic-bezier(.34,1.4,.64,1);
+}
+.game-clear.show{display:flex}
+.gc-ico{font-size:4rem;filter:drop-shadow(0 4px 20px rgba(201,168,76,.6));animation:gcBounce 1.2s ease infinite}
+.gc-title{font-family:var(--serif);font-size:1.5rem;font-weight:700;color:var(--acc)}
+.gc-sub{font-size:.76rem;color:var(--muted);text-align:center;line-height:1.7}
+.gc-close{margin-top:8px;padding:11px 28px;border-radius:10px;border:1px solid rgba(201,168,76,.35);background:rgba(201,168,76,.1);color:var(--acc);font-family:inherit;font-size:.9rem;font-weight:900;cursor:pointer;transition:all .15s}
+.gc-close:hover{background:rgba(201,168,76,.2)}
+@keyframes gcBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+@keyframes fadeScaleIn{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}
+/* ━━ Market dividend sim ━━ */
+.div-sim{background:var(--sf);border:1px solid rgba(201,168,76,.18);border-radius:10px;padding:13px;margin-bottom:10px}
+.div-sim-title{font-size:.6rem;font-weight:900;color:var(--acc);letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px}
+.div-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--line);font-size:.72rem}
+.div-row:last-child{border-bottom:none}
+.div-label{color:var(--muted)}
+.div-val{font-family:var(--serif);font-weight:700;color:var(--acc)}
+/* ━━ Coin float ━━ */
+.coin-float{
+  position:fixed;pointer-events:none;z-index:600;
+  font-family:var(--serif);font-size:.85rem;font-weight:700;color:var(--acc);
+  animation:floatUp 1.1s ease-out forwards;
+  text-shadow:0 1px 6px rgba(0,0,0,.6);
+}
+@keyframes floatUp{0%{opacity:1;transform:translateY(0) scale(1)}60%{opacity:1;transform:translateY(-36px) scale(1.1)}100%{opacity:0;transform:translateY(-60px) scale(.9)}}
+/* ━━ Streak milestone ━━ */
+.streak-toast{
+  position:fixed;top:calc(var(--top)+10px);left:50%;transform:translateX(-50%);
+  background:linear-gradient(135deg,rgba(249,115,22,.95),rgba(201,168,76,.9));
+  border:1px solid rgba(255,255,255,.2);border-radius:12px;
+  padding:12px 20px;z-index:600;display:none;
+  text-align:center;box-shadow:0 8px 30px rgba(249,115,22,.4);
+  backdrop-filter:blur(8px);
+}
+.streak-toast.show{display:block;animation:streakIn .4s cubic-bezier(.34,1.56,.64,1)}
+.streak-toast-ico{font-size:1.4rem;display:block;margin-bottom:3px}
+.streak-toast-title{font-size:.88rem;font-weight:900;color:#fff}
+.streak-toast-sub{font-size:.64rem;color:rgba(255,255,255,.8);margin-top:2px}
+@keyframes streakIn{from{opacity:0;transform:translateX(-50%) translateY(-12px) scale(.9)}to{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}}
+/* ━━ Game progress bar ━━ */
+.game-prog-bar{height:3px;background:rgba(255,255,255,.06);border-radius:99px;overflow:hidden;margin-top:8px}
+.game-prog-fill{height:100%;border-radius:99px;transition:width .5s cubic-bezier(.34,1.2,.64,1)}
+/* ━━ Habit heatmap ━━ */
+.heatmap-wrap{background:var(--sf);border:1px solid var(--line);border-radius:10px;padding:12px}
+.heatmap-month-label{font-size:.56rem;color:var(--muted);letter-spacing:.14em;margin-bottom:8px;text-align:center;text-transform:uppercase}
+.heatmap-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.hm-cell{aspect-ratio:1;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:.42rem;color:rgba(255,255,255,.3);transition:transform .1s}
+.hm-cell:hover{transform:scale(1.3);z-index:1}
+.hm-cell.empty{background:rgba(255,255,255,.04)}
+.hm-cell.d0{background:rgba(255,255,255,.04)}
+.hm-cell.d1{background:rgba(87,200,124,.25)}
+.hm-cell.d2{background:rgba(87,200,124,.55)}
+.hm-cell.d3{background:rgba(87,200,124,.85)}
+.hm-day-labels{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:5px}
+.hm-day-lbl{text-align:center;font-size:.44rem;color:var(--faint);letter-spacing:.04em}
+/* ━━ Coin history chart ━━ */
+.coin-chart-wrap{background:var(--sf);border:1px solid rgba(201,168,76,.15);border-radius:10px;padding:12px;margin-bottom:10px}
+.coin-chart-label{font-size:.56rem;color:var(--acc);letter-spacing:.12em;text-transform:uppercase;margin-bottom:8px}
+#coinHistoryCanvas{width:100%;height:70px;display:block}
+/* ━━ Weekly widget ━━ */
+.weekly-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:0}
+.ww-cell{background:var(--sf);border:1px solid var(--line);border-radius:9px;padding:11px 10px;text-align:center}
+.ww-val{font-family:var(--serif);font-size:1.2rem;font-weight:700;color:var(--text);line-height:1}
+.ww-lbl{font-size:.5rem;color:var(--muted);margin-top:4px;letter-spacing:.1em;text-transform:uppercase}
+.ww-bar-wrap{grid-column:span 2;background:var(--sf);border:1px solid var(--line);border-radius:9px;padding:10px 12px}
+.ww-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.ww-bar-row:last-child{margin-bottom:0}
+.ww-bar-label{font-size:.58rem;color:var(--muted);width:52px;flex-shrink:0;text-align:right}
+.ww-bar-bg{flex:1;height:4px;background:rgba(255,255,255,.06);border-radius:99px;overflow:hidden}
+.ww-bar-fill{height:100%;border-radius:99px;transition:width .5s cubic-bezier(.34,1.2,.64,1)}
+.ww-bar-num{font-size:.56rem;font-weight:900;width:28px;flex-shrink:0;text-align:right}
+/* ━━ HW today highlight ━━ */
+.hw-item.today{border-color:rgba(201,168,76,.4);background:rgba(201,168,76,.04)}
+.hw-today-tag{font-size:.52rem;font-weight:900;color:var(--acc);border:1px solid rgba(201,168,76,.3);border-radius:999px;padding:1px 6px;margin-top:3px;display:inline-block;letter-spacing:.06em}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ━━ TopBar ━━ -->
+<div id="topBar">
+  <div class="top-streak"><span class="streak-fire">🔥</span><span id="tStreak">0</span></div>
+  <div class="top-brand">マネぼう</div>
+  <div style="display:flex;align-items:center;gap:6px">
+    <div class="top-coins" id="tCoins" onclick="copyCoins()" title="タップでコピー" style="cursor:pointer">🪙 <span id="tCoinsNum">0</span><span class="today-earned" id="todayEarned"></span></div>
+    <button class="top-gear" onclick="openSettings()" title="設定">⚙️</button>
+  </div>
+</div>
+
+<!-- ━━ TopBar Progress ━━ -->
+<div id="topProgress"><div id="topProgressFill" style="width:0%"></div></div>
+
+<!-- ━━ Screens ━━ -->
+<div id="screenArea">
+
+<!-- ── ホーム ── -->
+<div class="screen active" id="homeScreen">
+  <div class="inner">
+    <div class="news-ticker"><span class="ticker-label">📰 TODAY</span><span class="ticker-text" id="newsTicker"></span></div>
+    <div class="greeting-row">
+      <div>
+        <div class="greeting-text" id="greetingText">こんにちは！</div>
+        <div class="greeting-sub" id="homeDateChip">📅 ―</div>
+      </div>
+    </div>
+    <div id="homeCharBubble" class="char-bubble-wrap" id="homeCharSwipe"></div>
+    <div class="today-event" id="todayEventCard"></div>
+    <div class="week-score-card" id="weekScoreCard"></div>
+    <div class="quote-card" id="quoteCard"><div class="quote-text" id="quoteText"></div><div class="quote-author" id="quoteAuthor"></div></div>
+
+    <!-- コイン + ストリーク バナー -->
+    <div class="coin-banner">
+      <div>
+        <div class="coin-banner-sub">ゲーム内コイン</div>
+        <div class="coin-banner-val">🪙 <span id="heroCoins">0</span><span class="yesterday-diff" id="yesterdayDiff"></span></div>
+        <div class="total-earned-row">
+          <span class="te-label">累計獲得</span>
+          <span class="te-val" id="heroTotalEarned">0 🪙</span>
+        </div>
+      </div>
+      <div class="coin-banner-right">
+        <div class="coin-banner-sub">連続ログイン</div>
+        <div class="streak-big"><span id="heroStreak">0</span>日 🔥</div>
+      </div>
+    </div>
+
+    <!-- サマリー -->
+    <div class="slabel">サマリー</div>
+    <div class="home-stats-row" id="homeStats"></div>
+
+    <!-- 今日のやること -->
+    <div class="slabel">今日のやること</div>
+    <div id="todayList" class="today-list"></div>
+
+    <div class="divider"></div>
+    <div class="slabel">今週の成果</div>
+    <div id="weeklyWidget"></div>
+    <div class="divider"></div>
+    <div class="slabel">明日のやること</div>
+    <div class="tomorrow-card"><div class="tm-label">TOMORROW</div><div class="tm-list" id="tomorrowList"></div></div>
+    <div class="divider"></div>
+    <div class="slabel">今週のコイン獲得</div>
+    <div class="card" id="weekCoinWidget" style="padding:10px 12px"></div>
+    <div class="divider"></div>
+    <div class="slabel">達成バッジ</div>
+    <div id="achBadgeGrid" class="badge-scroll"></div>
+    <div class="divider"></div>
+    <div class="slabel" style="color:var(--faint)">今後追加予定</div>
+    <div class="ph-card"><span class="ph-ico">📊</span>詳細レポート・ランキングなど</div>
+  </div>
+</div>
+
+<!-- ── 学習 ── -->
+<div class="screen" id="studyScreen">
+  <div class="inner">
+    <div id="nextLessonCard"></div>
+    <div class="study-progress-bar">
+      <canvas class="spb-canvas" id="studyDonut" width="56" height="56"></canvas>
+      <div class="spb-info">
+        <div class="spb-title" id="studyProgTitle">全体進捗</div>
+        <div class="spb-sub" id="studyProgSub"></div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div class="slabel" style="margin-bottom:0">ゲーム × カリキュラム</div>
+      <div style="display:flex;gap:5px">
+        <button class="study-filter-btn active" id="sf-all"  onclick="setStudyFilter('all')">全て</button>
+        <button class="study-filter-btn"        id="sf-todo" onclick="setStudyFilter('todo')">未完了</button>
+        <button class="study-filter-btn"        id="sf-done" onclick="setStudyFilter('done')">完了</button>
+        <button class="sort-btn" id="sortGame" onclick="toggleGameSort()">↕ 並替</button>
+        <button class="sort-btn" id="flatView" onclick="toggleFlatView()">☰ 一覧</button>
+      </div>
+    </div>
+    <div id="gameList"></div>
+    <div class="divider"></div>
+    <div class="ph-card">
+      <span class="ph-ico">🎯</span>
+      レッスン詳細・ミニクイズ・修了証は今後追加予定
+    </div>
+  </div>
+</div>
+
+<!-- ── 習慣 ── -->
+<div class="screen" id="habitsScreen">
+  <div class="inner">
+    <div id="habitCharBubble" class="char-bubble-wrap"></div>
+    <div class="slabel">今週の達成サマリー</div>
+    <div class="habit-week-summary" id="habitWeekSummary"></div>
+    <div class="slabel">今日の習慣</div>
+    <div id="habitList"></div>
+    <div class="custom-habit-form">
+      <div class="slabel" style="margin-bottom:8px">習慣を追加</div>
+      <div class="habit-emoji-row" id="habitEmojiRow"></div>
+      <div class="hw-row" style="gap:7px">
+        <input class="hw-input" id="customHabitName" type="text" placeholder="習慣の名前…" maxlength="20" style="margin-bottom:0;flex:1" onkeydown="if(event.key==='Enter')addCustomHabit()">
+        <button class="btn-acc" style="flex-shrink:0;padding:9px 14px;white-space:nowrap" onclick="addCustomHabit()">追加</button>
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div class="slabel">スキップログ</div>
+    <div id="skipLogList" class="skip-log-list"></div>
+    <div class="divider" style="margin:8px 0"></div>
+    <div class="slabel">連続記録ランキング</div>
+    <div id="streakRankList" class="streak-rank-list"></div>
+    <div class="divider"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0">
+      <div class="slabel" style="margin-bottom:0">習慣記録</div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <button class="hm-nav-btn" onclick="shiftHeatmapMonth(-1)">‹ 前月</button>
+        <span id="heatmapMonthLabel" style="font-size:.58rem;color:var(--muted)"></span>
+        <button class="hm-nav-btn" onclick="shiftHeatmapMonth(1)">次月 ›</button>
+      </div>
+    </div>
+    <div id="habitHeatmap" style="margin-top:10px"></div>
+  </div>
+</div>
+
+<!-- ── 宿題 ── -->
+<div class="screen" id="hwScreen">
+  <div class="inner">
+    <div class="hw-form">
+      <div class="slabel" style="margin-bottom:10px">宿題を追加</div>
+      <input class="hw-input" id="hwTitleInput" type="text" placeholder="宿題の内容を入力…" maxlength="60"
+        onkeydown="if(event.key==='Enter')addHomework()">
+      <div class="hw-row" style="margin-bottom:8px">
+        <select class="hw-game-select" id="hwGameTag">
+          <option value="">タグなし</option>
+          <option value="itadaki">🏙️ いただきスト</option>
+          <option value="jinsei">🎡 人生ゲーム</option>
+          <option value="momotetsu">🚅 桃鉄</option>
+          <option value="zai">📊 ZAi</option>
+          <option value="monopoly">🏘️ モノポリー</option>
+          <option value="other">📌 その他</option>
+        </select>
+        <input class="hw-date" id="hwDateInput" type="date" style="flex:1">
+      </div>
+      <div class="hw-row" style="gap:5px;margin-bottom:8px">
+        <span style="font-size:.6rem;color:var(--muted);flex-shrink:0">難易度：</span>
+        <button class="hw-filter-btn active" id="hwd-easy"   onclick="setHwDiff('easy')">易</button>
+        <button class="hw-filter-btn"        id="hwd-normal" onclick="setHwDiff('normal')">普</button>
+        <button class="hw-filter-btn"        id="hwd-hard"   onclick="setHwDiff('hard')">難</button>
+      </div>
+      <div class="hw-row" style="gap:5px;margin-bottom:8px">
+        <span style="font-size:.6rem;color:var(--muted);flex-shrink:0">繰り返し：</span>
+        <button class="hw-filter-btn active" id="hwr-none"  onclick="setHwRepeat('none')">なし</button>
+        <button class="hw-filter-btn"        id="hwr-daily" onclick="setHwRepeat('daily')">毎日</button>
+        <button class="hw-filter-btn"        id="hwr-weekly"onclick="setHwRepeat('weekly')">毎週</button>
+      </div>
+      <div class="hw-row" style="gap:7px">
+        <button class="quick-priority-btn" id="quickPriorityBtn" onclick="toggleQuickPriority()">⭐ 重要</button>
+        <button class="btn-acc" onclick="addHomework()" style="flex:1;padding:11px;font-size:.85rem">追加 ＋</button>
+      </div>
+    </div>
+    <div class="hw-progress-section">
+      <svg class="hw-ring" width="48" height="48" viewBox="0 0 48 48">
+        <circle cx="24" cy="24" r="20" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="5"/>
+        <circle id="hwRing" cx="24" cy="24" r="20" fill="none" stroke="var(--grn)" stroke-width="5"
+          stroke-dasharray="126" stroke-dashoffset="126" stroke-linecap="round"
+          transform="rotate(-90 24 24)" style="transition:stroke-dashoffset .6s cubic-bezier(.34,1.2,.64,1)"/>
+      </svg>
+      <div class="hw-progress-info">
+        <div class="hw-progress-label">宿題完了率</div>
+        <div class="hw-progress-pct" id="hwProgressPct">0%</div>
+      </div>
+    </div>
+    <div class="week-hw-row">
+      <span class="wh-label">📝 今週の完了数</span>
+      <span class="wh-val" id="weekHwCount">0件</span>
+      <button class="hwcal-view-btn" id="hwCalToggle" onclick="toggleHwCalendar()">📅 カレンダー</button>
+    </div>
+    <div id="hwCalendarView" style="display:none;margin-bottom:10px"></div>
+    <div class="diff-stat-row" id="diffStatRow"></div>
+    <div class="hw-filter-row">
+      <button class="hw-filter-btn active" id="hwf-all"  onclick="setHwFilter('all')">全て</button>
+      <button class="hw-filter-btn"        id="hwf-todo" onclick="setHwFilter('todo')">未完了</button>
+      <button class="hw-filter-btn"        id="hwf-done" onclick="setHwFilter('done')">完了済み</button>
+      <button class="hw-filter-btn"        id="hwf-star" onclick="setHwFilter('star')">⭐ 重要</button>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <div class="slabel" style="margin-bottom:0">宿題リスト</div>
+      <button class="hw-bulk-btn" id="hwBulkBtn" style="width:auto;padding:5px 12px;margin-bottom:0;font-size:.62rem" onclick="bulkCompleteHW()">✓ 全て完了</button>
+      <button class="hw-bulk-btn" style="width:auto;padding:5px 12px;margin-bottom:0;font-size:.62rem;border-color:rgba(224,85,85,.3);color:var(--red);background:rgba(224,85,85,.06)" onclick="clearDoneHW()">🗑 完了済を削除</button>
+    </div>
+    <div id="hwList"></div>
+  </div>
+</div>
+
+<!-- ── 市場 ── -->
+<div class="screen" id="marketScreen">
+  <div class="inner">
+    <div class="mkt-header">
+      <div>
+        <div class="mkt-coin-lbl">保有コイン</div>
+        <div class="mkt-coin-val">🪙 <span id="mktCoins">0</span></div>
+        <div id="coinRankBadge" class="coin-rank-badge"></div>
+        <div class="milestone-bar-wrap" id="milestonebar"></div>
+      </div>
+      <button class="share-btn" onclick="shareProgress()">📤 シェア</button>
+    </div>
+    <div class="coin-pace-row" id="coinPaceRow">
+      <span style="color:var(--muted)">📊 1日平均獲得</span>
+      <span class="coin-pace-val" id="coinPaceVal">計算中…</span>
+    </div>
+    <div class="slabel">ポートフォリオ</div>
+    <div class="asset-box">
+      <div class="asset-box-hd">📈 株式</div>
+      <div class="asset-box-empty" id="stockList">保有なし</div>
+    </div>
+    <div class="asset-box">
+      <div class="asset-box-hd">🏘️ 不動産</div>
+      <div class="asset-box-empty" id="propList">保有なし</div>
+    </div>
+    <div class="mkt-advice">
+      <div class="mkt-advice-label">💡 今日のアドバイス</div>
+      <div class="mkt-advice-text" id="mktAdviceText"></div>
+      <div class="mkt-advice-author" id="mktAdviceAuthor"></div>
+    </div>
+    <div class="coin-chart-wrap">
+      <div class="chart-period-row">
+        <button class="chart-period-btn" id="cp-7"  onclick="setChartPeriod(7)">7日</button>
+        <button class="chart-period-btn active" id="cp-14" onclick="setChartPeriod(14)">14日</button>
+        <button class="chart-period-btn" id="cp-30" onclick="setChartPeriod(30)">30日</button>
+      </div>
+      <div class="coin-chart-label">📈 コイン推移</div>
+      <canvas id="coinHistoryCanvas"></canvas>
+    </div>
+    <div class="div-sim">
+      <div class="div-sim-title">📐 コイン運用シミュレーション</div>
+      <div id="divSimBox"></div>
+    </div>
+    <div class="divider"></div>
+    <!-- 積立シミュレーション -->
+    <div class="tsum-wrap">
+      <div class="tsum-title">💹 積立シミュレーション</div>
+      <div class="tsum-period-row">
+        <button class="tsum-period-btn active" id="tp-day"   onclick="setTsumPeriod('day')">日次積立</button>
+        <button class="tsum-period-btn"        id="tp-month" onclick="setTsumPeriod('month')">月次積立</button>
+      </div>
+      <div class="tsum-row">
+        <span class="tsum-lbl">毎日の積立</span>
+        <input class="tsum-input" id="tsumDaily" type="number" value="15" min="1" max="9999" oninput="calcTsum()">
+        <span style="font-size:.64rem;color:var(--muted)">🪙/日</span>
+      </div>
+      <div class="tsum-row">
+        <span class="tsum-lbl">運用利率</span>
+        <input class="tsum-input" id="tsumRate" type="number" value="5" min="0" max="50" oninput="calcTsum()">
+        <span style="font-size:.64rem;color:var(--muted)">%/年</span>
+      </div>
+      <div class="tsum-results" id="tsumResults"></div>
+      <div class="donut-wrap">
+        <canvas id="tsumDonut" width="80" height="80"></canvas>
+        <div class="donut-legend" id="tsumLegend"></div>
+      </div>
+    </div>
+    <!-- コイン獲得ログ -->
+    <div class="slabel">コイン獲得履歴</div>
+    <div class="coin-log-list" id="coinLogList"></div>
+    <div class="divider"></div>
+    <div class="slabel">🏪 学習教材ショップ</div>
+    <div class="shop-tab-row">
+      <button class="shop-tab active" id="stab-all"   onclick="setShopTab('all')">全商品</button>
+      <button class="shop-tab"        id="stab-owned" onclick="setShopTab('owned')">購入済み</button>
+    </div>
+    <div class="vshop-grid" id="vshopGrid"></div>
+    <div class="divider"></div>
+    <div class="slabel">💡 コインの使い道アイデア</div>
+    <div class="coin-tips" id="coinTipsList"></div>
+    <div class="divider"></div>
+    <div class="mkt-shop">
+      <div class="mkt-shop-title">🏪 マーケット（準備中）</div>
+      <div class="mkt-shop-sub">株式・不動産の購入機能は今後実装予定。<br>コインを貯めて将来の投資に備えよう！</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── キャラ ── -->
+<div class="screen" id="charScreen">
+  <div class="inner">
+    <div class="slabel">ガイドキャラクター</div>
+    <div id="charList"></div>
+    <div class="divider"></div>
+    <div class="slabel" style="color:var(--faint)">今後追加予定</div>
+    <div class="char-locked"><div class="cl-ico">👤</div><div class="cl-text">近日公開 ― キャラクター #3</div></div>
+    <div class="char-locked"><div class="cl-ico">👤</div><div class="cl-text">近日公開 ― キャラクター #4</div></div>
+  </div>
+</div>
+
+</div><!-- /screenArea -->
+
+<!-- ━━ BottomNav ━━ -->
+<div id="bottomNav">
+  <button class="nav-btn active" id="nb-home"   onclick="nav('homeScreen','nb-home');renderHome()"><div class="ni">🏠</div>ホーム</button>
+  <button class="nav-btn" id="nb-study"  onclick="nav('studyScreen','nb-study');renderStudy()"><div class="ni">📚</div>学習</button>
+  <button class="nav-btn" id="nb-habits" onclick="nav('habitsScreen','nb-habits');renderHabits()"><div class="ni">📅</div>習慣<span class="nav-badge" id="badge-habits"></span></button>
+  <button class="nav-btn" id="nb-hw"     onclick="nav('hwScreen','nb-hw');renderHomework()"><div class="ni">📝</div>宿題<span class="nav-badge" id="badge-hw"></span></button>
+  <button class="nav-btn" id="nb-market" onclick="nav('marketScreen','nb-market');renderMarket()"><div class="ni">📈</div>市場</button>
+  <button class="nav-btn" id="nb-chars"  onclick="nav('charScreen','nb-chars');renderChars()"><div class="ni">👥</div>キャラ</button>
+</div>
+</div><!-- /app -->
+
+<!-- ━━ Feedback ━━ -->
+<div id="feedbackBar">
+  <div class="fb-inner">
+    <div class="fb-ico" id="fbIco">✅</div>
+    <div>
+      <div class="fb-title" id="fbTitle"></div>
+      <div class="fb-sub"   id="fbSub"></div>
+    </div>
+  </div>
+  <button class="fb-close" onclick="closeFeedback()">OK →</button>
+</div>
+
+<!-- ━━ Welcome Overlay ━━ -->
+<div id="welcomeOver" class="welcome-over">
+  <div class="wl-logo">💰</div>
+  <div class="wl-title">マネぼうへようこそ！</div>
+  <div class="wl-sub">お金・経済・投資を<br>楽しみながら学べる<br>マネぼう塾の学習アプリです。</div>
+  <div class="wl-chars">
+    <div class="wl-char">
+      <img src="../マネぼうHP/images/img6.webp" alt="えんだ" onerror="this.style.opacity='.2'">
+      <span class="wl-char-name">えんだ</span>
+    </div>
+    <div class="wl-char">
+      <img src="../マネぼうHP/images/img5.webp" alt="ふくろう" onerror="this.style.opacity='.2'">
+      <span class="wl-char-name">ふくろう</span>
+    </div>
+  </div>
+  <button class="btn-acc" style="width:100%;max-width:280px;padding:13px;font-size:.9rem"
+    onclick="startApp()">はじめる →</button>
+</div>
+
+<!-- ━━ Settings ━━ -->
+<div id="settingsOver" class="settings-over" onclick="if(event.target===this)closeSettings()">
+  <div class="settings-panel">
+    <div class="settings-handle"></div>
+    <div class="settings-title">設定</div>
+    <div class="settings-item">
+      <div><div class="si-label">ユーザー名</div><div class="si-sub">グリーティングに表示</div></div>
+      <input class="si-input" id="userNameInput" type="text" placeholder="名前を入力…" maxlength="12" oninput="saveUserName(this.value)">
+    </div>
+    <div class="settings-item">
+      <div><div class="si-label">ライトモード</div><div class="si-sub">明るい色テーマに切替</div></div>
+      <div class="sound-toggle" onclick="toggleLightMode()">
+        <div class="toggle-track" id="lightModeTrack"><div class="toggle-thumb"></div></div>
+      </div>
+    </div>
+    <div class="settings-item">
+      <div><div class="si-label">サウンドエフェクト</div><div class="si-sub">コイン獲得・完了音</div></div>
+      <div class="sound-toggle" onclick="toggleSound()">
+        <div class="toggle-track" id="soundTrack"><div class="toggle-thumb"></div></div>
+      </div>
+    </div>
+    <div class="settings-item">
+      <div><div class="si-label">ブラウザ通知</div><div class="si-sub">習慣リマインダー通知</div></div>
+      <div style="display:flex;align-items:center;gap:7px">
+        <span class="notif-status" id="notifStatus">確認中</span>
+        <button class="si-btn neutral" id="notifBtn" onclick="requestNotification()">許可</button>
+      </div>
+    </div>
+    <div class="settings-item">
+      <div>
+        <div class="si-label">データをリセット</div>
+        <div class="si-sub">全て削除 または 部分削除</div>
+        <div class="partial-reset-row">
+          <button class="pr-btn" onclick="partialReset('homework')">宿題のみ</button>
+          <button class="pr-btn" onclick="partialReset('habits')">習慣のみ</button>
+          <button class="pr-btn" onclick="partialReset('lessons')">学習のみ</button>
+          <button class="pr-btn" onclick="partialReset('coins')">コインのみ</button>
+        </div>
+      </div>
+      <button class="si-btn danger" onclick="confirmReset()">全削除</button>
+    </div>
+    <div class="settings-item">
+      <div><div class="si-label">テーマカラー</div><div class="si-sub">アクセントカラーを変更</div></div>
+      <div class="theme-colors" id="themeColorPicker"></div>
+    </div>
+    <div class="settings-item">
+      <div><div class="si-label">データをエクスポート</div><div class="si-sub">学習記録をJSONで保存</div></div>
+      <button class="si-btn neutral" onclick="exportData()">保存 ↓</button>
+    </div>
+    <div class="settings-item">
+      <div><div class="si-label">週次レポート</div><div class="si-sub">今週の成果をまとめて確認</div></div>
+      <button class="si-btn neutral" onclick="openWeekReport()">表示</button>
+    </div>
+    <div class="settings-item">
+      <div><div class="si-label">サウンドプレビュー</div><div class="si-sub">通知音を確認する</div></div>
+      <div style="display:flex;gap:5px">
+        <button class="si-btn neutral" onclick="playSound('coin')">🪙</button>
+        <button class="si-btn neutral" onclick="playSound('check')">✅</button>
+        <button class="si-btn neutral" onclick="playSound('done')">🎉</button>
+      </div>
+    </div>
+    <div class="settings-item">
+      <div><div class="si-label">使い方ガイド</div><div class="si-sub">アプリの機能を確認</div></div>
+      <button class="si-btn neutral" onclick="openGuide()">開く</button>
+    </div>
+    <div class="settings-item">
+      <div><div class="si-label">フィードバック</div><div class="si-sub">改善要望・バグ報告</div></div>
+      <a href="mailto:fukuisho0603@gmail.com?subject=マネぼうアプリ フィードバック" class="si-btn neutral" style="text-decoration:none;display:inline-block">送る ↗</a>
+    </div>
+    <div class="settings-item">
+      <div><div class="si-label">バージョン</div><div class="si-sub">マネぼうアプリ v0.5</div></div>
+      <span style="font-size:.64rem;color:var(--faint)">Money Bo App</span>
+    </div>
+    <div class="settings-item">
+      <div><div class="si-label">閉じる</div></div>
+      <button class="si-btn neutral" onclick="closeSettings()">✕ 閉じる</button>
+    </div>
+  </div>
+</div>
+
+<!-- ━━ Encouragement ━━ -->
+<div class="enc-over" id="encOver">
+  <div class="enc-ico" id="encIco">🎉</div>
+  <div class="enc-title" id="encTitle">すごい！</div>
+  <div class="enc-msg"   id="encMsg"></div>
+  <button class="btn-grn" style="margin-top:8px;padding:11px 24px" onclick="closeEnc()">やったー！</button>
+</div>
+
+<!-- ━━ Guide ━━ -->
+<div class="guide-over" id="guideOver">
+  <div style="padding:16px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;background:rgba(7,8,13,.96);flex-shrink:0">
+    <span style="font-family:var(--serif);font-size:1rem;font-weight:700;color:var(--acc)">📖 使い方ガイド</span>
+    <button onclick="closeGuide()" style="margin-left:auto;background:none;border:1px solid var(--line);border-radius:6px;padding:4px 10px;font-size:.7rem;color:var(--muted);cursor:pointer">閉じる</button>
+  </div>
+  <div class="guide-panel">
+    <div class="guide-section">
+      <div class="guide-title">🪙 コインの稼ぎ方</div>
+      <div class="guide-item"><div class="guide-ico">🔥</div><div class="guide-text"><div class="guide-name">ログインボーナス</div><div class="guide-desc">毎日アプリを開くと +5コイン。連続記録でマイルストーンボーナスも！</div></div></div>
+      <div class="guide-item"><div class="guide-ico">📅</div><div class="guide-text"><div class="guide-name">習慣チェック</div><div class="guide-desc">各習慣をチェックするたびに +10コイン。毎日続けよう。</div></div></div>
+      <div class="guide-item"><div class="guide-ico">📝</div><div class="guide-text"><div class="guide-name">宿題完了</div><div class="guide-desc">宿題を1件完了するたびに +50コイン。難しい宿題ほどやりがいあり！</div></div></div>
+      <div class="guide-item"><div class="guide-ico">📚</div><div class="guide-text"><div class="guide-name">レッスン完了</div><div class="guide-desc">各レッスンを初めてクリアすると +30コイン。全完了で +100コインボーナス！</div></div></div>
+    </div>
+    <div class="guide-section">
+      <div class="guide-title">📱 基本操作</div>
+      <div class="guide-item"><div class="guide-ico">🏠</div><div class="guide-text"><div class="guide-name">ホーム画面</div><div class="guide-desc">サマリーカードをタップすると各画面へ移動。キャラをタップで切替。</div></div></div>
+      <div class="guide-item"><div class="guide-ico">📅</div><div class="guide-text"><div class="guide-name">習慣タブ</div><div class="guide-desc">チェックすると連続記録が積み上がる。オリジナル習慣も追加できる。</div></div></div>
+      <div class="guide-item"><div class="guide-ico">📝</div><div class="guide-text"><div class="guide-name">宿題タブ</div><div class="guide-desc">期限・ゲームタグ・難易度を設定できる。⭐で重要マーク、✏️で編集。</div></div></div>
+      <div class="guide-item"><div class="guide-ico">📈</div><div class="guide-text"><div class="guide-name">市場タブ</div><div class="guide-desc">コインの推移グラフ・積立シミュレーション・配当シミュレーションを確認。</div></div></div>
+    </div>
+    <div class="guide-section">
+      <div class="guide-title">⚙️ カスタマイズ</div>
+      <div class="guide-item"><div class="guide-ico">🎨</div><div class="guide-text"><div class="guide-name">テーマカラー</div><div class="guide-desc">設定からアクセントカラーを6色から選択できる。</div></div></div>
+      <div class="guide-item"><div class="guide-ico">🌙</div><div class="guide-text"><div class="guide-name">ライトモード</div><div class="guide-desc">設定から明るいテーマに切り替えられる。</div></div></div>
+      <div class="guide-item"><div class="guide-ico">👤</div><div class="guide-text"><div class="guide-name">ユーザー名</div><div class="guide-desc">設定に名前を入力するとグリーティングに表示される。</div></div></div>
+    </div>
+  </div>
+  <div class="guide-close-btn">
+    <button class="btn-acc" style="width:100%;max-width:300px;padding:12px" onclick="closeGuide()">閉じる</button>
+  </div>
+</div>
+
+<!-- ━━ All Badges Cleared ━━ -->
+<div class="all-clear-over" id="allClearOver">
+  <div class="ac-ico">🏆</div>
+  <div class="ac-title">全バッジ解除！</div>
+  <div class="ac-sub">すべての達成バッジを解除しました！<br>マネぼうマスターの証です。<br>おめでとうございます！</div>
+  <button class="btn-acc" style="margin-top:12px;padding:12px 28px" onclick="document.getElementById('allClearOver').className='all-clear-over'">ありがとう！</button>
+</div>
+
+<!-- ━━ HW Edit Modal ━━ -->
+<div class="edit-modal" id="hwEditModal" onclick="if(event.target===this)closeHwEdit()">
+  <div class="edit-panel">
+    <div class="edit-title">✏️ 宿題を編集</div>
+    <input class="hw-input" id="hwEditInput" type="text" placeholder="宿題の内容" maxlength="60" style="margin-bottom:12px">
+    <div style="display:flex;gap:8px">
+      <button class="btn-grn" style="flex:1" onclick="saveHwEdit()">保存</button>
+      <button onclick="closeHwEdit()" style="flex:1;padding:9px;border-radius:8px;border:1px solid var(--line);background:var(--sf);color:var(--muted);font-family:inherit;font-size:.82rem;font-weight:900;cursor:pointer">キャンセル</button>
+    </div>
+  </div>
+</div>
+
+<!-- ━━ Game Popup ━━ -->
+<div class="game-popup" id="gamePopup" onclick="if(event.target===this)closeGamePopup()">
+  <div class="game-popup-panel">
+    <div class="gpp-handle"></div>
+    <div class="gpp-head">
+      <div class="gpp-ico" id="gppIco"></div>
+      <div><div class="gpp-name" id="gppName"></div><div class="gpp-meta" id="gppMeta"></div></div>
+    </div>
+    <div class="gpp-desc" id="gppDesc"></div>
+    <div class="slabel">レッスン一覧</div>
+    <div class="gpp-lessons" id="gppLessons"></div>
+    <button class="btn-acc" style="width:100%;margin-top:14px;padding:12px" onclick="closeGamePopup()">閉じる</button>
+  </div>
+</div>
+
+<!-- ━━ Week Report ━━ -->
+<div class="week-report-over" id="weekReportOver">
+  <div class="wr-header">
+    <span style="font-family:var(--serif);font-size:1rem;font-weight:700;color:var(--acc)">📊 今週のレポート</span>
+    <button onclick="closeWeekReport()" style="background:none;border:1px solid var(--line);border-radius:6px;padding:4px 10px;font-size:.7rem;color:var(--muted);cursor:pointer">閉じる</button>
+  </div>
+  <div class="wr-body" id="wrBody"></div>
+</div>
+
+<!-- ━━ Char Zoom ━━ -->
+<div class="char-zoom-over" id="charZoomOver" onclick="closeCharZoom()">
+  <img class="char-zoom-img" id="czImg" src="" alt="">
+  <div class="char-zoom-name" id="czName"></div>
+  <div class="char-zoom-quote" id="czQuote"></div>
+  <button class="btn-acc" style="margin-top:4px;padding:10px 24px" onclick="closeCharZoom()">閉じる</button>
+</div>
+
+<!-- ━━ Char Reaction ━━ -->
+<div class="char-reaction" id="charReaction"></div>
+
+<!-- ━━ Streak Popup ━━ -->
+<div class="streak-popup" id="streakPopup">
+  <span class="sp-ico">🔥</span>
+  <div class="sp-num" id="spNum">1</div>
+  <div class="sp-lbl">日連続チェック！</div>
+</div>
+
+<!-- ━━ Offline Banner ━━ -->
+<div id="offlineBanner">📡 オフライン ― キャッシュデータで動作中</div>
+
+<!-- ━━ A2HS Banner ━━ -->
+<div id="a2hsBanner">
+  <div class="a2hs-ico">📲</div>
+  <div class="a2hs-text">
+    <div class="a2hs-title">ホーム画面に追加</div>
+    <div class="a2hs-sub">アプリとして使うとより便利！</div>
+  </div>
+  <button class="a2hs-btn" id="a2hsInstallBtn">追加する</button>
+  <button class="a2hs-close" onclick="dismissA2HS()">✕</button>
+</div>
+
+<!-- ━━ Game Clear Overlay ━━ -->
+<div id="gameClearOverlay" class="game-clear">
+  <div class="gc-ico">🏆</div>
+  <div class="gc-title" id="gcTitle">ゲームクリア！</div>
+  <div class="gc-sub"   id="gcSub"></div>
+  <button class="gc-close" onclick="document.getElementById('gameClearOverlay').className='game-clear'">つぎへ →</button>
+</div>
+
+<div id="confettiWrap" class="confetti-wrap"></div>
+<div id="coinShowerWrap" class="coin-shower-wrap"></div>
+<div id="streakToast" class="streak-toast">
+  <span class="streak-toast-ico" id="stIco">🔥</span>
+  <div class="streak-toast-title" id="stTitle"></div>
+  <div class="streak-toast-sub"   id="stSub"></div>
+</div>
+
+<!-- ━━ Splash ━━ -->
+<div id="splash">
+  <div class="spl-ico">💰</div>
+  <div class="spl-title">マネぼう</div>
+  <div class="spl-sub">Money Bo Academy</div>
+  <div class="spl-chars">
+    <img class="spl-char" src="../マネぼうHP/images/img6.webp" alt="えんだ" onerror="this.style.display='none'">
+    <img class="spl-char" src="../マネぼうHP/images/img5.webp" alt="ふくろう" onerror="this.style.display='none'">
+  </div>
+  <div class="spl-bar"><div class="spl-fill"></div></div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ━━ マスターデータ ━━
+
+const GAMES = [
+  {
+    id:'itadaki', name:'いただきストリート', emoji:'🏙️', color:'#f59e0b', ready:true,
+    lessons:[
+      {id:'l01',title:'お金とは何か'},
+      {id:'l02',title:'働く・稼ぐとは'},
+      {id:'l03',title:'家計管理'},
+      {id:'l04',title:'貯める'},
+      {id:'l05',title:'欲しいと必要の違い'},
+      {id:'l06',title:'投資の基本'},
+      {id:'l07',title:'リスク管理'},
+      {id:'l08',title:'企業の仕組み'},
+      {id:'l09',title:'借金・ローン'},
+      {id:'l10',title:'人生設計'},
+      {id:'l11',title:'経済の流れ'},
+      {id:'l12',title:'お金と時間'},
+    ]
+  },
+  {id:'jinsei',    name:'人生ゲーム',          emoji:'🎡', color:'#3b82f6', ready:false, lessons:[]},
+  {id:'momotetsu', name:'桃鉄教育版',           emoji:'🚅', color:'#ef4444', ready:false, lessons:[]},
+  {id:'zai',       name:'ZAi（株式投資ゲーム）', emoji:'📊', color:'#8b5cf6', ready:false, lessons:[]},
+  {id:'monopoly',  name:'モノポリー（不動産）',  emoji:'🏘️', color:'#10b981', ready:false, lessons:[]},
+];
+
+const HABITS = [
+  {id:'nikkei', name:'日経平均チェック', emoji:'📈', coins:10, desc:'今日の日経平均を確認する'},
+  {id:'h2',     name:'（近日追加予定）', emoji:'📚', coins:10, desc:'', disabled:true},
+  {id:'h3',     name:'（近日追加予定）', emoji:'✍️', coins:10, desc:'', disabled:true},
+];
+
+const CHARS = [
+  {
+    id:'enda', name:'えんだ / 円舵', realName:'阿部優貴',
+    role:'塾長・投資教育講師', cls:'enda',
+    img:'../マネぼうHP/images/img6.webp',
+    quote:'投資で大切なのはテクニックより、歴史を知ること。55年の経済史がそれを証明しています。',
+    msgs:['今日も一緒に学ぼう！','習慣を守ることが最大の投資だよ。','小さな積み重ねが大きな差になる。'],
+  },
+  {
+    id:'fukurou', name:'ふくろう / 服牢', realName:'福井紫耀',
+    role:'CCO・ゲーム開発者', cls:'fukurou',
+    img:'../マネぼうHP/images/img5.webp',
+    quote:'初心者だからこそわかる、初心者が本当に欲しかった教材を作りました。',
+    msgs:['今日の宿題はもう終わった？','日経平均、チェックしたよね？','コツコツが一番強い。'],
+  },
+];
+
+const REWARDS = {login:5, habit:10, homework:50, lesson:30};
+const SAVE_KEY = 'manebo_app_v1';
+
+// ━━ State ━━
+let S = {
+  coins:0, streak:0, lastLogin:'',
+  habitLogs:{},
+  lessonDone:{},
+  homework:[],
+  assets:{stocks:[], properties:[]},
+};
+function load(){try{const d=localStorage.getItem(SAVE_KEY);if(d)S=Object.assign(S,JSON.parse(d))}catch(e){}}
+function save(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(S))}catch(e){}}
+
+// ━━ Utils ━━
+const today = () => new Date().toISOString().slice(0,10);
+const fmt   = n  => Number(n).toLocaleString();
+const uid   = () => Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+
+// ━━ Confetti ━━
+function launchConfetti(){
+  const wrap=document.getElementById('confettiWrap');wrap.innerHTML='';
+  const cols=['#c9a84c','#57c87c','#a78bfa','#6bb6ff','#f97316','#e05555','#fff'];
+  for(let i=0;i<48;i++){
+    const el=document.createElement('div');el.className='cp';
+    const x=Math.random()*100, dx=(Math.random()-.5)*130;
+    const sz=6+Math.random()*7, br=Math.random()>.5?'50%':'2px';
+    const dur=(.9+Math.random()*1.1).toFixed(2), del=(Math.random()*.55).toFixed(2);
+    el.style.cssText=`left:${x}%;top:-14px;background:${cols[i%cols.length]};width:${sz}px;height:${sz}px;border-radius:${br};--dx:${dx}px;--d:${dur}s;--del:${del}s`;
+    wrap.appendChild(el);
+  }
+  setTimeout(()=>{wrap.innerHTML=''},2800);
+}
+
+// ━━ Sound ━━
+let _AC=null;
+function getAC(){if(!_AC)_AC=new(window.AudioContext||window.webkitAudioContext)();return _AC;}
+function playSound(type){
+  if(!isSoundOn())return;
+  try{
+    const ac=getAC(),t=ac.currentTime;
+    const beep=(freq,start,dur,vol=.2,wave='sine')=>{
+      const o=ac.createOscillator(),g=ac.createGain();
+      o.type=wave;o.frequency.value=freq;
+      g.gain.setValueAtTime(vol,t+start);
+      g.gain.exponentialRampToValueAtTime(.001,t+start+dur);
+      o.connect(g);g.connect(ac.destination);
+      o.start(t+start);o.stop(t+start+dur);
+    };
+    if(type==='coin')  {beep(880,.0,.1);beep(1100,.08,.12);}
+    if(type==='check') {beep(523,.0,.1);beep(659,.09,.14);}
+    if(type==='done')  {[523,659,784,1047].forEach((f,i)=>beep(f,i*.09,.22));}
+  }catch(e){}
+}
+
+// ━━ Feedback Bar ━━
+let _fbTimer=null;
+function showFeedback(good,title,sub=''){
+  const bar=document.getElementById('feedbackBar');
+  document.getElementById('fbIco').textContent =good?'✅':'💪';
+  document.getElementById('fbTitle').textContent=title;
+  document.getElementById('fbSub').textContent  =sub;
+  bar.className=good?'show good-fb':'show bad-fb';
+  clearTimeout(_fbTimer);
+  _fbTimer=setTimeout(closeFeedback,3500);
+}
+function closeFeedback(){document.getElementById('feedbackBar').className='';}
+
+// ━━ Toast ━━
+function showToast(msg,type=''){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className='show'+(type?' '+type:'');
+  clearTimeout(t._t);t._t=setTimeout(()=>{t.className='';},2500);
+}
+
+// ━━ Coin float ━━
+function spawnCoinFloat(n){
+  const el=document.createElement('div');
+  el.className='coin-float';
+  el.textContent='+'+n+'🪙';
+  const coins=document.getElementById('tCoins');
+  const r=coins?coins.getBoundingClientRect():{top:60,right:window.innerWidth-16};
+  el.style.top =(r.top +window.scrollY-8)+'px';
+  el.style.left=(r.right+window.scrollX-60)+'px';
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(),1200);
+}
+
+// ━━ Coins ━━
+function addCoins(n,label='',withConfetti=false){
+  S.coins+=n;
+  if(!S.totalEarned)S.totalEarned=0;
+  S.totalEarned+=n;
+  save();syncCoins();
+  showToast((label?label+' ':'')+'+'+n,'coin');
+  playSound('coin');
+  spawnCoinFloat(n);
+  if(label)addCoinLog(label,n);
+  const el=document.getElementById('tCoins');
+  if(el){el.classList.add('pop');setTimeout(()=>el.classList.remove('pop'),300);}
+  if(withConfetti)launchConfetti();
+  checkAchievements();
+}
+
+function syncCoins(){
+  ['tCoinsNum','heroCoins','mktCoins'].forEach(id=>{
+    const el=document.getElementById(id);if(!el)return;
+    const prev=parseInt(el.textContent.replace(/,/g,''))||0;
+    if(prev!==S.coins&&Math.abs(S.coins-prev)<500){
+      let cur=prev,step=Math.ceil((S.coins-prev)/8)||1;
+      const ticker=setInterval(()=>{
+        cur+=step;if((step>0&&cur>=S.coins)||(step<0&&cur<=S.coins)){cur=S.coins;clearInterval(ticker);}
+        el.textContent=fmt(cur);
+      },40);
+    } else el.textContent=fmt(S.coins);
+  });
+  ['tStreak','heroStreak'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.textContent=S.streak;
+  });
+  const te=document.getElementById('heroTotalEarned');
+  if(te)te.textContent=fmt(S.totalEarned||0)+' 🪙';
+  updateNavBadges();updateTodayEarned();updateTopProgress();
+}
+
+// ━━ Nav badges ━━
+function updateNavBadges(){
+  const td=today();
+  // 宿題バッジ
+  const hwPending=S.homework.filter(h=>!h.done).length;
+  const bHw=document.getElementById('badge-hw');
+  if(bHw){bHw.textContent=hwPending>9?'9+':hwPending||'';bHw.className='nav-badge'+(hwPending>0?' show':'');}
+  // 習慣バッジ（未チェック数）
+  const habitsActive=allHabits().filter(h=>!h.disabled);
+  const habitsMissed=habitsActive.filter(h=>!(S.habitLogs[h.id]||[]).includes(td)).length;
+  const bH=document.getElementById('badge-habits');
+  if(bH){bH.textContent=habitsMissed||'';bH.className='nav-badge'+(habitsMissed>0?' show':'');}
+}
+
+// ━━ Nav ━━
+function nav(screenId,navId){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById(screenId).classList.add('active');
+  document.getElementById(navId).classList.add('active');
+}
+
+// ━━ Streak milestone ━━
+const MILESTONES=[{n:3,ico:'🔥',t:'3日連続！',s:'継続は力なり。この調子！'},{n:7,ico:'⚡',t:'7日連続！',s:'1週間達成！本物の習慣になってきた。'},{n:14,ico:'💎',t:'14日連続！',s:'2週間！コインがどんどん増えてるよ。'},{n:30,ico:'👑',t:'30日連続！',s:'1ヶ月制覇！マネぼうマスターへ。'},{n:50,ico:'🌟',t:'50日連続！',s:'50日継続！もはや伝説レベル。'},{n:100,ico:'🏆',t:'100日連続!!',s:'ついに100日。本物の投資家の資質だ。'}];
+function showStreakMilestone(n){
+  const m=MILESTONES.find(x=>x.n===n);if(!m)return;
+  const el=document.getElementById('streakToast');
+  document.getElementById('stIco').textContent=m.ico;
+  document.getElementById('stTitle').textContent=m.t;
+  document.getElementById('stSub').textContent=m.s;
+  el.className='streak-toast show';
+  setTimeout(()=>{el.className='streak-toast';},3500);
+}
+
+// ━━ Login ━━
+function checkLogin(){
+  const td=today();if(S.lastLogin===td)return;
+  if(!S.firstLogin)S.firstLogin=td;
+  const prev=S.lastLogin;S.lastLogin=td;
+  if(prev){const diff=(new Date(td)-new Date(prev))/86400000;S.streak=diff<=1.5?S.streak+1:1;}
+  else S.streak=1;
+  S.coins+=REWARDS.login;save();
+  setTimeout(()=>{
+    showToast('ログイン！ +'+REWARDS.login,'coin');
+    if(MILESTONES.find(x=>x.n===S.streak))setTimeout(()=>showStreakMilestone(S.streak),800);
+  },1700);
+}
+
+// ━━ Char bubble ━━
+const _charIdx={};
+function renderCharBubble(containerId,charId){
+  // 固定キャラがあればそちらを優先
+  if(S.fixedChar)charId=S.fixedChar;
+  if(!_charIdx[containerId])_charIdx[containerId]=CHARS.findIndex(c=>c.id===charId)||0;
+  const idx=_charIdx[containerId];
+  const ch=CHARS[idx]||CHARS[0];
+  const msg=ch.msgs[Math.floor(Date.now()/3600000)%ch.msgs.length];
+  const el=document.getElementById(containerId);if(!el)return;
+  el.innerHTML=`
+    <img class="char-avatar ${ch.cls}" src="${ch.img}" alt="${ch.name}"
+      onerror="this.style.opacity='.15'"
+      onclick="cycleChar('${containerId}')" style="cursor:pointer;transition:transform .15s"
+      title="タップでキャラ切替">
+    <div class="char-bubble">
+      <div class="char-nametag">${ch.name} <span style="color:var(--faint);font-size:.48rem">▷ タップで切替</span></div>
+      <div class="char-msg">${msg}</div>
+    </div>`;
+}
+function cycleChar(containerId){
+  _charIdx[containerId]=((_charIdx[containerId]||0)+1)%CHARS.length;
+  renderCharBubble(containerId,CHARS[_charIdx[containerId]].id);
+}
+
+// ━━ Weekly widget ━━
+function renderWeekly(){
+  const el=document.getElementById('weeklyWidget');if(!el)return;
+  // 今週月曜〜今日の日付配列
+  const now=new Date(today());
+  const mon=new Date(now);mon.setDate(now.getDate()-((now.getDay()+6)%7));
+  const dates=[];for(let d=new Date(mon);d<=now;d.setDate(d.getDate()+1))dates.push(d.toISOString().slice(0,10));
+  // 週内の習慣チェック数
+  const habitsActive=HABITS.filter(h=>!h.disabled);
+  let habitChecks=0;
+  habitsActive.forEach(h=>{habitChecks+=(S.habitLogs[h.id]||[]).filter(d=>dates.includes(d)).length;});
+  const habitMax=habitsActive.length*dates.length;
+  // 週内の宿題完了数
+  const hwDone=S.homework.filter(h=>h.done&&dates.includes(h.doneAt)).length;
+  // 週内のレッスン完了（レッスンにdoneAt記録なし→全体数で代替）
+  const lessonTotal=Object.keys(S.lessonDone).length;
+  // コイン推移（今週の獲得コインは記録がないので残高から推算は難しい→獲得機会ベースで表示）
+  const habitPct=habitMax>0?Math.round(habitChecks/habitMax*100):0;
+  el.innerHTML=`
+    <div class="weekly-grid">
+      <div class="ww-cell"><div class="ww-val" style="color:var(--grn)">${hwDone}</div><div class="ww-lbl">宿題完了</div></div>
+      <div class="ww-cell"><div class="ww-val" style="color:var(--acc)">${habitChecks}</div><div class="ww-lbl">習慣達成</div></div>
+      <div class="ww-bar-wrap">
+        <div class="ww-bar-row">
+          <div class="ww-bar-label">習慣</div>
+          <div class="ww-bar-bg"><div class="ww-bar-fill" style="width:${habitPct}%;background:var(--grn)"></div></div>
+          <div class="ww-bar-num" style="color:var(--grn)">${habitPct}%</div>
+        </div>
+        <div class="ww-bar-row">
+          <div class="ww-bar-label">レッスン</div>
+          <div class="ww-bar-bg"><div class="ww-bar-fill" style="width:${Math.min(100,lessonTotal/12*100)}%;background:var(--acc)"></div></div>
+          <div class="ww-bar-num" style="color:var(--acc)">${lessonTotal}</div>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ━━ Home ━━
+function renderHome(){
+  syncCoins();updateNavBadges();renderDateChip();renderGreeting();renderQuote();renderTicker();renderWeekScore();renderTodayEvent();renderYesterdayDiff();
+  const dayIdx=Math.floor(Date.now()/86400000);
+  renderCharBubble('homeCharBubble',dayIdx%2===0?'enda':'fukurou');
+
+  const td=today();
+  const lessonCount =Object.keys(S.lessonDone).length;
+  const hwPending   =S.homework.filter(h=>!h.done).length;
+  const habitsActive=HABITS.filter(h=>!h.disabled);
+  const habitsDone  =habitsActive.filter(h=>(S.habitLogs[h.id]||[]).includes(td)).length;
+
+  const totalLessons=GAMES.filter(g=>g.ready).reduce((s,g)=>s+g.lessons.length,0);
+  const studyPct=totalLessons?Math.round(lessonCount/totalLessons*100):0;
+  const daysSince=S.firstLogin?Math.floor((Date.now()-new Date(S.firstLogin).getTime())/86400000)+1:1;
+  document.getElementById('homeStats').innerHTML=`
+    <div class="hs-cell" style="cursor:pointer" onclick="nav('studyScreen','nb-study');renderStudy()">
+      <div class="hs-val grn">${studyPct}%</div><div class="hs-lbl">📚 学習率</div>
+      <div class="days-since">${lessonCount}/${totalLessons}</div>
+    </div>
+    <div class="hs-cell" style="cursor:pointer" onclick="nav('hwScreen','nb-hw');renderHomework()">
+      <div class="hs-val acc">${hwPending}</div><div class="hs-lbl">📝 宿題残り</div>
+    </div>
+    <div class="hs-cell" style="cursor:pointer" onclick="nav('habitsScreen','nb-habits');renderHabits()">
+      <div class="hs-val ora">${habitsDone}/${habitsActive.length}</div><div class="hs-lbl">📅 習慣</div>
+    </div>
+    <div class="hs-cell" onclick="nav('marketScreen','nb-market');renderMarket()" style="cursor:pointer">
+      <div class="hs-val" style="color:var(--pur);font-size:1.1rem">${daysSince}日</div><div class="hs-lbl">🗓 継続</div>
+    </div>`;
+
+  const items=[];
+  habitsActive.forEach(h=>{
+    const done=(S.habitLogs[h.id]||[]).includes(td);
+    items.push({ico:h.emoji,text:h.name,tag:'習慣',tagC:'rgba(107,182,255,.6)',done,action:done?null:`checkHabit('${h.id}');renderHome()`});
+  });
+  S.homework.filter(h=>!h.done).slice(0,3).forEach(h=>{
+    items.push({ico:'📝',text:h.title,tag:'宿題',tagC:'rgba(167,139,250,.6)',done:false,action:`completeHW('${h.id}');renderHome()`});
+  });
+
+  renderWeekly();renderWeekCoinWidget();renderAchBadges();checkAchievements();renderTomorrow();
+  document.getElementById('todayList').innerHTML=items.length
+    ?items.map(i=>`
+      <div class="today-item${i.done?' done':''}" ${i.action?`onclick="${i.action}"`:''}">
+        <span class="ti-ico">${i.ico}</span>
+        <span class="ti-text">${i.text}</span>
+        <span class="ti-badge" style="color:${i.tagC};border-color:${i.tagC}">${i.tag}</span>
+        ${i.done?'<span class="ti-check">✓</span>':''}
+      </div>`).join('')
+    :'<div class="empty-state"><span class="es-ico">🎉</span>今日のやることは全部完了！</div>';
+}
+
+// ━━ Study filter ━━
+let _studyFilter='all';
+let _gameSort='default';
+function setStudyFilter(f){
+  _studyFilter=f;
+  ['all','todo','done'].forEach(x=>{
+    const el=document.getElementById('sf-'+x);
+    if(el)el.className='study-filter-btn'+(x===f?' active':'');
+  });
+  renderStudy();
+}
+
+// ━━ Study ━━
+function renderStudy(){
+  const sortedGames=_gameSort==='progress'
+    ?[...GAMES].sort((a,b)=>{
+        const pa=a.lessons.length?Object.keys(S.lessonDone).filter(k=>k.startsWith(a.id+'_')).length/a.lessons.length:0;
+        const pb=b.lessons.length?Object.keys(S.lessonDone).filter(k=>k.startsWith(b.id+'_')).length/b.lessons.length:0;
+        return pb-pa;
+      })
+    :GAMES;
+  const filteredGames=sortedGames.filter(g=>{
+    if(_studyFilter==='all')return true;
+    if(_studyFilter==='done')return g.ready&&g.lessons.every(l=>S.lessonDone[g.id+'_'+l.id]);
+    if(_studyFilter==='todo')return !g.ready||!g.lessons.every(l=>S.lessonDone[g.id+'_'+l.id]);
+    return true;
+  });
+  renderStudyDonut();renderNextLesson();
+  if(_flatView){
+    const allLessons=GAMES.filter(g=>g.ready).flatMap(g=>g.lessons.map(l=>({...l,game:g})));
+    document.getElementById('gameList').innerHTML=`<div class="lesson-list">${allLessons.map(l=>{
+      const key=l.game.id+'_'+l.id,done=!!S.lessonDone[key];
+      return`<div class="lesson-row${done?' done':''}" onclick="toggleLesson('${l.game.id}','${l.id}')">
+        <span class="lr-num" style="color:${l.game.color}">${l.game.emoji}</span>
+        <span class="lr-title">${l.title}</span>
+        <span class="lr-status">${done?'✅':'⬜'}</span>
+      </div>`;}).join('')}</div>`;
+    return;
+  }
+  document.getElementById('gameList').innerHTML=filteredGames.map(g=>{
+    const doneCnt=Object.keys(S.lessonDone).filter(k=>k.startsWith(g.id+'_')).length;
+    return`
+      <div class="game-block${g.ready?' ready':''}" id="gc-${g.id}">
+        <div class="game-block-head" style="background:linear-gradient(135deg,${g.color}08,transparent)" ${g.ready?`onclick="toggleGame('${g.id}')"`:''}">
+          <div class="gb-ico" style="background:${g.color}18;border:1px solid ${g.color}30">${g.emoji}</div>
+          <div class="gb-info">
+            <div class="gb-name">${g.name}</div>
+            <div class="gb-meta">${g.ready?g.lessons.length+' レッスン':'準備中 ― 近日公開'} ${g.ready?`・約${g.lessons.length*5}分`:''}</div>
+            ${g.ready&&g.lessons.length?`<div class="gb-prog">✓ ${doneCnt} / ${g.lessons.length} 完了 ${doneCnt===g.lessons.length?'👑':''}</div><div class="game-prog-bar"><div class="game-prog-fill" style="width:${Math.round(doneCnt/g.lessons.length*100)}%;background:${g.color}99"></div></div>`:''}
+          </div>
+          ${g.ready?`<button onclick="event.stopPropagation();openGamePopup('${g.id}')" style="background:none;border:1px solid ${g.color}44;border-radius:6px;padding:4px 8px;font-size:.56rem;font-weight:900;color:${g.color};cursor:pointer;flex-shrink:0;margin-right:5px">詳細</button><span class="gb-arrow" style="color:${g.color}aa">▶</span>`:''}
+        </div>
+        <div class="game-block-body">
+          ${g.lessons.length
+            ?`<div class="lesson-list">${g.lessons.map((l,i)=>{
+                const key=g.id+'_'+l.id, done=!!S.lessonDone[key];
+                const memoKey=g.id+'_'+l.id+'_memo';
+                const memo=S.lessonMemos?.[memoKey]||'';
+                return`<div class="lesson-row${done?' done':''}">
+                  <span class="lr-num" onclick="event.stopPropagation();toggleLesson('${g.id}','${l.id}')">L${String(i+1).padStart(2,'0')}</span>
+                  <span class="lr-title" onclick="event.stopPropagation();toggleLesson('${g.id}','${l.id}')">${l.title}</span>
+                  <span class="lr-status" onclick="event.stopPropagation();toggleLesson('${g.id}','${l.id}')">${done?'✅':'⬜'}</span>
+                  <button onclick="event.stopPropagation();toggleMemo('${g.id}_${l.id}')" style="background:none;border:none;font-size:.7rem;cursor:pointer;color:${memo?'var(--acc)':'var(--faint)'};padding:2px" title="メモ">📝</button>
+                </div>
+                <div id="memo_${g.id}_${l.id}" style="display:none" class="lesson-memo-wrap">
+                  ${memo?`<div class="lesson-memo-text">${memo}</div><button class="lesson-memo-save" onclick="clearMemo('${g.id}_${l.id}')">削除</button>`:`<textarea class="lesson-memo-input" id="memoInput_${g.id}_${l.id}" placeholder="このレッスンのメモを書く…" rows="2">${memo}</textarea><button class="lesson-memo-save" onclick="saveMemo('${g.id}_${l.id}')">保存</button>`}
+                </div>`;
+              }).join('')}</div>`
+            :`<span class="coming-pill">🔒 レッスン準備中</span>`}
+        </div>
+      </div>`;
+  }).join('');
+}
+function toggleGame(id){document.getElementById('gc-'+id).classList.toggle('expanded');}
+function toggleLesson(gameId,lessonId){
+  const key=gameId+'_'+lessonId;
+  if(S.lessonDone[key]){delete S.lessonDone[key];save();}
+  else{
+    S.lessonDone[key]=true;save();
+    playSound('check');
+    const g=GAMES.find(x=>x.id===gameId), l=g?.lessons.find(x=>x.id===lessonId);
+    addCoins(REWARDS.lesson,'レッスン完了！',false);
+    showFeedback(true,'レッスン完了！ 📚',(l?.title||'')+' +'+REWARDS.lesson+' コイン');
+    // 全レッスン完了チェック
+    if(g&&g.lessons.length>0){
+      const allDone=g.lessons.every(ll=>S.lessonDone[g.id+'_'+ll.id]);
+      if(allDone){
+        setTimeout(()=>{
+          launchConfetti();playSound('done');
+          document.getElementById('gcTitle').textContent=g.name+' ― 全レッスン完了！';
+          document.getElementById('gcSub').textContent=g.name+'の全'+g.lessons.length+'レッスンをマスター！\nボーナス +100コイン！';
+          document.getElementById('gameClearOverlay').className='game-clear show';
+          addCoins(100,'ゲームクリア！',false);
+        },600);
+      }
+    }
+  }
+  renderStudy();
+}
+
+// ━━ Habit month achievement badge ━━
+function renderHabitMonthBadge(){
+  const now=new Date(today());
+  const year=now.getFullYear(), month=now.getMonth();
+  const daysInMonth=new Date(year,month+1,0).getDate();
+  const daysElapsed=now.getDate();
+  const habitsActive=allHabits().filter(h=>!h.disabled);
+  let checks=0,maxChecks=habitsActive.length*daysElapsed;
+  habitsActive.forEach(h=>{
+    (S.habitLogs[h.id]||[]).forEach(d=>{
+      const dt=new Date(d);
+      if(dt.getFullYear()===year&&dt.getMonth()===month)checks++;
+    });
+  });
+  const pct=maxChecks>0?Math.round(checks/maxChecks*100):0;
+  const badge=pct>=90?{ico:'🏅',label:'今月 達人',c:'#c9a84c',bc:'rgba(201,168,76,.25)'}
+             :pct>=70?{ico:'🌟',label:'今月 優秀',c:'#57c87c',bc:'rgba(87,200,124,.2)'}
+             :pct>=50?{ico:'📈',label:'今月 成長中',c:'#6bb6ff',bc:'rgba(107,182,255,.2)'}
+             :null;
+  const el=document.getElementById('habitCharBubble');
+  if(!el||!badge)return;
+  // バッジをキャラバブル下に追加
+  let b=document.getElementById('habitMonthBadge');
+  if(!b){b=document.createElement('div');b.id='habitMonthBadge';el.parentNode.insertBefore(b,el.nextSibling);}
+  b.innerHTML=`<div class="habit-month-badge" style="color:${badge.c};border-color:${badge.bc};background:${badge.bc}">${badge.ico} ${badge.label} ${pct}%達成</div>`;
+}
+
+// ━━ Habit heatmap ━━
+function renderHeatmap(){
+  const el=document.getElementById('habitHeatmap');if(!el)return;
+  const now=new Date(today());now.setMonth(now.getMonth()+_heatmapOffset);
+  const year=now.getFullYear(), month=now.getMonth();
+  const lbl=document.getElementById('heatmapMonthLabel');
+  if(lbl)lbl.textContent=`${year}年${month+1}月`;
+  // 未来月は無効化
+  const navNext=document.querySelector('.hm-nav-btn:last-of-type');
+  if(navNext)navNext.style.opacity=_heatmapOffset>=0?'.3':'1',navNext.disabled=_heatmapOffset>=0;
+  const firstDay=new Date(year,month,1).getDay(); // 0=日
+  const daysInMonth=new Date(year,month+1,0).getDate();
+  const habitsActive=HABITS.filter(h=>!h.disabled);
+  const maxPerDay=habitsActive.length||1;
+  // 日ごとのチェック数マップ
+  const checkMap={};
+  habitsActive.forEach(h=>{
+    (S.habitLogs[h.id]||[]).forEach(d=>{
+      const dt=new Date(d);
+      if(dt.getFullYear()===year&&dt.getMonth()===month){
+        const key=dt.getDate();checkMap[key]=(checkMap[key]||0)+1;
+      }
+    });
+  });
+  const dayNames=['日','月','火','水','木','金','土'];
+  const cells=[];
+  for(let i=0;i<firstDay;i++)cells.push('<div class="hm-cell empty"></div>');
+  for(let d=1;d<=daysInMonth;d++){
+    const n=checkMap[d]||0;
+    const lvl=n===0?0:n>=maxPerDay?3:Math.ceil(n/maxPerDay*2);
+    const isToday=d===now.getDate();
+    cells.push(`<div class="hm-cell d${lvl}" title="${d}日 ${n}/${maxPerDay}"${isToday?' style="outline:1.5px solid rgba(201,168,76,.7);border-radius:3px"':''}>${d}</div>`);
+  }
+  const monthLabel=`${year}年${month+1}月`;
+  el.innerHTML=`<div class="heatmap-wrap">
+    <div class="heatmap-month-label">${monthLabel}</div>
+    <div class="hm-day-labels">${dayNames.map(n=>`<div class="hm-day-lbl">${n}</div>`).join('')}</div>
+    <div class="heatmap-grid">${cells.join('')}</div>
+  </div>`;
+}
+
+// ━━ Habits ━━
+function renderHabits(){
+  const dayIdx=Math.floor(Date.now()/86400000);
+  renderCharBubble('habitCharBubble',dayIdx%2===0?'fukurou':'enda');
+  renderHeatmap();renderHabitEmojiRow();renderHabitMonthBadge();renderStreakRanking();renderHabitWeekSummary();renderSkipLog();
+  const td=today();
+  // チェック済みを下部に移動
+  const habitsAll=[
+    ...allHabits().filter(h=>!(S.habitLogs[h.id]||[]).includes(td)),
+    ...allHabits().filter(h=> (S.habitLogs[h.id]||[]).includes(td)),
+  ];
+  document.getElementById('habitList').innerHTML=habitsAll.map(h=>{
+    if(h.disabled)return`
+      <div class="habit-row disabled">
+        <div class="hr-ico">${h.emoji}</div>
+        <div class="hr-info"><div class="hr-name">${h.name}</div><div class="hr-desc">近日追加予定</div></div>
+        <div class="hr-btn"></div>
+      </div>`;
+    const logs=S.habitLogs[h.id]||[], done=logs.includes(td), streak=calcStreak(logs);
+    return`
+      <div class="habit-row${done?' done':''}">
+        <div class="hr-ico">${h.emoji}</div>
+        <div class="hr-info">
+          <div class="hr-name">${h.name}</div>
+          <div class="hr-reward">+${h.coins} コイン</div>
+          ${h.desc?`<div class="hr-desc">${h.desc}</div>`:''}
+          ${streak>0?`<div class="hr-streak">🔥 ${streak}日連続</div>`:''}
+        </div>
+        <button class="hr-btn ripple-wrap${done?' done':''}"
+          onclick="${done?'':` checkHabit('${h.id}');renderHabits()`}"
+          ${!done?`onpointerdown="addRipple(this,event)"`:''}>
+          ${done?'✓':''}
+        </button>
+        ${!done?`<button onclick="skipHabit('${h.id}')" style="background:none;border:1px solid var(--line);border-radius:6px;font-size:.56rem;color:var(--muted);cursor:pointer;padding:3px 6px;flex-shrink:0;transition:all .15s" title="スキップ">Skip</button>`:''}
+        ${h.id.startsWith('ch_')?`<button onclick="deleteCustomHabit('${h.id}')" style="background:none;border:none;color:var(--faint);font-size:.75rem;cursor:pointer;padding:2px;flex-shrink:0" title="削除">✕</button>`:''}
+      </div>`;
+  }).join('');
+}
+function calcStreak(logs){
+  const sorted=[...logs].sort().reverse();let streak=0;const d=new Date(today());
+  for(let i=0;i<60;i++){
+    if(sorted.includes(d.toISOString().slice(0,10)))streak++;else break;
+    d.setDate(d.getDate()-1);
+  }
+  return streak;
+}
+function checkHabit(id){
+  const td=today();
+  if(!S.habitLogs[id])S.habitLogs[id]=[];
+  if(S.habitLogs[id].includes(td))return;
+  S.habitLogs[id].push(td);save();
+  const h=allHabits().find(x=>x.id===id);
+  playSound('check');checkAllHabitsDone();
+  addCoins(h?h.coins:REWARDS.habit,'習慣チェック！',false);
+  showFeedback(true,'習慣チェック！ ✅',(h?.name||'習慣')+' +'+(h?.coins||10)+' コイン獲得');
+  // ストリーク強調
+  const streak=calcStreak([...(S.habitLogs[id]||[])]);
+  if(streak>=2)setTimeout(()=>showStreakPopup(streak),400);
+}
+
+// ━━ Homework ━━
+function renderHomework(){updateWeekHwCount();renderDiffStats();setTimeout(updateHwProgressRing,100);
+  const td=today();
+  // 期限順ソート（期限なし→末尾、期限あり→昇順）
+  const sortByDue=(a,b)=>{
+    if(!a.dueDate&&!b.dueDate)return 0;
+    if(!a.dueDate)return 1;if(!b.dueDate)return -1;
+    return a.dueDate<b.dueDate?-1:a.dueDate>b.dueDate?1:0;
+  };
+  let allHw=S.homework;
+  if(_hwFilter==='todo') allHw=allHw.filter(h=>!h.done);
+  else if(_hwFilter==='done') allHw=allHw.filter(h=>h.done);
+  else if(_hwFilter==='star') allHw=allHw.filter(h=>h.priority&&!h.done);
+  const pending=allHw.filter(h=>!h.done).sort(sortByDue);
+  const done   =(_hwFilter==='all'||_hwFilter==='star'?allHw:allHw).filter(h=>h.done).sort((a,b)=>b.doneAt>a.doneAt?1:-1);
+  const toHtml=h=>{
+    const overdue=!h.done&&h.dueDate&&h.dueDate<td;
+    const dueToday=!h.done&&h.dueDate===td;
+    const tomorrow=new Date(td);tomorrow.setDate(tomorrow.getDate()+1);
+    const dueSoon=!h.done&&!dueToday&&!overdue&&h.dueDate&&h.dueDate<=tomorrow.toISOString().slice(0,10);
+    return`<div class="hw-item${h.done?' done':''}${dueToday?' today':''}${dueSoon?' due-soon':''}${h.priority?' priority':''}">
+      <button class="hw-chk${h.done?' done':''}" onclick="${h.done?'':` completeHW('${h.id}');renderHomework()`}">${h.done?'✓':''}</button>
+      <div class="hw-body">
+        <div class="hw-title">${h.title}</div>
+        ${h.difficulty?`<span class="hw-diff-badge hw-diff-${h.difficulty}">${h.difficulty==='easy'?'易':h.difficulty==='normal'?'普':'難'}</span>`:''}
+        ${h.repeat?`<span class="hw-diff-badge" style="color:var(--blue);border-color:rgba(107,182,255,.3)">${h.repeat==='daily'?'🔁毎日':'🔁毎週'}</span>`:''}
+        ${h.gameTag?(()=>{const g=GAMES.find(x=>x.id===h.gameTag);return g?`<span class="hw-tag" style="color:${g.color};border-color:${g.color}44">${g.emoji} ${g.name}</span>`:`<span class="hw-tag" style="color:var(--muted);border-color:var(--line)">📌 その他</span>`;})():''}
+        ${dueToday?'<span class="hw-today-tag">TODAY</span>':''}
+        ${dueSoon?'<span class="hw-due-soon-tag">⏰ 明日まで</span>':''}
+        ${h.dueDate&&!dueToday?`<div class="hw-due${overdue?' overdue':''}">期限：${h.dueDate}${overdue?' ⚠️':''}</div>`:''}
+      </div>
+      <button class="hw-star${h.priority?' on':''}" onclick="togglePriority('${h.id}')">⭐</button>
+      ${!h.done?`<button onclick="openHwEdit('${h.id}')" style="background:none;border:none;color:var(--muted);font-size:.75rem;cursor:pointer;padding:2px;flex-shrink:0;transition:color .15s">✏️</button>`:''}
+      ${!h.done&&h.dueDate?`<button class="hw-snooze" onclick="snoozeHW('${h.id}')" title="期限を1日後ろへ">💤+1</button>`:''}
+      <button class="hw-del" onclick="deleteHW('${h.id}')">✕</button>
+    </div>`;
+  };
+  const isEmpty=pending.length===0&&done.length===0;
+  document.getElementById('hwList').innerHTML=isEmpty
+    ?`<div class="empty-art"><span class="empty-art-ico">📭</span><div class="empty-art-title">宿題なし！</div><div class="empty-art-sub">すべての宿題が完了しています。<br>この調子で頑張ろう！</div></div>`
+    :[...pending.map(toHtml),
+       done.length?'<div class="divider"></div><div class="slabel" style="color:var(--faint)">完了済み</div>':'',
+       ...done.map(toHtml)].join('');
+}
+function addHomework(){
+  const title=document.getElementById('hwTitleInput').value.trim();if(!title)return;
+  const gameTag=document.getElementById('hwGameTag')?.value||'';
+  const gameInfo=gameTag?GAMES.find(g=>g.id===gameTag):null;
+  S.homework.unshift({id:uid(),title,dueDate:document.getElementById('hwDateInput').value||'',gameTag,difficulty:_hwDiff,repeat:_hwRepeat!=='none'?_hwRepeat:null,priority:_quickPriority,done:false,doneAt:null});
+  save();renderHomework();
+  document.getElementById('hwTitleInput').value='';
+  showToast('宿題を追加しました','good');
+}
+function completeHW(id){
+  const h=S.homework.find(x=>x.id===id);if(!h||h.done)return;
+  h.done=true;h.doneAt=today();save();
+  launchConfetti();playHwCompleteSound(h.difficulty||'normal');
+  addCoins(REWARDS.homework,'宿題完了！🎉',false);
+  showFeedback(true,'宿題完了！ 🎉',h.title+' +'+REWARDS.homework+' コイン獲得');
+  setTimeout(showEncouragement,600);
+  renderHomework();
+  // ホーム画面から完了した場合は宿題タブに移動
+  if(document.getElementById('homeScreen').classList.contains('active')){
+    setTimeout(()=>{nav('hwScreen','nb-hw');renderHomework();},700);
+  }
+}
+function deleteHW(id){
+  S.homework=S.homework.filter(x=>x.id!==id);save();renderHomework();
+}
+
+// ━━ Coin history snapshot ━━
+function snapCoinHistory(){
+  const td=today();
+  if(!S.coinHistory)S.coinHistory={};
+  S.coinHistory[td]=S.coins;
+  // 30日以上古いデータは削除
+  const cutoff=new Date(td);cutoff.setDate(cutoff.getDate()-30);
+  Object.keys(S.coinHistory).forEach(k=>{if(k<cutoff.toISOString().slice(0,10))delete S.coinHistory[k];});
+  save();
+}
+
+function drawCoinHistory(){
+  const cv=document.getElementById('coinHistoryCanvas');if(!cv)return;
+  const history=S.coinHistory||{};
+  const dates=[];const now=new Date(today());
+  for(let i=_chartPeriod-1;i>=0;i--){const d=new Date(now);d.setDate(now.getDate()-i);dates.push(d.toISOString().slice(0,10));}
+  const vals=dates.map(d=>history[d]??null);
+  // Fill gaps
+  let last=0;const filled=vals.map(v=>{if(v!==null)last=v;return v??last;});
+  const dpr=window.devicePixelRatio||1;
+  cv.width=cv.offsetWidth*dpr;cv.height=70*dpr;
+  const ctx=cv.getContext('2d');ctx.scale(dpr,dpr);
+  const W=cv.offsetWidth,H=70,n=filled.length;
+  if(n<2){ctx.fillStyle='rgba(201,168,76,.15)';ctx.fillRect(0,0,W,H);return;}
+  const mn=Math.min(...filled),mx=Math.max(...filled,1);
+  const pad=6;const xStep=(W-pad*2)/(n-1);
+  // Gradient fill
+  const grad=ctx.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0,'rgba(201,168,76,.3)');grad.addColorStop(1,'rgba(201,168,76,.02)');
+  ctx.beginPath();
+  ctx.moveTo(pad,H-pad);
+  filled.forEach((v,i)=>{const x=pad+i*xStep,y=pad+(1-(v-mn)/(mx-mn||1))*(H-pad*2);ctx.lineTo(x,y);});
+  ctx.lineTo(W-pad,H-pad);ctx.closePath();ctx.fillStyle=grad;ctx.fill();
+  // Line
+  ctx.beginPath();
+  filled.forEach((v,i)=>{const x=pad+i*xStep,y=pad+(1-(v-mn)/(mx-mn||1))*(H-pad*2);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+  ctx.strokeStyle='rgba(201,168,76,.85)';ctx.lineWidth=1.5;ctx.stroke();
+  // Latest dot
+  const lx=pad+(n-1)*xStep,ly=pad+(1-(filled[n-1]-mn)/(mx-mn||1))*(H-pad*2);
+  ctx.beginPath();ctx.arc(lx,ly,3,0,Math.PI*2);ctx.fillStyle='#c9a84c';ctx.fill();
+}
+
+// ━━ Market ━━
+function renderMarket(){
+  syncCoins();snapCoinHistory();renderCoinLog();renderMktAdvice();renderCoinTips();renderCoinRank();renderMilestoneBar();renderCoinPace();renderVShop();
+  setTimeout(()=>{drawCoinHistory();calcTsum();},50);
+  // コイン配当シミュレーション（仮定: 年利3%・5%・8%）
+  const c=S.coins;
+  const el=document.getElementById('divSimBox');
+  if(!el)return;
+  const rates=[{r:.03,label:'安全運用 3%'},{r:.05,label:'標準運用 5%'},{r:.08,label:'積極運用 8%'}];
+  el.innerHTML=rates.map(x=>`
+    <div class="div-row">
+      <span class="div-label">${x.label}</span>
+      <span class="div-val">+${fmt(Math.round(c*x.r))} / 年</span>
+    </div>`).join('');
+}
+
+// ━━ Characters ━━
+function renderChars(){
+  document.getElementById('charList').innerHTML=CHARS.map(ch=>`
+    <div class="char-card-full">
+      <div class="ccf-top">
+        <img class="ccf-avatar ${ch.cls}" src="${ch.img}" alt="${ch.name}" onerror="this.style.opacity='.15'">
+        <div>
+          <div class="ccf-role">${ch.role}</div>
+          <div class="ccf-name">${ch.name}</div>
+          <div class="ccf-realname">${ch.realName}</div>
+        </div>
+      </div>
+      <div class="ccf-body">
+        <div style="display:flex;gap:7px;margin-bottom:10px">
+          <button onclick="openCharZoom('${ch.id}')" style="flex:1;padding:7px;border-radius:8px;border:1px solid var(--line);background:var(--sf);font-size:.7rem;font-weight:900;color:var(--muted);cursor:pointer;transition:all .15s">🔍 拡大</button>
+          <button onclick="setFixedChar('${ch.id}')" class="fixed-char-chip${S.fixedChar===ch.id?' on':''}" id="fixBtn_${ch.id}">📌 ${S.fixedChar===ch.id?'固定中':'固定する'}</button>
+        </div>
+        <div class="ccf-quote">${ch.quote}</div>
+        <div class="char-today-msg">
+          <div class="ctm-label">💬 今日のメッセージ</div>
+          <div class="ctm-text">${ch.msgs[Math.floor(Date.now()/86400000)%ch.msgs.length]}</div>
+        </div>
+        <div class="slabel" style="margin-top:12px;margin-bottom:6px">全メッセージ</div>
+        <div class="char-msg-list">${ch.msgs.map(m=>`<div class="char-msg-item">${m}</div>`).join('')}</div>
+      </div>
+    </div>`).join('');
+}
+
+// ━━ 積立シミュレーション ━━
+function calcTsum(){
+  let daily=parseFloat(document.getElementById('tsumDaily')?.value)||15;
+  const rate=parseFloat(document.getElementById('tsumRate')?.value)||5;
+  // 月次の場合は月額を日割りに変換
+  const isMonth=_tsumPeriod==='month';
+  if(isMonth)daily=daily/30;
+  const r=rate/100/365;
+  const calc=(days)=>{let tot=0;for(let i=0;i<days;i++)tot=(tot+daily)*(1+r);return Math.round(tot);};
+  const y1=calc(365),y3=calc(365*3),y5=calc(365*5),y10=calc(365*10);
+  const el=document.getElementById('tsumResults');if(!el)return;
+  const items=[{label:'1年後',val:y1},{label:'3年後',val:y3},{label:'5年後',val:y5},{label:'10年後',val:y10}];
+  el.innerHTML=items.map(x=>`<div class="tsum-cell"><div class="tsum-val">${fmt(x.val)}🪙</div><div class="tsum-sub">${x.label}</div></div>`).join('');
+  // ドーナツ: 元本 vs 利益
+  const principal10=daily*365*10;const profit10=y10-principal10;
+  const cols=['rgba(201,168,76,.8)','rgba(87,200,124,.8)'];
+  setTimeout(()=>drawDonut('tsumDonut',[principal10,Math.max(profit10,0)],cols),50);
+  const leg=document.getElementById('tsumLegend');
+  if(leg)leg.innerHTML=`
+    <div class="donut-leg-item"><div class="donut-leg-dot" style="background:${cols[0]}"></div>元本<span class="donut-leg-val">${fmt(principal10)}</span></div>
+    <div class="donut-leg-item"><div class="donut-leg-dot" style="background:${cols[1]}"></div>利益<span class="donut-leg-val">${fmt(Math.round(profit10))}</span></div>
+  `;
+}
+
+// ━━ Coin log ━━
+function addCoinLog(label,amount){
+  if(!S.coinLog)S.coinLog=[];
+  S.coinLog.unshift({label,amount,time:new Date().toLocaleTimeString('ja',{hour:'2-digit',minute:'2-digit'})});
+  if(S.coinLog.length>30)S.coinLog=S.coinLog.slice(0,30);
+  save();
+}
+function renderCoinLog(){
+  const el=document.getElementById('coinLogList');if(!el)return;
+  const logs=S.coinLog||[];
+  el.innerHTML=logs.length
+    ?logs.map(l=>`<div class="cl-item"><span class="cl-label">${l.label}</span><span class="cl-amount">+${l.amount}</span><span class="cl-time">${l.time}</span></div>`).join('')
+    :'<div style="text-align:center;padding:12px;font-size:.68rem;color:var(--faint)">まだ記録がありません</div>';
+}
+
+// ━━ Weekly coin widget ━━
+function renderWeekCoinWidget(){
+  const el=document.getElementById('weekCoinWidget');if(!el)return;
+  const now=new Date(today());
+  const days=['月','火','水','木','金','土','日'];
+  const weekData=[];
+  for(let i=6;i>=0;i--){
+    const d=new Date(now);d.setDate(now.getDate()-i);
+    const ds=d.toISOString().slice(0,10);
+    const coins=(S.coinHistory||{})[ds]||0;
+    const prev=(S.coinHistory||{})[new Date(new Date(ds).getTime()-86400000).toISOString().slice(0,10)]||0;
+    const earned=Math.max(0,coins-prev);
+    weekData.push({day:days[(d.getDay()+6)%7],earned,isToday:i===0});
+  }
+  const maxVal=Math.max(...weekData.map(x=>x.earned),1);
+  const barH=50;
+  el.innerHTML=`<div class="week-coin-row">${weekData.map(d=>`
+    <div class="wc-bar">
+      <div class="wc-bar-val" style="color:${d.isToday?'var(--acc)':'var(--muted)'}">${d.earned||''}</div>
+      <div class="wc-bar-bg" style="height:${barH}px">
+        <div class="wc-bar-fill" style="height:${Math.round(d.earned/maxVal*barH)}px;background:${d.isToday?'var(--acc)':'rgba(201,168,76,.35)'};margin-top:auto"></div>
+      </div>
+      <div class="wc-bar-label" style="color:${d.isToday?'var(--acc)':'var(--faint)'}">${d.day}</div>
+    </div>`).join('')}</div>`;
+}
+
+// ━━ Next lesson suggestion ━━
+function renderNextLesson(){
+  const el=document.getElementById('nextLessonCard');if(!el)return;
+  for(const g of GAMES){
+    if(!g.ready)continue;
+    const next=g.lessons.find(l=>!S.lessonDone[g.id+'_'+l.id]);
+    if(next){
+      el.innerHTML=`<div class="next-lesson-card" onclick="nav('studyScreen','nb-study');renderStudy();setTimeout(()=>toggleGame('${g.id}'),200)">
+        <div class="nl-ico">${g.emoji}</div>
+        <div class="nl-info">
+          <div class="nl-label">✨ 次のレッスン</div>
+          <div class="nl-title">${next.title}</div>
+          <div class="nl-game">${g.name}</div>
+        </div>
+        <span style="color:var(--grn);font-size:.8rem">→</span>
+      </div>`;
+      return;
+    }
+  }
+  el.innerHTML=''; // 全完了なら非表示
+}
+
+// ━━ HW calendar view ━━
+let _hwCalOpen=false;
+function toggleHwCalendar(){
+  _hwCalOpen=!_hwCalOpen;
+  const view=document.getElementById('hwCalendarView');
+  const btn=document.getElementById('hwCalToggle');
+  if(view)view.style.display=_hwCalOpen?'block':'none';
+  if(btn)btn.className='hwcal-view-btn'+(_hwCalOpen?' active':'');
+  if(_hwCalOpen)renderHwCalendar();
+}
+function renderHwCalendar(){
+  const el=document.getElementById('hwCalendarView');if(!el)return;
+  const now=new Date(today());
+  const year=now.getFullYear(), month=now.getMonth();
+  const firstDay=(new Date(year,month,1).getDay()+6)%7; // 月曜始まり
+  const daysInMonth=new Date(year,month+1,0).getDate();
+  const dayNames=['月','火','水','木','金','土','日'];
+  // 宿題を日付でインデックス化
+  const hwByDate={};
+  S.homework.forEach(h=>{if(h.dueDate){if(!hwByDate[h.dueDate])hwByDate[h.dueDate]=[];hwByDate[h.dueDate].push(h);}});
+  const cells=[];
+  for(let i=0;i<firstDay;i++)cells.push('<div class="hwcal-cell"></div>');
+  for(let d=1;d<=daysInMonth;d++){
+    const ds=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const hws=hwByDate[ds]||[];
+    const isToday=ds===today();
+    cells.push(`<div class="hwcal-cell${hws.length?' has-hw':''}${isToday?' today-cell':''}" title="${hws.map(h=>h.title).join(', ')||''}">
+      <div class="hwcal-date">${d}</div>
+      ${hws.slice(0,3).map(h=>`<div class="hwcal-dot" style="background:${h.done?'rgba(87,200,124,.7)':'rgba(201,168,76,.7)'}"></div>`).join('')}
+    </div>`);
+  }
+  el.innerHTML=`
+    <div class="hw-cal-grid">${dayNames.map(n=>`<div class="hwcal-hd">${n}</div>`).join('')}</div>
+    <div class="hw-cal-grid">${cells.join('')}</div>
+    <div style="display:flex;gap:10px;font-size:.56rem;color:var(--muted);margin-top:5px">
+      <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:rgba(201,168,76,.7);margin-right:3px"></span>未完了</span>
+      <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:rgba(87,200,124,.7);margin-right:3px"></span>完了</span>
+    </div>`;
+}
+
+// ━━ HW difficulty stats ━━
+function renderDiffStats(){
+  const el=document.getElementById('diffStatRow');if(!el)return;
+  const diffs=['easy','normal','hard'];
+  const labels={easy:'易',normal:'普',hard:'難'};
+  const colors={easy:'var(--grn)',normal:'var(--acc)',hard:'var(--red)'};
+  el.innerHTML=diffs.map(d=>{
+    const total=S.homework.filter(h=>h.difficulty===d).length;
+    const done=S.homework.filter(h=>h.difficulty===d&&h.done).length;
+    const pct=total?Math.round(done/total*100):0;
+    return`<div class="diff-stat-cell">
+      <div class="ds-val" style="color:${colors[d]}">${pct}%</div>
+      <div class="ds-lbl">${labels[d]} (${done}/${total})</div>
+    </div>`;
+  }).join('');
+}
+
+// ━━ Char double tap reaction ━━
+const REACTIONS=['🎉','✨','💰','🔥','⚡','💎','🌟','🎊'];
+let _tapTimer={};
+function cycleChar(containerId){
+  const now=Date.now();
+  if(now-(_tapTimer[containerId]||0)<400){
+    // ダブルタップ：リアクション
+    const el=document.getElementById('charReaction');
+    if(el){
+      el.textContent=REACTIONS[Math.floor(Math.random()*REACTIONS.length)];
+      el.className='char-reaction show';
+      setTimeout(()=>{el.className='char-reaction';},1500);
+    }
+    playSound('done');
+  } else {
+    // シングルタップ：キャラ切替
+    _charIdx[containerId]=((_charIdx[containerId]||0)+1)%CHARS.length;
+    renderCharBubble(containerId,CHARS[_charIdx[containerId]].id);
+  }
+  _tapTimer[containerId]=now;
+}
+
+// ━━ HW repeat ━━
+let _hwRepeat='none';
+function setHwRepeat(r){
+  _hwRepeat=r;
+  ['none','daily','weekly'].forEach(x=>{
+    const el=document.getElementById('hwr-'+x);
+    if(el)el.className='hw-filter-btn'+(x===r?' active':'');
+  });
+}
+function processRepeatHW(){
+  const td=today();
+  S.homework.filter(h=>h.repeat&&h.done&&h.doneAt<td).forEach(h=>{
+    if(h.repeat==='daily'){h.done=false;h.doneAt=null;h.dueDate=td;}
+    else if(h.repeat==='weekly'){
+      const d=new Date(h.doneAt);d.setDate(d.getDate()+7);
+      if(d.toISOString().slice(0,10)<=td){h.done=false;h.doneAt=null;h.dueDate=d.toISOString().slice(0,10);}
+    }
+  });
+  save();
+}
+
+// ━━ Habit skip ━━
+function skipHabit(id){
+  const td=today();
+  if(!S.habitSkips)S.habitSkips={};
+  if(!S.habitSkips[td])S.habitSkips[td]=[];
+  if(!S.habitSkips[td].includes(id)){
+    S.habitSkips[td].push(id);save();
+    showToast('スキップしました（連続記録は維持）','good');
+    renderHabits();
+  }
+}
+
+// ━━ Flat lesson view ━━
+let _flatView=false;
+function toggleFlatView(){
+  _flatView=!_flatView;
+  const el=document.getElementById('flatView');
+  if(el)el.className='sort-btn'+(_flatView?' active':'');
+  renderStudy();
+}
+
+// ━━ Skip log ━━
+function renderSkipLog(){
+  const el=document.getElementById('skipLogList');if(!el)return;
+  const skips=S.habitSkips||{};
+  const entries=[];
+  Object.entries(skips).forEach(([date,ids])=>{
+    ids.forEach(id=>{
+      const h=allHabits().find(x=>x.id===id);
+      if(h)entries.push({date,name:h.name,emoji:h.emoji});
+    });
+  });
+  entries.sort((a,b)=>b.date.localeCompare(a.date));
+  el.innerHTML=entries.slice(0,10).length
+    ?entries.slice(0,10).map(e=>`<div class="skip-log-item"><span class="skip-log-habit">${e.emoji} ${e.name}</span><span class="skip-log-date">${e.date}</span></div>`).join('')
+    :'<div style="font-size:.66rem;color:var(--faint);padding:8px;text-align:center">スキップ記録はありません</div>';
+}
+
+// ━━ Fixed char ━━
+function setFixedChar(id){
+  S.fixedChar=S.fixedChar===id?null:id;save();
+  renderChars();showToast(S.fixedChar?'キャラを固定しました':'固定を解除しました','good');
+}
+
+// ━━ Tsum period ━━
+let _tsumPeriod='day';
+function setTsumPeriod(p){
+  _tsumPeriod=p;
+  ['day','month'].forEach(x=>{
+    const el=document.getElementById('tp-'+x);if(el)el.className='tsum-period-btn'+(x===p?' active':'');
+  });
+  // ラベル更新
+  const dailyEl=document.getElementById('tsumDaily')?.parentElement?.querySelector('.tsum-lbl');
+  if(dailyEl)dailyEl.textContent=p==='day'?'毎日の積立':'毎月の積立';
+  calcTsum();
+}
+
+// ━━ All habits done confetti ━━
+function checkAllHabitsDone(){
+  const td=today();
+  const habitsActive=allHabits().filter(h=>!h.disabled);
+  const allDone=habitsActive.length>0&&habitsActive.every(h=>(S.habitLogs[h.id]||[]).includes(td));
+  if(allDone&&!S.allHabitsDoneShown?.includes(td)){
+    if(!S.allHabitsDoneShown)S.allHabitsDoneShown=[];
+    S.allHabitsDoneShown.push(td);save();
+    setTimeout(()=>{launchConfetti();showToast('🎉 今日の習慣を全て達成！','good');},300);
+  }
+}
+
+// ━━ Today event (何の日) ━━
+const TODAY_EVENTS=[
+  {m:1, d:1,  year:1973, title:'変動相場制へ移行',  desc:'日本が固定相場制から変動相場制に移行。円の価値が市場で決まる時代へ。'},
+  {m:1, d:9,  year:2007, title:'iPhone発表',         desc:'スティーブ・ジョブズがiPhoneを発表。スマートフォン時代が始まり、経済の在り方が変わった。'},
+  {m:2, d:22, year:1985, title:'プラザ合意前夜',     desc:'G5各国がドル高是正で会議。翌年のプラザ合意で円は急騰し、日本経済が大転換。'},
+  {m:3, d:11, year:2011, title:'東日本大震災',       desc:'マグニチュード9.0の大地震。株式市場は急落し、復興需要と円高が経済に影響。'},
+  {m:4, d:1,  year:2019, title:'令和元年',            desc:'新元号「令和」に改元。日本経済は新時代に向けて動き出した。'},
+  {m:5, d:6,  year:2009, title:'リーマン底打ち',     desc:'世界的な量的緩和政策が浸透し株式市場が底打ち。投資の好機となった年。'},
+  {m:6, d:29, year:2007, title:'iPhone発売（日本）', desc:'日本でiPhone販売開始。モバイル経済が爆発的に拡大する契機となった。'},
+  {m:7, d:2,  year:1997, title:'アジア通貨危機',     desc:'タイバーツが暴落し、アジア各国に通貨危機が波及。日本の金融機関にも打撃。'},
+  {m:8, d:15, year:1971, title:'ニクソンショック',   desc:'米国がドルと金の兌換を停止。戦後の固定相場制が崩壊した歴史的瞬間。'},
+  {m:9, d:15, year:2008, title:'リーマン・ブラザーズ破綻',desc:'米投資銀行が経営破綻。世界金融危機が始まり、世界同時不況へ突入した。'},
+  {m:10,d:19, year:1987, title:'ブラックマンデー',   desc:'NYダウが1日で約22%暴落。「ブラックマンデー」として歴史に刻まれた。'},
+  {m:11,d:29, year:1989, title:'日経平均最高値',     desc:'日経平均が38,915円の史上最高値を記録。翌年からバブル崩壊が始まった。'},
+  {m:12,d:29, year:1989, title:'バブル最高値記念日', desc:'日経平均株価が38,915円の最高値を記録した翌日。歴史の転換点となった日。'},
+];
+function renderTodayEvent(){
+  const el=document.getElementById('todayEventCard');if(!el)return;
+  const now=new Date();const m=now.getMonth()+1,d=now.getDate();
+  const ev=TODAY_EVENTS.find(e=>e.m===m&&e.d===d)
+    ||TODAY_EVENTS[Math.floor(Date.now()/86400000)%TODAY_EVENTS.length];
+  el.innerHTML=`<div class="te-label">📅 今日は何の日<span style="color:var(--muted)">（${m}/${d}）</span></div>
+    <div class="te-year">${ev.year}年 — ${ev.title}</div>
+    <div class="te-desc">${ev.desc}</div>`;
+}
+
+// ━━ Yesterday diff ━━
+function renderYesterdayDiff(){
+  const el=document.getElementById('yesterdayDiff');if(!el)return;
+  const history=S.coinHistory||{};
+  const td=today();
+  const yd=new Date(td);yd.setDate(yd.getDate()-1);
+  const yds=yd.toISOString().slice(0,10);
+  const todayCoins=history[td]||S.coins;
+  const yestCoins=history[yds];
+  if(yestCoins==null){el.className='yesterday-diff eq';el.textContent='';return;}
+  const diff=todayCoins-yestCoins;
+  if(diff>0){el.className='yesterday-diff up';el.textContent='↑'+fmt(diff);}
+  else if(diff<0){el.className='yesterday-diff dn';el.textContent='↓'+fmt(Math.abs(diff));}
+  else{el.className='yesterday-diff eq';el.textContent='±0';}
+}
+
+// ━━ Clear done HW ━━
+function clearDoneHW(){
+  const cnt=S.homework.filter(h=>h.done).length;
+  if(!cnt){showToast('完了済みの宿題はありません','');return;}
+  if(!confirm(`完了済み${cnt}件を削除しますか？`))return;
+  S.homework=S.homework.filter(h=>!h.done);save();renderHomework();
+  showToast(`${cnt}件を削除しました`,'good');
+}
+
+// ━━ Quick priority ━━
+let _quickPriority=false;
+function toggleQuickPriority(){
+  _quickPriority=!_quickPriority;
+  const el=document.getElementById('quickPriorityBtn');
+  if(el)el.className='quick-priority-btn'+(_quickPriority?' on':'');
+}
+
+// ━━ Shop tab ━━
+let _shopTab='all';
+function setShopTab(t){
+  _shopTab=t;
+  ['all','owned'].forEach(x=>{
+    const el=document.getElementById('stab-'+x);
+    if(el)el.className='shop-tab'+(x===t?' active':'');
+  });
+  renderVShop();
+}
+
+// ━━ Week report ━━
+function openWeekReport(){
+  const now=new Date(today());
+  const mon=new Date(now);mon.setDate(now.getDate()-((now.getDay()+6)%7));
+  const dates=[];for(let d=new Date(mon);d<=now;d.setDate(d.getDate()+1))dates.push(d.toISOString().slice(0,10));
+  const habitsActive=allHabits().filter(h=>!h.disabled);
+  let habitChecks=0;habitsActive.forEach(h=>{habitChecks+=(S.habitLogs[h.id]||[]).filter(d=>dates.includes(d)).length;});
+  const hwDone=S.homework.filter(h=>h.done&&dates.includes(h.doneAt)).length;
+  const history=S.coinHistory||{};
+  const weekStart=history[dates[0]]||S.coins;const weekEnd=history[dates[dates.length-1]]||S.coins;
+  const earnedThisWeek=Math.max(0,weekEnd-weekStart);
+  const totalLessons=GAMES.filter(g=>g.ready).reduce((s,g)=>s+g.lessons.length,0)||1;
+  const studyPct=Math.round(Object.keys(S.lessonDone).length/totalLessons*100);
+  const el=document.getElementById('wrBody');
+  if(el)el.innerHTML=`
+    <div style="margin-bottom:20px;padding:16px;background:rgba(201,168,76,.06);border:1px solid rgba(201,168,76,.2);border-radius:12px;text-align:center">
+      <div style="font-family:var(--serif);font-size:.7rem;color:var(--muted)">週間スコア</div>
+      <div id="wrScoreLabel" style="font-family:var(--serif);font-size:3rem;font-weight:700;color:var(--acc)">-</div>
+    </div>
+    ${[
+      {label:'📅 習慣チェック数',val:`${habitChecks}回 / ${habitsActive.length*dates.length}回`},
+      {label:'📝 宿題完了数',val:`${hwDone}件`},
+      {label:'📚 学習達成率',val:`${studyPct}%`},
+      {label:'🪙 今週獲得コイン',val:`+${fmt(earnedThisWeek)}コイン`},
+      {label:'🔥 現在連続日数',val:`${S.streak}日`},
+      {label:'🏅 バッジ解除数',val:`${(S.achievements||[]).length} / ${ACHIEVEMENTS.length}個`},
+    ].map(r=>`<div class="wr-stat"><span class="wr-label">${r.label}</span><span class="wr-val">${r.val}</span></div>`).join('')}`;
+  document.getElementById('weekReportOver').className='week-report-over show';
+  // スコア計算
+  const hScore=Math.round(habitChecks/(habitsActive.length*dates.length||1)*50);
+  const hwScore=Math.min(30,hwDone*10);const lScore=Math.round(studyPct/100*20);
+  const total=hScore+hwScore+lScore;
+  const grade=total>=90?'S':total>=70?'A':total>=50?'B':total>=30?'C':'D';
+  setTimeout(()=>{const sl=document.getElementById('wrScoreLabel');if(sl)sl.textContent=grade;},200);
+  closeSettings();
+}
+function closeWeekReport(){document.getElementById('weekReportOver').className='week-report-over';}
+
+// ━━ Virtual shop ━━
+const VSHOP=[
+  {id:'book1',ico:'📖',name:'投資入門テキスト',desc:'バフェットから学ぶ長期投資の基本',price:100},
+  {id:'book2',ico:'📊',name:'経済史チートシート',desc:'1970〜2025年の重要事件まとめ',price:150},
+  {id:'card1',ico:'🎴',name:'経済用語カード',desc:'株・債券・為替の基礎用語集',price:80},
+  {id:'quiz1',ico:'🧠',name:'上級クイズパック',desc:'難易度★★★の経済クイズ30問',price:200},
+  {id:'hint1',ico:'💡',name:'投資ヒント集',desc:'プロが教える分散投資のコツ10選',price:120},
+];
+function renderVShop(){
+  const el=document.getElementById('vshopGrid');if(!el)return;
+  if(!S.shopOwned)S.shopOwned=[];
+  const items=_shopTab==='owned'?VSHOP.filter(i=>S.shopOwned.includes(i.id)):VSHOP;
+  if(!items.length){el.innerHTML='<div style="text-align:center;padding:16px;font-size:.7rem;color:var(--faint)">購入済みの教材はありません</div>';return;}
+  el.innerHTML=items.map(item=>{
+    const owned=S.shopOwned.includes(item.id);
+    return`<div class="vshop-item${owned?' owned':''}">
+      <div class="vs-ico">${item.ico}</div>
+      <div class="vs-info"><div class="vs-name">${item.name}</div><div class="vs-desc">${item.desc}</div></div>
+      ${owned
+        ?'<button class="vs-btn owned">所有済 ✓</button>'
+        :`<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+            <div class="vs-price">🪙 ${item.price}</div>
+            <button class="vs-btn buy" onclick="buyShopItem('${item.id}',${item.price})">${S.coins>=item.price?'購入':'不足'}</button>
+          </div>`}
+    </div>`;
+  }).join('');
+}
+function buyShopItem(id,price){
+  if(!S.shopOwned)S.shopOwned=[];
+  if(S.shopOwned.includes(id)){showToast('すでに所有しています','');return;}
+  if(S.coins<price){showToast('コインが足りません！','');return;}
+  S.coins-=price;S.shopOwned.push(id);save();
+  launchCoinShower();syncCoins();renderVShop();
+  showToast('購入しました！','good');checkAchievements();
+}
+
+// ━━ Coin shower ━━
+function launchCoinShower(){
+  const wrap=document.getElementById('coinShowerWrap');if(!wrap)return;
+  for(let i=0;i<20;i++){
+    const el=document.createElement('div');el.className='cs-coin';
+    el.textContent='🪙';
+    const x=Math.random()*100, dx=(Math.random()-.5)*80;
+    el.style.cssText=`left:${x}%;top:-5%;--dx:${dx}px;--d:${(.8+Math.random()*.8).toFixed(2)}s;--del:${(Math.random()*.4).toFixed(2)}s`;
+    wrap.appendChild(el);
+  }
+  setTimeout(()=>{wrap.innerHTML='';},1500);
+}
+
+// ━━ HW progress ring ━━
+function updateHwProgressRing(){
+  const total=S.homework.length,done=S.homework.filter(h=>h.done).length;
+  const pct=total?Math.round(done/total*100):0;
+  const ring=document.getElementById('hwRing');
+  const pctEl=document.getElementById('hwProgressPct');
+  if(ring)ring.style.strokeDashoffset=126-(126*pct/100);
+  if(pctEl)pctEl.textContent=pct+'%';
+}
+
+// ━━ Week score ━━
+function renderWeekScore(){
+  const el=document.getElementById('weekScoreCard');if(!el)return;
+  const now=new Date(today());
+  const mon=new Date(now);mon.setDate(now.getDate()-((now.getDay()+6)%7));
+  const dates=[];for(let d=new Date(mon);d<=now;d.setDate(d.getDate()+1))dates.push(d.toISOString().slice(0,10));
+  const habitsActive=allHabits().filter(h=>!h.disabled);
+  let habitChecks=0,maxHabit=habitsActive.length*dates.length;
+  habitsActive.forEach(h=>{habitChecks+=(S.habitLogs[h.id]||[]).filter(d=>dates.includes(d)).length;});
+  const hwDone=S.homework.filter(h=>h.done&&dates.includes(h.doneAt)).length;
+  const hwTotal=S.homework.filter(h=>dates.includes(h.dueDate)||dates.includes(h.doneAt)).length;
+  const lessons=Object.keys(S.lessonDone).length;
+  const totalLessons=GAMES.filter(g=>g.ready).reduce((s,g)=>s+g.lessons.length,0)||1;
+  // スコア計算（習慣50点・宿題30点・レッスン20点）
+  const hScore=maxHabit?Math.round(habitChecks/maxHabit*50):0;
+  const hwScore=hwTotal?Math.round(hwDone/hwTotal*30):0;
+  const lScore=Math.round(Math.min(lessons/totalLessons,1)*20);
+  const total=hScore+hwScore+lScore;
+  const grade=total>=90?'S':total>=70?'A':total>=50?'B':total>=30?'C':'D';
+  const gradeC={S:'var(--gold)',A:'var(--grn)',B:'var(--sky)',C:'var(--acc)',D:'var(--muted)'}[grade];
+  el.innerHTML=`
+    <div class="ws-top">
+      <div>
+        <div class="ws-title">今週のスコア</div>
+        <div style="display:flex;align-items:baseline;gap:6px;margin-top:3px">
+          <div class="ws-score">${total}</div>
+          <div class="ws-max">/ 100</div>
+          <div style="font-family:var(--serif);font-size:1.5rem;font-weight:700;color:${gradeC};margin-left:4px">${grade}</div>
+        </div>
+      </div>
+    </div>
+    <div class="ws-bars">
+      <div class="ws-bar-row"><span class="ws-bar-label">習慣</span><div class="ws-bar-bg"><div class="ws-bar-fill" style="width:${maxHabit?habitChecks/maxHabit*100:0}%;background:var(--grn)"></div></div><span class="ws-bar-num" style="color:var(--grn)">${hScore}</span></div>
+      <div class="ws-bar-row"><span class="ws-bar-label">宿題</span><div class="ws-bar-bg"><div class="ws-bar-fill" style="width:${hwTotal?hwDone/hwTotal*100:0}%;background:var(--acc)"></div></div><span class="ws-bar-num" style="color:var(--acc)">${hwScore}</span></div>
+      <div class="ws-bar-row"><span class="ws-bar-label">学習</span><div class="ws-bar-bg"><div class="ws-bar-fill" style="width:${lessons/totalLessons*100}%;background:var(--pur)"></div></div><span class="ws-bar-num" style="color:var(--pur)">${lScore}</span></div>
+    </div>`;
+}
+
+// ━━ Habit week summary ━━
+function renderHabitWeekSummary(){
+  const el=document.getElementById('habitWeekSummary');if(!el)return;
+  const now=new Date(today());
+  const mon=new Date(now);mon.setDate(now.getDate()-((now.getDay()+6)%7));
+  const dates=[];for(let d=new Date(mon);d<=now;d.setDate(d.getDate()+1))dates.push(d.toISOString().slice(0,10));
+  const habitsActive=allHabits().filter(h=>!h.disabled);
+  let total=0,done=0;
+  habitsActive.forEach(h=>{
+    total+=dates.length;
+    done+=(S.habitLogs[h.id]||[]).filter(d=>dates.includes(d)).length;
+  });
+  const best=habitsActive.reduce((mx,h)=>{const s=calcStreak(S.habitLogs[h.id]||[]);return s>mx?s:mx;},0);
+  const pct=total?Math.round(done/total*100):0;
+  el.innerHTML=`
+    <div class="hws-cell"><div class="hws-val">${done}</div><div class="hws-lbl">今週チェック</div></div>
+    <div class="hws-cell"><div class="hws-val" style="color:var(--acc)">${pct}%</div><div class="hws-lbl">達成率</div></div>
+    <div class="hws-cell"><div class="hws-val" style="color:var(--ora)">${best}日</div><div class="hws-lbl">最長連続</div></div>`;
+}
+
+// ━━ Char zoom ━━
+function openCharZoom(charId){
+  const ch=CHARS.find(c=>c.id===charId);if(!ch)return;
+  document.getElementById('czImg').src=ch.img;
+  document.getElementById('czImg').className=`char-zoom-img ${ch.cls}`;
+  document.getElementById('czName').textContent=ch.name;
+  document.getElementById('czQuote').textContent=ch.quote;
+  document.getElementById('charZoomOver').className='char-zoom-over show';
+}
+function closeCharZoom(){document.getElementById('charZoomOver').className='char-zoom-over';}
+
+// ━━ Swipe char bubble ━━
+function setupCharSwipe(containerId){
+  const el=document.getElementById(containerId);if(!el)return;
+  let startX=0;
+  el.addEventListener('touchstart',e=>{startX=e.touches[0].clientX;},{passive:true});
+  el.addEventListener('touchend',e=>{
+    const dx=e.changedTouches[0].clientX-startX;
+    if(Math.abs(dx)>40){
+      const dir=dx>0?-1:1;
+      _charIdx[containerId]=((_charIdx[containerId]||0)+dir+CHARS.length)%CHARS.length;
+      renderCharBubble(containerId,CHARS[_charIdx[containerId]].id);
+    }
+  },{passive:true});
+}
+
+// ━━ Browser notification ━━
+function updateNotifUI(){
+  const status=Notification?.permission||'default';
+  const el=document.getElementById('notifStatus');
+  const btn=document.getElementById('notifBtn');
+  if(el){el.textContent={granted:'通知ON',denied:'ブロック中',default:'未設定'}[status]||'未設定';el.className='notif-status '+status;}
+  if(btn)btn.style.display=status==='granted'?'none':'inline-block';
+}
+function requestNotification(){
+  if(!('Notification' in window)){showToast('このブラウザは通知非対応','');return;}
+  Notification.requestPermission().then(p=>{
+    updateNotifUI();
+    if(p==='granted')showToast('通知を許可しました！','good');
+  });
+}
+
+// ━━ Partial reset ━━
+function partialReset(type){
+  const labels={homework:'宿題',habits:'習慣ログ',lessons:'レッスン進捗',coins:'コイン'};
+  if(!confirm(`${labels[type]}のデータを削除しますか？`))return;
+  if(type==='homework')S.homework=[];
+  else if(type==='habits'){S.habitLogs={};S.customHabits=[];}
+  else if(type==='lessons'){S.lessonDone={};S.lessonMemos={};}
+  else if(type==='coins'){S.coins=0;S.totalEarned=0;S.coinLog=[];S.coinHistory={};}
+  save();closeSettings();renderHome();showToast(labels[type]+'をリセットしました','good');
+}
+
+// ━━ Milestone progress bar ━━
+function renderMilestoneBar(){
+  const el=document.getElementById('milestonebar');if(!el)return;
+  const cur=COIN_RANKS.findIndex(r=>S.coins<r.min);
+  const prev=cur<=0?COIN_RANKS[0]:COIN_RANKS[cur-1];
+  const next=cur<0?null:COIN_RANKS[cur];
+  if(!next){el.innerHTML='<div style="font-size:.58rem;color:var(--acc);text-align:center;margin-top:8px">👑 最高ランク達成！</div>';return;}
+  const pct=Math.min(100,Math.round((S.coins-prev.min)/(next.min-prev.min)*100));
+  el.innerHTML=`<div class="milestone-bar-wrap">
+    <div class="milestone-bar-label"><span>${prev.label}</span><span>→ ${next.label} (あと${fmt(next.min-S.coins)}🪙)</span></div>
+    <div class="milestone-bar-bg"><div class="milestone-bar-fill" style="width:${pct}%;background:linear-gradient(90deg,${prev.c||'var(--acc)'},${next.c||'var(--acc)'})"></div></div>
+  </div>`;
+}
+
+// ━━ Coin pace ━━
+function renderCoinPace(){
+  const el=document.getElementById('coinPaceVal');if(!el)return;
+  const history=S.coinHistory||{};
+  const dates=Object.keys(history).sort();
+  if(dates.length<2){el.textContent='データ収集中…';return;}
+  const values=dates.map(d=>history[d]);
+  let totalEarned=0;
+  for(let i=1;i<values.length;i++)totalEarned+=Math.max(0,values[i]-values[i-1]);
+  const avgPerDay=Math.round(totalEarned/(dates.length-1));
+  el.textContent=`+${fmt(avgPerDay)} 🪙/日`;
+}
+
+// ━━ Coin log with daily subtotals ━━
+function renderCoinLog(){
+  const el=document.getElementById('coinLogList');if(!el)return;
+  const logs=S.coinLog||[];
+  if(!logs.length){el.innerHTML='<div style="text-align:center;padding:12px;font-size:.68rem;color:var(--faint)">まだ記録がありません</div>';return;}
+  // グループ化（時刻→今日/昨日判定）
+  const today_str=today();
+  const yesterday=new Date(today_str);yesterday.setDate(yesterday.getDate()-1);
+  const yest_str=yesterday.toISOString().slice(0,10);
+  // ログは時刻のみなのでグループ化は省略→先頭に今日の小計を表示
+  const todayLogs=logs.filter((_,i)=>i<10); // 直近10件
+  const todayTotal=todayLogs.reduce((s,l)=>s+l.amount,0);
+  el.innerHTML=`<div class="cl-day-header"><span>直近の記録</span><span class="cl-day-total">合計 +${todayTotal}🪙</span></div>`
+    +todayLogs.map(l=>`<div class="cl-item"><span class="cl-label">${l.label}</span><span class="cl-amount">+${l.amount}</span><span class="cl-time">${l.time}</span></div>`).join('');
+}
+
+// ━━ Difficulty-based sound ━━
+function playHwCompleteSound(difficulty){
+  if(!isSoundOn())return;
+  try{
+    const ac=getAC(),t=ac.currentTime;
+    const beep=(freq,start,dur,vol=.2)=>{
+      const o=ac.createOscillator(),g=ac.createGain();
+      o.frequency.value=freq;g.gain.setValueAtTime(vol,t+start);
+      g.gain.exponentialRampToValueAtTime(.001,t+start+dur);
+      o.connect(g);g.connect(ac.destination);o.start(t+start);o.stop(t+start+dur);
+    };
+    if(difficulty==='easy'){beep(659,.0,.12);beep(784,.1,.15);}
+    else if(difficulty==='hard'){[523,659,784,988,1047].forEach((f,i)=>beep(f,i*.08,.2,.25));}
+    else{beep(523,.0,.1);beep(659,.09,.14);beep(784,.18,.18);}
+  }catch(e){}
+}
+
+// ━━ News ticker ━━
+const NEWS_ITEMS=[
+  '日経平均株価は長期的に見て右肩上がりの傾向があります',
+  '複利効果：毎日10コイン積み立てで10年後に驚きの結果に',
+  '分散投資の基本：株・債券・不動産・金を組み合わせよう',
+  'オイルショック（1973年）→ 日本経済が省エネ技術で復活',
+  'バブル崩壊（1990年）→ 失われた30年の始まりを学ぼう',
+  'リーマンショック（2008年）→ 世界同時不況から何を学ぶ？',
+  'アベノミクス（2012年）→ 3本の矢で日本株が急騰',
+  'コロナショック（2020年）→ 最大の暴落から最速回復へ',
+  '今日の習慣チェックは完了しましたか？ +10コイン待ってます',
+  '宿題を期限内に完了すると +50コイン！忘れずに',
+];
+function renderTicker(){
+  const el=document.getElementById('newsTicker');if(!el)return;
+  const idx=Math.floor(Date.now()/3600000)%NEWS_ITEMS.length;
+  el.textContent=NEWS_ITEMS[idx]+' ・ '+NEWS_ITEMS[(idx+1)%NEWS_ITEMS.length];
+}
+
+// ━━ Coin rank ━━
+const COIN_RANKS=[
+  {min:0,   label:'🥉 ブロンズ', c:'#cd7f32', bc:'rgba(205,127,50,.2)'},
+  {min:100, label:'🥈 シルバー', c:'#c0c0c0', bc:'rgba(192,192,192,.2)'},
+  {min:500, label:'🥇 ゴールド', c:'#ffd700', bc:'rgba(255,215,0,.2)'},
+  {min:1000,label:'💎 プラチナ', c:'#a78bfa', bc:'rgba(167,139,250,.2)'},
+  {min:3000,label:'👑 ダイヤモンド',c:'#6bb6ff',bc:'rgba(107,182,255,.2)'},
+];
+function renderCoinRank(){
+  const el=document.getElementById('coinRankBadge');if(!el)return;
+  const rank=[...COIN_RANKS].reverse().find(r=>S.coins>=r.min)||COIN_RANKS[0];
+  const next=COIN_RANKS[COIN_RANKS.findIndex(r=>r===rank)+1];
+  el.textContent=rank.label;
+  el.style.cssText=`color:${rank.c};border-color:${rank.bc};background:${rank.bc};display:inline-flex`;
+  // 次のランクまでの進捗
+  if(next){const pct=Math.min(100,Math.round((S.coins-rank.min)/(next.min-rank.min)*100));el.title=`次のランクまで${next.min-S.coins}コイン (${pct}%)`;}
+}
+
+// ━━ Streak ranking ━━
+function renderStreakRanking(){
+  const el=document.getElementById('streakRankList');if(!el)return;
+  const habits=allHabits().filter(h=>!h.disabled);
+  const ranked=habits.map(h=>{
+    const logs=S.habitLogs[h.id]||[];
+    // 最長連続記録を計算
+    const sorted=[...new Set(logs)].sort();
+    let maxStreak=0,cur=0,prev=null;
+    sorted.forEach(d=>{
+      if(prev){const diff=(new Date(d)-new Date(prev))/86400000;cur=diff<=1.5?cur+1:1;}
+      else cur=1;
+      if(cur>maxStreak)maxStreak=cur;
+      prev=d;
+    });
+    return{...h,maxStreak,curStreak:calcStreak(logs)};
+  }).sort((a,b)=>b.maxStreak-a.maxStreak).slice(0,5);
+  const medals=['🥇','🥈','🥉','4','5'];
+  const medalCls=['gold','silver','bronze','',''];
+  el.innerHTML=ranked.length
+    ?ranked.map((h,i)=>`
+      <div class="streak-rank-item">
+        <span class="sr-rank ${medalCls[i]}">${medals[i]}</span>
+        <span class="sr-ico">${h.emoji}</span>
+        <span class="sr-name">${h.name}</span>
+        <span class="sr-streak">🔥 最長${h.maxStreak}日 / 現在${h.curStreak}日</span>
+      </div>`).join('')
+    :'<div style="font-size:.7rem;color:var(--faint);padding:10px;text-align:center">習慣を追加してチェックすると記録が積まれます</div>';
+}
+
+// ━━ Guide ━━
+function openGuide(){document.getElementById('guideOver').className='guide-over show';closeSettings();}
+function closeGuide(){document.getElementById('guideOver').className='guide-over';}
+
+// ━━ Theme colors ━━
+const THEMES=[
+  {acc:'#c9a84c',name:'ゴールド'},
+  {acc:'#57c87c',name:'グリーン'},
+  {acc:'#6bb6ff',name:'ブルー'},
+  {acc:'#a78bfa',name:'パープル'},
+  {acc:'#f97316',name:'オレンジ'},
+  {acc:'#e05555',name:'レッド'},
+];
+function applyTheme(){
+  if(S.themeAcc){document.documentElement.style.setProperty('--acc',S.themeAcc);}
+  const picker=document.getElementById('themeColorPicker');
+  if(!picker)return;
+  picker.innerHTML=THEMES.map(t=>`
+    <div class="theme-dot${S.themeAcc===t.acc?' active':''}" style="background:${t.acc}" title="${t.name}"
+      onclick="setTheme('${t.acc}')"></div>`).join('');
+}
+function setTheme(acc){
+  S.themeAcc=acc;save();applyTheme();
+  document.documentElement.style.setProperty('--acc',acc);
+  const goldd=acc==='#c9a84c'?'#9a7c28':acc;
+  document.documentElement.style.setProperty('--goldd',goldd);
+  closeSettings();setTimeout(openSettings,100);
+}
+
+// ━━ Share progress ━━
+function shareProgress(){
+  const lessonCount=Object.keys(S.lessonDone).length;
+  const hwDone=S.homework.filter(h=>h.done).length;
+  const habitsActive=allHabits().filter(h=>!h.disabled);
+  const td=today();const habitsDone=habitsActive.filter(h=>(S.habitLogs[h.id]||[]).includes(td)).length;
+  const text=`📚 マネぼうアプリで学習中！\n🪙 コイン: ${fmt(S.coins)}\n🔥 連続: ${S.streak}日\n📖 レッスン完了: ${lessonCount}個\n📝 宿題完了: ${hwDone}件\n📅 今日の習慣: ${habitsDone}/${habitsActive.length}\n\nhttps://rainybrainch.github.io/manebou-app/`;
+  if(navigator.share){navigator.share({title:'マネぼうアプリ',text});}
+  else{navigator.clipboard?.writeText(text).then(()=>showToast('シェアテキストをコピーしました','good'));}
+}
+
+// ━━ Study donut ━━
+function renderStudyDonut(){
+  const allLessons=GAMES.filter(g=>g.ready).flatMap(g=>g.lessons);
+  const done=Object.keys(S.lessonDone).length;
+  const total=allLessons.length||1;
+  const pct=Math.round(done/total*100);
+  const el=document.getElementById('studyProgTitle');
+  const sub=document.getElementById('studyProgSub');
+  if(el)el.textContent=`学習進捗 ${pct}%`;
+  if(sub)sub.innerHTML=`${done} / ${total} レッスン完了<br><span style="color:var(--acc);font-weight:700">${pct===100?'👑 全レッスン制覇！':'あと'+(total-done)+'レッスン'}</span>`;
+  setTimeout(()=>drawDonut('studyDonut',[done,total-done],['rgba(87,200,124,.8)','rgba(255,255,255,.06)']),30);
+}
+
+// ━━ Tomorrow reminder ━━
+function renderTomorrow(){
+  const el=document.getElementById('tomorrowList');if(!el)return;
+  const tm=new Date(today());tm.setDate(tm.getDate()+1);
+  const tms=tm.toISOString().slice(0,10);
+  const items=[];
+  // 明日期限の宿題
+  S.homework.filter(h=>!h.done&&h.dueDate===tms).forEach(h=>{
+    items.push({ico:'📝',text:h.title});
+  });
+  // 習慣リマインダー
+  allHabits().filter(h=>!h.disabled).slice(0,2).forEach(h=>{
+    items.push({ico:h.emoji,text:h.name+'チェックを忘れずに'});
+  });
+  el.innerHTML=items.length
+    ?items.map(i=>`<div class="tm-item"><span>${i.ico}</span><span>${i.text}</span></div>`).join('')
+    :'<div class="tm-item"><span>🌙</span><span>明日の予定はのんびりです</span></div>';
+}
+
+// ━━ Week HW counter ━━
+function updateWeekHwCount(){
+  const el=document.getElementById('weekHwCount');if(!el)return;
+  const now=new Date(today());
+  const mon=new Date(now);mon.setDate(now.getDate()-((now.getDay()+6)%7));
+  const dates=[];for(let d=new Date(mon);d<=now;d.setDate(d.getDate()+1))dates.push(d.toISOString().slice(0,10));
+  const cnt=S.homework.filter(h=>h.done&&dates.includes(h.doneAt)).length;
+  el.textContent=cnt+'件';
+}
+
+// ━━ Copy coins ━━
+function copyCoins(){
+  navigator.clipboard?.writeText(String(S.coins)).then(()=>showToast('🪙 '+fmt(S.coins)+' コピーしました','good'));
+}
+
+// ━━ Game sort ━━
+function toggleGameSort(){
+  _gameSort=_gameSort==='default'?'progress':'default';
+  const el=document.getElementById('sortGame');
+  if(el)el.className='sort-btn'+(_gameSort!=='default'?' active':'');
+  renderStudy();
+}
+
+// ━━ User name ━━
+function saveUserName(v){S.userName=v.trim();save();}
+function loadUserNameUI(){
+  const el=document.getElementById('userNameInput');
+  if(el&&S.userName)el.value=S.userName;
+}
+
+// ━━ Top progress bar ━━
+function updateTopProgress(){
+  const td=today();
+  const habitsActive=allHabits().filter(h=>!h.disabled);
+  const habitsDone=habitsActive.filter(h=>(S.habitLogs[h.id]||[]).includes(td)).length;
+  const hwToday=S.homework.filter(h=>h.dueDate===td).length;
+  const hwDoneToday=S.homework.filter(h=>h.dueDate===td&&h.done).length;
+  const total=habitsActive.length+(hwToday||0);
+  const done=habitsDone+(hwDoneToday||0);
+  const pct=total>0?Math.round(done/total*100):0;
+  const el=document.getElementById('topProgressFill');
+  if(el)el.style.width=pct+'%';
+}
+
+// ━━ Streak popup ━━
+let _spTimer=null;
+function showStreakPopup(n){
+  const el=document.getElementById('streakPopup');
+  const num=document.getElementById('spNum');
+  if(!el)return;
+  if(num)num.textContent=n;
+  el.className='streak-popup show';
+  clearTimeout(_spTimer);
+  _spTimer=setTimeout(()=>{el.className='streak-popup';},1800);
+}
+
+// ━━ Bulk complete HW ━━
+function bulkCompleteHW(){
+  const pending=S.homework.filter(h=>!h.done);
+  if(!pending.length)return;
+  if(!confirm(`未完了の宿題${pending.length}件を全て完了にしますか？`))return;
+  const earned=pending.length*REWARDS.homework;
+  pending.forEach(h=>{h.done=true;h.doneAt=today();});
+  save();launchConfetti();playSound('done');
+  addCoins(earned,'まとめて完了！',false);
+  renderHomework();showToast(`${pending.length}件完了！+${earned}コイン`,'good');
+}
+
+// ━━ Today earned display ━━
+function updateTodayEarned(){
+  const history=S.coinHistory||{};
+  const td=today();
+  const prev=history[new Date(new Date(td).getTime()-86400000).toISOString().slice(0,10)]||0;
+  const earned=Math.max(0,(history[td]||S.coins)-prev);
+  const el=document.getElementById('todayEarned');
+  if(!el)return;
+  if(earned>0){el.textContent='+'+earned;el.className='today-earned show';}
+  else el.className='today-earned';
+}
+
+// ━━ Donut chart ━━
+function drawDonut(canvasId, segments, colors){
+  const cv=document.getElementById(canvasId);if(!cv)return;
+  const ctx=cv.getContext('2d');
+  const W=cv.width,H=cv.height,cx=W/2,cy=H/2,r=Math.min(W,H)/2-4,ir=r*.55;
+  ctx.clearRect(0,0,W,H);
+  const total=segments.reduce((s,x)=>s+x,0)||1;
+  let angle=-Math.PI/2;
+  segments.forEach((v,i)=>{
+    const sweep=v/total*Math.PI*2;
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,angle,angle+sweep);ctx.closePath();
+    ctx.fillStyle=colors[i];ctx.fill();
+    angle+=sweep;
+  });
+  // inner circle
+  ctx.beginPath();ctx.arc(cx,cy,ir,0,Math.PI*2);ctx.fillStyle='var(--bg2)';ctx.fill();
+}
+
+// ━━ HW difficulty ━━
+let _hwDiff='normal';
+function setHwDiff(d){
+  _hwDiff=d;
+  ['easy','normal','hard'].forEach(x=>{
+    const el=document.getElementById('hwd-'+x);
+    if(el)el.className='hw-filter-btn'+(x===d?' active':'');
+  });
+}
+
+// ━━ Lesson memo ━━
+function toggleMemo(key){
+  const el=document.getElementById('memo_'+key);
+  if(el)el.style.display=el.style.display==='none'?'block':'none';
+}
+function saveMemo(key){
+  const inp=document.getElementById('memoInput_'+key);if(!inp)return;
+  if(!S.lessonMemos)S.lessonMemos={};
+  S.lessonMemos[key+'_memo']=inp.value.trim();
+  save();renderStudy();showToast('メモを保存しました','good');
+}
+function clearMemo(key){
+  if(!S.lessonMemos)return;
+  delete S.lessonMemos[key+'_memo'];
+  save();renderStudy();
+}
+
+// ━━ Coin tips ━━
+const COIN_TIPS=[
+  {ico:'📚',t:'レッスン完了でコイン獲得',s:'各レッスンをクリアすると+30コイン。全レッスン制覇でボーナス+100コイン！'},
+  {ico:'📅',t:'毎日の習慣チェック',s:'日経平均チェック等の習慣を毎日続けると+10コイン/日。連続記録でストリークを伸ばそう。'},
+  {ico:'📝',t:'宿題を期限内に完了',s:'宿題1件完了で+50コイン。期限内に終わらせてコインを稼ごう。'},
+  {ico:'🔥',t:'ログインボーナス',s:'毎日アプリを開くと+5コイン。連続ログインでマイルストーンボーナスも！'},
+  {ico:'🏪',t:'将来：マーケットで使う',s:'貯めたコインで（準備中の）株式・不動産をゲーム内で購入予定。今から貯めておこう！'},
+];
+function renderCoinTips(){
+  const el=document.getElementById('coinTipsList');if(!el)return;
+  el.innerHTML=COIN_TIPS.map(t=>`
+    <div class="coin-tip">
+      <div class="ct-ico">${t.ico}</div>
+      <div class="ct-info"><div class="ct-title">${t.t}</div><div class="ct-sub">${t.s}</div></div>
+    </div>`).join('');
+}
+
+// ━━ Encouragement messages ━━
+const ENC_MSGS=[
+  {ico:'🎉',t:'よくやった！',m:'一つひとつの積み重ねが、大きな力になる。'},
+  {ico:'🌟',t:'すばらしい！',m:'宿題をやり遂げた君は、本物の学習者だ。'},
+  {ico:'💪',t:'お疲れさま！',m:'今日も一歩前に進んだ。この調子で！'},
+  {ico:'🏆',t:'完璧！',m:'継続は力なり。君は確実に成長している。'},
+  {ico:'🚀',t:'最高！',m:'えんだとふくろうも誇りに思っているよ！'},
+];
+function showEncouragement(){
+  const e=ENC_MSGS[Math.floor(Math.random()*ENC_MSGS.length)];
+  document.getElementById('encIco').textContent=e.ico;
+  document.getElementById('encTitle').textContent=e.t;
+  document.getElementById('encMsg').textContent=e.m;
+  document.getElementById('encOver').className='enc-over show';
+}
+function closeEnc(){document.getElementById('encOver').className='enc-over';}
+
+// ━━ Data export ━━
+function exportData(){
+  const data={exportedAt:new Date().toISOString(),version:'0.5',...S};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`manebo-data-${today()}.json`;
+  a.click();URL.revokeObjectURL(a.href);
+  showToast('データをエクスポートしました','good');
+}
+
+// ━━ Greeting ━━
+function renderGreeting(){
+  const h=new Date().getHours();
+  const base=h<5?'深夜もお疲れさま':h<10?'おはようございます':h<17?'こんにちは':h<21?'こんばんは':'お疲れさまです';
+  const name=S.userName?`、${S.userName}さん`:'';
+  const el=document.getElementById('greetingText');if(el)el.textContent=base+name+'！';
+}
+
+// ━━ HW filter ━━
+let _hwFilter='all';
+function setHwFilter(f){
+  _hwFilter=f;
+  ['all','todo','done','star'].forEach(x=>{
+    const el=document.getElementById('hwf-'+x);
+    if(el)el.className='hw-filter-btn'+(x===f?' active':'');
+  });
+  renderHomework();
+}
+
+// ━━ Snooze ━━
+function snoozeHW(id){
+  const h=S.homework.find(x=>x.id===id);if(!h||!h.dueDate)return;
+  const d=new Date(h.dueDate);d.setDate(d.getDate()+1);
+  h.dueDate=d.toISOString().slice(0,10);
+  save();renderHomework();showToast('💤 1日スヌーズしました','good');
+}
+
+// ━━ Market advice ━━
+const MKT_ADVICE=[
+  {text:'分散投資はリスクを分けることで、損失を限定する最もシンプルな方法だ。',author:'— ハリー・マーコウィッツ'},
+  {text:'株式市場は、忍耐のない者から忍耐強い者へ富を移転する装置だ。',author:'— ウォーレン・バフェット'},
+  {text:'買い時は悲観が最高潮に達した時。売り時は楽観が最高潮に達した時だ。',author:'— ジョン・テンプルトン'},
+  {text:'長期的に見れば、株式市場はビジネスの成長を反映する。',author:'— ピーター・リンチ'},
+  {text:'複利の魔法を信じ、時間に働いてもらおう。',author:'— えんだ / 円舵'},
+  {text:'リスクを理解しない者は、それに支配される。',author:'— ふくろう / 服牢'},
+  {text:'貯蓄は守り。投資は攻め。両方知ることで人生は豊かになる。',author:'— マネぼう'},
+];
+function renderMktAdvice(){
+  const q=MKT_ADVICE[Math.floor(Date.now()/86400000)%MKT_ADVICE.length];
+  const t=document.getElementById('mktAdviceText'),a=document.getElementById('mktAdviceAuthor');
+  if(t)t.textContent=q.text;if(a)a.textContent=q.author;
+}
+
+// ━━ Chart period ━━
+let _chartPeriod=14;
+function setChartPeriod(n){
+  _chartPeriod=n;
+  [7,14,30].forEach(x=>{
+    const el=document.getElementById('cp-'+x);
+    if(el)el.className='chart-period-btn'+(x===n?' active':'');
+  });
+  setTimeout(drawCoinHistory,30);
+}
+
+// ━━ Heatmap month navigation ━━
+let _heatmapOffset=0; // 0=今月、-1=先月
+function shiftHeatmapMonth(d){_heatmapOffset+=d;renderHeatmap();}
+
+// ━━ Motivational quotes ━━
+const QUOTES=[
+  {text:'投資で大切なのは、賢さよりも規律だ。',author:'— ウォーレン・バフェット'},
+  {text:'複利は人類最大の発明だ。知っている者がそれを稼ぎ、知らない者がそれを払う。',author:'— アルバート・アインシュタイン'},
+  {text:'リスクとは、自分が何をやっているかを知らないことから生まれる。',author:'— ウォーレン・バフェット'},
+  {text:'お金は奴隷にすることもできれば、主人にすることもできる。',author:'— フランシス・ベーコン'},
+  {text:'成功のために必要なのは、正しい方向に努力し続けることだ。',author:'— サミュエル・スマイルズ'},
+  {text:'長期的な視野で見れば、株式市場は楽観主義者に味方する。',author:'— ベンジャミン・グレアム'},
+  {text:'今日の種まきが、明日の収穫につながる。',author:'— マネぼう'},
+  {text:'経済の歴史を知ることは、未来を予測する最善の方法だ。',author:'— えんだ / 円舵'},
+  {text:'毎日の小さな習慣が、10年後の大きな差を生む。',author:'— ふくろう / 服牢'},
+  {text:'貯めることより、増やすことより、学ぶことが先だ。',author:'— マネぼう'},
+];
+function renderQuote(){
+  const q=QUOTES[Math.floor(Date.now()/86400000)%QUOTES.length];
+  const qt=document.getElementById('quoteText'), qa=document.getElementById('quoteAuthor');
+  if(qt)qt.textContent=q.text;if(qa)qa.textContent=q.author;
+}
+
+// ━━ Date display ━━
+function renderDateChip(){
+  const el=document.getElementById('homeDateChip');if(!el)return;
+  const now=new Date();
+  const days=['日','月','火','水','木','金','土'];
+  el.textContent=`📅 ${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日（${days[now.getDay()]}）`;
+}
+
+// ━━ Offline detection ━━
+function setupOffline(){
+  const b=document.getElementById('offlineBanner');
+  const update=()=>{if(b)b.className=navigator.onLine?'':'show'};
+  window.addEventListener('online',update);window.addEventListener('offline',update);
+  update();
+}
+
+// ━━ A2HS (Add to Home Screen) ━━
+let _deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();_deferredPrompt=e;
+  if(!localStorage.getItem('a2hs_dismissed')){
+    setTimeout(()=>{document.getElementById('a2hsBanner').className='a2hsBanner show';},3000);
+  }
+});
+document.getElementById('a2hsInstallBtn')?.addEventListener('click',async()=>{
+  if(!_deferredPrompt)return;
+  _deferredPrompt.prompt();
+  const {outcome}=await _deferredPrompt.userChoice;
+  _deferredPrompt=null;
+  dismissA2HS();
+  if(outcome==='accepted')showToast('インストール完了！','good');
+});
+function dismissA2HS(){
+  document.getElementById('a2hsBanner').className='a2hsBanner';
+  localStorage.setItem('a2hs_dismissed','1');
+}
+
+// ━━ HW priority toggle ━━
+function togglePriority(id){
+  const h=S.homework.find(x=>x.id===id);if(!h)return;
+  h.priority=!h.priority;save();renderHomework();
+}
+
+// ━━ Custom habits ━━
+const HABIT_EMOJIS=['🏃','💪','📖','🧘','💤','🥗','💧','🎵','✏️','🌞','🚴','🧹'];
+let _selectedEmoji=HABIT_EMOJIS[0];
+function renderHabitEmojiRow(){
+  const el=document.getElementById('habitEmojiRow');if(!el)return;
+  el.innerHTML=HABIT_EMOJIS.map(e=>`
+    <button class="habit-emoji-btn${e===_selectedEmoji?' selected':''}" onclick="selectHabitEmoji('${e}')">${e}</button>
+  `).join('');
+}
+function selectHabitEmoji(e){_selectedEmoji=e;renderHabitEmojiRow();}
+function addCustomHabit(){
+  const name=document.getElementById('customHabitName')?.value.trim();
+  if(!name)return;
+  if(!S.customHabits)S.customHabits=[];
+  const id='ch_'+uid();
+  S.customHabits.push({id,name,emoji:_selectedEmoji,coins:10});
+  save();
+  document.getElementById('customHabitName').value='';
+  renderHabits();
+  showToast(_selectedEmoji+' 習慣を追加しました','good');
+}
+function deleteCustomHabit(id){
+  if(!S.customHabits)return;
+  S.customHabits=S.customHabits.filter(h=>h.id!==id);
+  delete S.habitLogs[id];
+  save();renderHabits();
+}
+function allHabits(){
+  return [...HABITS,...(S.customHabits||[])];
+}
+
+// ━━ Sound toggle ━━
+function isSoundOn(){return S.soundOn!==false;}
+function toggleSound(){
+  S.soundOn=!isSoundOn();save();
+  const t=document.getElementById('soundTrack');
+  if(t)t.className='toggle-track'+(S.soundOn?' on':'');
+}
+function updateSoundUI(){
+  const t=document.getElementById('soundTrack');
+  if(t)t.className='toggle-track'+(isSoundOn()?' on':'');
+}
+
+// ━━ Ripple effect ━━
+function addRipple(el,e){
+  const r=el.getBoundingClientRect();
+  const size=Math.max(r.width,r.height)*2;
+  const x=(e.clientX-r.left)-size/2, y=(e.clientY-r.top)-size/2;
+  const rip=document.createElement('span');
+  rip.className='ripple';
+  rip.style.cssText=`width:${size}px;height:${size}px;left:${x}px;top:${y}px`;
+  el.appendChild(rip);
+  setTimeout(()=>rip.remove(),550);
+}
+
+// ━━ Achievement badges ━━
+const ACHIEVEMENTS=[
+  {id:'first_lesson',ico:'📚',name:'初レッスン',   check:()=>Object.keys(S.lessonDone).length>=1},
+  {id:'first_hw',    ico:'📝',name:'初宿題完了',   check:()=>S.homework.some(h=>h.done)},
+  {id:'first_habit', ico:'📅',name:'初習慣',       check:()=>Object.values(S.habitLogs).some(l=>l.length>0)},
+  {id:'streak3',     ico:'🔥',name:'3日連続',      check:()=>S.streak>=3},
+  {id:'streak7',     ico:'⚡',name:'7日連続',      check:()=>S.streak>=7},
+  {id:'streak30',    ico:'💎',name:'30日連続',     check:()=>S.streak>=30},
+  {id:'coins100',    ico:'🪙',name:'100コイン',    check:()=>S.totalEarned>=100},
+  {id:'coins500',    ico:'💰',name:'500コイン',    check:()=>S.totalEarned>=500},
+  {id:'coins1000',   ico:'👑',name:'1000コイン',   check:()=>S.totalEarned>=1000},
+  {id:'all_lessons', ico:'🏆',name:'全レッスン',   check:()=>GAMES.filter(g=>g.ready).every(g=>g.lessons.every(l=>S.lessonDone[g.id+'_'+l.id]))},
+  {id:'first_skip',  ico:'😴',name:'初スキップ',   check:()=>S.habitSkips&&Object.values(S.habitSkips).some(v=>v.length>0)},
+  {id:'repeat_done', ico:'🔁',name:'繰り返し達成', check:()=>S.homework.some(h=>h.repeat&&h.done)},
+  {id:'shop_buy',    ico:'🛒',name:'初購入',       check:()=>S.shopOwned&&S.shopOwned.length>0},
+];
+function checkAchievements(){
+  if(!S.achievements)S.achievements=[];
+  let newUnlock=false;
+  ACHIEVEMENTS.forEach(a=>{
+    if(!S.achievements.includes(a.id)&&a.check()){
+      S.achievements.push(a.id);save();newUnlock=true;
+      setTimeout(()=>showToast(a.ico+' バッジ獲得: '+a.name,'good'),300);
+    }
+  });
+  // 全バッジ解除チェック
+  if(newUnlock&&S.achievements.length===ACHIEVEMENTS.length&&!S.allClearShown){
+    S.allClearShown=true;save();
+    setTimeout(()=>{launchConfetti();document.getElementById('allClearOver').className='all-clear-over show';},800);
+  }
+}
+function renderAchBadges(){
+  const el=document.getElementById('achBadgeGrid');if(!el)return;
+  el.innerHTML=ACHIEVEMENTS.map(a=>{
+    const ul=S.achievements&&S.achievements.includes(a.id);
+    const condStr={first_lesson:'1つレッスンを完了',first_hw:'1つ宿題を完了',first_habit:'1回習慣チェック',streak3:'3日連続ログイン',streak7:'7日連続ログイン',coins100:'累計100コイン獲得',coins500:'累計500コイン獲得',all_lessons:'全レッスン完了'}[a.id]||'';
+    return`<div class="ach-badge-h${ul?' unlocked':''}">
+      <span class="ach-ico-h">${a.ico}</span>
+      <div class="ach-name-h">${a.name}</div>
+      <div class="ach-tooltip">${a.name}<br><span style="color:var(--muted);font-size:.52rem">${condStr}</span></div>
+    </div>`;
+  }).join('');
+}
+
+// ━━ HW edit ━━
+let _editingHwId=null;
+function openHwEdit(id){
+  const h=S.homework.find(x=>x.id===id);if(!h)return;
+  _editingHwId=id;
+  document.getElementById('hwEditInput').value=h.title;
+  document.getElementById('hwEditModal').className='edit-modal show';
+}
+function closeHwEdit(){document.getElementById('hwEditModal').className='edit-modal';_editingHwId=null;}
+function saveHwEdit(){
+  const h=S.homework.find(x=>x.id===_editingHwId);if(!h)return;
+  const v=document.getElementById('hwEditInput').value.trim();if(!v)return;
+  h.title=v;save();closeHwEdit();renderHomework();
+  showToast('宿題を更新しました','good');
+}
+
+// ━━ Game popup ━━
+const GAME_DESCS={
+  itadaki:'ボードゲーム「いただきストリート」を使って投資・経済を体験。物件購入・配当・売買のリアルな感覚を身につける。',
+  jinsei:'人生ゲームを使ってライフプランと家計管理を学ぶ。収入・支出・貯蓄のバランスを体験する。',
+  momotetsu:'桃鉄教育版で全国の産業・地理・経済を学ぶ。地域経済と投資の関係を理解する。',
+  zai:'株式投資ゲームZAiで相場の読み方・リスク管理・企業分析を実践的に学ぶ。',
+  monopoly:'モノポリーで不動産投資・ローン・資産形成の基礎を体験する。交渉力も鍛える。',
+};
+function openGamePopup(gameId){
+  const g=GAMES.find(x=>x.id===gameId);if(!g)return;
+  const doneCnt=Object.keys(S.lessonDone).filter(k=>k.startsWith(g.id+'_')).length;
+  document.getElementById('gppIco').style.cssText=`background:${g.color}18;border:1px solid ${g.color}30`;
+  document.getElementById('gppIco').textContent=g.emoji;
+  document.getElementById('gppName').textContent=g.name;
+  document.getElementById('gppMeta').textContent=g.ready?`${doneCnt}/${g.lessons.length} レッスン完了`:'準備中';
+  document.getElementById('gppDesc').textContent=GAME_DESCS[g.id]||'詳細は近日公開予定。';
+  document.getElementById('gppLessons').innerHTML=g.lessons.length
+    ?g.lessons.map((l,i)=>{
+        const done=S.lessonDone[g.id+'_'+l.id];
+        return`<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;background:${done?`rgba(87,200,124,.06)`:'rgba(255,255,255,.02)'};border:1px solid ${done?'rgba(87,200,124,.2)':'var(--line)'};margin-bottom:3px">
+          <span style="font-size:.58rem;font-weight:900;color:var(--muted);min-width:22px">L${String(i+1).padStart(2,'0')}</span>
+          <span style="flex:1;font-size:.72rem;color:var(--text)">${l.title}</span>
+          <span>${done?'✅':'⬜'}</span>
+        </div>`;
+      }).join('')
+    :'<div style="font-size:.7rem;color:var(--faint);text-align:center;padding:12px">レッスン準備中</div>';
+  document.getElementById('gamePopup').className='game-popup show';
+}
+function closeGamePopup(){document.getElementById('gamePopup').className='game-popup';}
+
+// ━━ Light mode ━━
+function toggleLightMode(){
+  S.lightMode=!S.lightMode;save();
+  applyLightMode();
+  const t=document.getElementById('lightModeTrack');
+  if(t)t.className='toggle-track'+(S.lightMode?' on':'');
+}
+function applyLightMode(){
+  document.body.className=S.lightMode?'light':'';
+  const t=document.getElementById('lightModeTrack');
+  if(t)t.className='toggle-track'+(S.lightMode?' on':'');
+}
+
+// ━━ Welcome / Settings ━━
+function startApp(){
+  S.welcomed=true;save();
+  document.getElementById('welcomeOver').className='welcome-over';
+}
+function openSettings(){document.getElementById('settingsOver').className='settings-over show';}
+function closeSettings(){document.getElementById('settingsOver').className='settings-over';}
+function confirmReset(){
+  if(!confirm('全データを削除しますか？この操作は元に戻せません。'))return;
+  localStorage.removeItem(SAVE_KEY);
+  S={coins:0,streak:0,lastLogin:'',habitLogs:{},lessonDone:{},homework:[],assets:{stocks:[],properties:[]}};
+  save();closeSettings();location.reload();
+}
+
+// ━━ Service Worker (PWA offline) ━━
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('./sw.js').catch(()=>{});
+}
+
+// ━━ Init ━━
+function init(){
+  load();processRepeatHW();checkLogin();syncCoins();snapCoinHistory();updateSoundUI();applyLightMode();applyTheme();setupOffline();loadUserNameUI();updateNotifUI();renderHome();checkAchievements();
+  // スワイプ設定（少し遅らせてDOMが確定してから）
+  setTimeout(()=>{setupCharSwipe('homeCharBubble');setupCharSwipe('habitCharBubble');},500);
+  // 初回のみウェルカム表示（スプラッシュ後）
+  if(!S.welcomed){setTimeout(()=>{document.getElementById('welcomeOver').className='welcome-over show';},1700);}
+  const di=document.getElementById('hwDateInput');
+  if(di)di.value=today();
+  setTimeout(()=>{
+    document.getElementById('splash').classList.add('fade');
+    setTimeout(()=>{const sp=document.getElementById('splash');if(sp)sp.remove();},600);
+  },1500);
+}
+init();
+</script>
+</body>
+</html>
