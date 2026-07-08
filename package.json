@@ -1,7 +1,10 @@
 {
   "name": "manebou-app",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
+  "description": "学生向け仮想通貨管理アプリ。ゲーミフィケーションを通じて金銭感覚と経済学習を支援します。",
+  "author": "RAINYBRAIN",
+  "license": "MIT",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
