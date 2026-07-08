@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { Input, Button, Card, Alert } from '@/app/components/ui'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -108,113 +109,96 @@ export default function LoginPage() {
       </div>
 
       {/* メインカード */}
-      <div className="w-full max-w-md">
-        <div className="bg-white rounded-2xl shadow-2xl p-8 space-y-6">
-          {/* ログインフォーム */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* エラーメッセージ */}
-            {error && (
-              <div className="rounded-lg bg-red-50 border border-red-200 p-4">
-                <p className="text-sm font-medium text-red-700">⚠️ {error}</p>
-              </div>
-            )}
+      <Card className="w-full max-w-md shadow-2xl">
+        {/* ログインフォーム */}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* エラーメッセージ */}
+          {error && <Alert variant="error">{error}</Alert>}
 
-            {/* メールアドレス入力 */}
-            <div>
-              <label htmlFor="email" className="block text-sm font-semibold text-gray-800 mb-2">
-                メールアドレス
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="example@school.jp"
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all duration-200"
-              />
-            </div>
+          {/* メールアドレス入力 */}
+          <Input
+            id="email"
+            label="メールアドレス"
+            name="email"
+            type="email"
+            autoComplete="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="example@school.jp"
+            icon="📧"
+          />
 
-            {/* パスワード入力 */}
-            <div>
-              <label htmlFor="password" className="block text-sm font-semibold text-gray-800 mb-2">
-                パスワード
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all duration-200"
-              />
-            </div>
+          {/* パスワード入力 */}
+          <Input
+            id="password"
+            label="パスワード"
+            name="password"
+            type="password"
+            autoComplete="current-password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="••••••••"
+            icon="🔐"
+          />
 
-            {/* ログインボタン */}
+          {/* ログインボタン */}
+          <Button type="submit" size="lg" disabled={loading} loading={loading}>
+            ログイン
+          </Button>
+        </form>
+
+        {/* または区切り線 */}
+        <div className="relative my-6">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-200"></div>
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-3 bg-white text-gray-600 font-medium">デモユーザーでクイックログイン</span>
+          </div>
+        </div>
+
+        {/* デモユーザーボタン */}
+        <div className="grid grid-cols-1 gap-3">
+          {demoUsers.map((demoUser) => (
             <button
-              type="submit"
+              key={demoUser.email}
+              type="button"
+              onClick={() => quickLogin(demoUser.email)}
               disabled={loading}
-              className="w-full py-3 px-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-lg hover:shadow-lg transform hover:scale-105 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100"
+              className="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-all duration-200 text-left disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              aria-label={`${demoUser.name}でログイン`}
             >
-              {loading ? '✓ ログイン中...' : 'ログイン'}
-            </button>
-          </form>
-
-          {/* または区切り線 */}
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-3 bg-white text-gray-600 font-medium">デモユーザーでクイックログイン</span>
-            </div>
-          </div>
-
-          {/* デモユーザーボタン */}
-          <div className="grid grid-cols-1 gap-3">
-            {demoUsers.map((demoUser) => (
-              <button
-                key={demoUser.email}
-                type="button"
-                onClick={() => quickLogin(demoUser.email)}
-                disabled={loading}
-                className="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-all duration-200 text-left disabled:opacity-60"
-              >
-                <div className="flex items-start justify-between">
-                  <div>
-                    <div className="text-2xl mb-1">{demoUser.icon}</div>
-                    <p className="font-semibold text-gray-900 text-sm">{demoUser.name}</p>
-                    <p className="text-xs text-gray-600 mt-1">{demoUser.email}</p>
-                  </div>
-                  <span className="text-lg">→</span>
+              <div className="flex items-start justify-between">
+                <div>
+                  <div className="text-2xl mb-1">{demoUser.icon}</div>
+                  <p className="font-semibold text-gray-900 text-sm">{demoUser.name}</p>
+                  <p className="text-xs text-gray-600 mt-1">{demoUser.email}</p>
                 </div>
-              </button>
-            ))}
-          </div>
+                <span className="text-lg">→</span>
+              </div>
+            </button>
+          ))}
         </div>
+      </Card>
 
-        {/* フッター情報 */}
-        <div className="mt-6 text-center text-xs text-gray-600">
-          <p className="mb-2">💡 デモユーザーで全機能をお試しできます</p>
-          <p>パスワードは不要です。メールアドレスだけでログインできます。</p>
-        </div>
+      {/* フッター情報 */}
+      <div className="mt-6 text-center text-xs text-gray-600 max-w-md">
+        <p className="mb-2">💡 デモユーザーで全機能をお試しできます</p>
+        <p>パスワードは不要です。メールアドレスだけでログインできます。</p>
+      </div>
 
-        {/* アカデミーへのリンク */}
-        <div className="mt-6 text-center">
-          <a
-            href="https://manebou-juku.vercel.app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors duration-200"
-          >
-            <span className="mr-1">🏠</span> マネぼう塾に戻る
-          </a>
-        </div>
+      {/* アカデミーへのリンク */}
+      <div className="mt-6 text-center">
+        <a
+          href="https://manebou-juku.vercel.app"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors duration-200"
+        >
+          <span className="mr-1">🏠</span> マネぼう塾に戻る
+        </a>
       </div>
 
       {/* 背景装飾 */}
