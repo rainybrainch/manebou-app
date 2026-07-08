@@ -1,14 +1,23 @@
 'use client'
 
-import { auth } from '@/lib/auth'
-import { useSession } from 'next-auth/react'
 import { useEffect, useState } from 'react'
-import useSWR from 'swr'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-
-const fetcher = (url: string) => fetch(url).then((res) => res.json())
+import {
+  PageHeader,
+  Card,
+  StatCard,
+  LoadingSpinner,
+  Alert,
+  Button,
+  EmptyState,
+  SectionTitle,
+} from '../../../components/ui'
 
 interface DashboardData {
+  fullName?: string
+  schoolName?: string
+  className?: string
   moneyBalance: number
   recentLogs: Array<{
     id: string
@@ -19,84 +28,127 @@ interface DashboardData {
 }
 
 export default function StudentDashboard() {
-  const { data: session, status } = useSession()
-  const { data, isLoading, error } = useSWR<DashboardData>(
-    status === 'authenticated' ? '/api/student/dashboard' : null,
-    fetcher
-  )
+  const router = useRouter()
+  const [user, setUser] = useState<any>(null)
+  const [data, setData] = useState<DashboardData | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  if (status === 'loading' || isLoading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">読み込み中...</p>
-        </div>
-      </div>
-    )
+  useEffect(() => {
+    const userData = localStorage.getItem('currentUser')
+    if (!userData) {
+      router.push('/login')
+      return
+    }
+
+    const parsed = JSON.parse(userData)
+    setUser(parsed)
+
+    const fetchData = async () => {
+      try {
+        const res = await fetch('/api/student/dashboard')
+        const result = await res.json()
+        if (result.success && result.data) {
+          setData({
+            ...result.data,
+            fullName: parsed.fullName,
+            schoolName: 'サンプル小学校',
+            className: '1年A組',
+          })
+        } else {
+          setError('データの読み込みに失敗しました')
+        }
+      } catch (err) {
+        console.error('Failed to fetch dashboard:', err)
+        setError('データを取得できません')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [router])
+
+  if (loading) {
+    return <LoadingSpinner fullscreen text="ダッシュボードを読み込み中..." />
   }
 
-  if (error || !data) {
+  if (!data || !user) {
     return (
-      <div className="rounded-lg bg-red-50 border border-red-200 p-6 max-w-md mx-auto">
-        <div className="flex items-start">
-          <div className="text-red-600 text-xl mr-3">⚠️</div>
-          <div>
-            <p className="font-semibold text-red-900">
-              エラー
-            </p>
-            <p className="text-sm text-red-700 mt-1">
-              データの読み込みに失敗しました。ページをリロードしてください。
-            </p>
-          </div>
-        </div>
+      <div className="p-6 max-w-4xl mx-auto">
+        <Alert variant="error" title="エラー">
+          データの読み込みに失敗しました。ページをリロードしてください。
+        </Alert>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6 p-6 max-w-4xl mx-auto">
-      {/* ウェルカムセクション */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h1 className="text-3xl font-bold text-gray-900">
-          こんにちは、👋
-        </h1>
-        <p className="text-gray-600 mt-2">
-          {session?.user?.email}
-        </p>
-      </div>
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-4xl mx-auto space-y-8">
+        {/* ヘッダー */}
+        <PageHeader
+          icon="🎓"
+          title={`こんにちは、${user.fullName}さん`}
+          description={`${data.schoolName} ${data.className}`}
+        />
 
-      {/* マネ残高 */}
-      <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg shadow p-6 text-white">
-        <p className="text-sm font-medium opacity-90">💰 現在のマネ</p>
-        <h2 className="text-4xl font-bold mt-2">
-          {data.moneyBalance.toLocaleString()}
-        </h2>
-        <p className="text-sm mt-2 opacity-75">マネ</p>
-      </div>
+        {error && <Alert variant="error">{error}</Alert>}
 
-      {/* 最近のアクティビティ */}
-      <div className="bg-white rounded-lg shadow">
-        <div className="p-6 border-b border-gray-200">
-          <h3 className="text-lg font-bold text-gray-900">
-            📜 最近のアクティビティ
-          </h3>
+        {/* マネ残高 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <StatCard
+            icon="💰"
+            label="現在のマネ"
+            value={data.moneyBalance.toLocaleString()}
+            color="blue"
+          />
+          <StatCard
+            icon="📈"
+            label="今週の増減"
+            value="+500"
+            color="green"
+            trend="up"
+            trendValue="好調です！"
+          />
         </div>
-        <div className="divide-y divide-gray-200">
+
+        {/* クイックアクション */}
+        <Card>
+          <SectionTitle icon="🚀" title="クイックアクション" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <Link href="/app/student/mane">
+              <Button variant="primary" size="md" className="w-full">
+                📜 マネ履歴を見る
+              </Button>
+            </Link>
+            <Link href="/ranking">
+              <Button variant="secondary" size="md" className="w-full">
+                🏆 ランキングを確認
+              </Button>
+            </Link>
+          </div>
+        </Card>
+
+        {/* 最近のアクティビティ */}
+        <Card>
+          <SectionTitle icon="📋" title="最近の取引" subtitle="過去の取引を確認できます" />
+
           {data.recentLogs.length === 0 ? (
-            <div className="p-6 text-center text-gray-500">
-              アクティビティはまだありません
-            </div>
+            <EmptyState icon="📭" title="取引がまだありません" description="マネを獲得するとここに表示されます" />
           ) : (
-            data.recentLogs.map((log) => (
-              <div key={log.id} className="p-4 hover:bg-gray-50">
-                <div className="flex justify-between items-start">
+            <div className="space-y-3">
+              {data.recentLogs.map((log) => (
+                <div key={log.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-blue-50 transition">
                   <div>
-                    <p className="font-medium text-gray-900">
-                      {log.reason}
-                    </p>
-                    <p className="text-sm text-gray-500 mt-1">
-                      {new Date(log.createdAt).toLocaleString('ja-JP')}
+                    <p className="font-medium text-gray-900">{log.reason}</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {new Date(log.createdAt).toLocaleString('ja-JP', {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
                     </p>
                   </div>
                   <div
@@ -107,20 +159,29 @@ export default function StudentDashboard() {
                     {log.amount > 0 ? '+' : ''}{log.amount.toLocaleString()}
                   </div>
                 </div>
+              ))}
+
+              <div className="text-center pt-4 border-t border-gray-200">
+                <Link href="/app/student/mane" className="text-blue-600 hover:text-blue-700 font-medium text-sm">
+                  すべての履歴を見る →
+                </Link>
               </div>
-            ))
+            </div>
           )}
-        </div>
-        {data.recentLogs.length > 0 && (
-          <div className="p-4 bg-gray-50 text-center border-t border-gray-200">
-            <Link
-              href="/app/student/mane"
-              className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-            >
-              すべての履歴を見る →
-            </Link>
+        </Card>
+
+        {/* 応援メッセージ */}
+        <Card variant="gradient" className="bg-gradient-to-r from-purple-50 to-pink-50">
+          <div className="text-center">
+            <p className="text-2xl mb-2">🌟</p>
+            <p className="font-bold text-gray-900 mb-2">頑張ってます！</p>
+            <p className="text-sm text-gray-600">
+              先生からのマネをもらうと、ランキングが上がります。
+              <br />
+              引き続き頑張ってください！
+            </p>
           </div>
-        )}
+        </Card>
       </div>
     </div>
   )
