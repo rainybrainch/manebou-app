@@ -60,6 +60,13 @@ export default function LoginPage() {
     },
   }
 
+  const getRedirectPath = (role: string) => {
+    if (role === 'teacher' || role === 'admin') {
+      return '/app/teacher/dashboard'
+    }
+    return '/app/student/dashboard'
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
@@ -69,7 +76,7 @@ export default function LoginPage() {
       const user = demoUsersMap[email]
       if (user) {
         localStorage.setItem('currentUser', JSON.stringify(user))
-        router.push('/app/student/dashboard')
+        router.push(getRedirectPath(user.role))
       } else {
         setError('認識されたメールアドレスではありません')
       }
@@ -89,7 +96,7 @@ export default function LoginPage() {
       const user = demoUsersMap[demoEmail]
       if (user) {
         localStorage.setItem('currentUser', JSON.stringify(user))
-        router.push('/app/student/dashboard')
+        router.push(getRedirectPath(user.role))
       }
       setLoading(false)
     }, 300)
