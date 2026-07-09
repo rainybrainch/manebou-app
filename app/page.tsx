@@ -101,20 +101,23 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* 右側: キャラクター配置スペース（Phase 2で埋める） */}
+            {/* 右側: マネぼう君 */}
             <div className="hidden lg:flex items-center justify-center">
               <div className="relative w-full h-96">
                 {/* 背景装飾 */}
                 <div className="absolute inset-0 bg-gradient-to-br from-blue-100 to-green-100 rounded-3xl opacity-30"></div>
 
-                {/* プレースホルダー - Phase 2でキャラクターイラストが入る */}
+                {/* 光の玉装飾 */}
+                <div className="absolute top-10 right-10 w-20 h-20 bg-yellow-300 rounded-full mix-blend-multiply filter blur-3xl opacity-25"></div>
+                <div className="absolute bottom-20 left-10 w-16 h-16 bg-green-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
+
+                {/* マネぼう君 SVG */}
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="text-6xl mb-4">🎮</div>
-                    <p className="text-gray-500 text-sm">
-                      マネぼう君が<br />ここに登場予定
-                    </p>
-                  </div>
+                  <img
+                    src="/images/manebou-kun-default.svg"
+                    alt="マネぼう君"
+                    className="w-80 h-80 animate-float drop-shadow-2xl"
+                  />
                 </div>
               </div>
             </div>
