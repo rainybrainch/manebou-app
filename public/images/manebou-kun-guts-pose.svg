@@ -1,0 +1,114 @@
+<svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="coinGradient" cx="40%" cy="40%">
+      <stop offset="0%" style="stop-color:#fcd34d;stop-opacity:1" />
+      <stop offset="70%" style="stop-color:#f59e0b;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#d97706;stop-opacity:1" />
+    </radialGradient>
+
+    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="10" stdDeviation="8" flood-opacity="0.3" />
+    </filter>
+
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect width="400" height="400" fill="transparent"/>
+
+  <!-- 本体: コイン形 -->
+  <circle cx="200" cy="220" r="140" fill="url(#coinGradient)" filter="url(#shadow)"/>
+
+  <!-- 3D効果: 上部ハイライト -->
+  <ellipse cx="200" cy="150" rx="110" ry="50" fill="#ffffff" opacity="0.35"/>
+
+  <!-- 3D効果: 側面ライン -->
+  <circle cx="200" cy="220" r="140" fill="none" stroke="#d97706" stroke-width="3" opacity="0.2"/>
+
+  <!-- 王冠 -->
+  <g filter="url(#glow)">
+    <path d="M 150 100 L 160 60 L 175 75 L 200 45 L 225 75 L 240 60 L 250 100 Z"
+          fill="#1e3a8a" stroke="#0f172a" stroke-width="2"/>
+    <circle cx="160" cy="65" r="6" fill="#f59e0b"/>
+    <circle cx="200" cy="50" r="8" fill="#fcd34d"/>
+    <circle cx="240" cy="65" r="6" fill="#f59e0b"/>
+    <rect x="160" y="95" width="80" height="8" fill="#1e3a8a" stroke="#0f172a" stroke-width="1"/>
+  </g>
+
+  <!-- 胸のバッジ -->
+  <g>
+    <rect x="165" y="280" width="70" height="70" rx="8" fill="#10b981" stroke="#059669" stroke-width="2"/>
+    <text x="200" y="330" font-size="50" text-anchor="middle" dominant-baseline="middle">💰</text>
+  </g>
+
+  <!-- 左目（大きく開いた元気な目） -->
+  <g>
+    <ellipse cx="160" cy="200" rx="32" ry="38" fill="#ffffff" stroke="#333333" stroke-width="2"/>
+    <circle cx="160" cy="205" r="22" fill="#1f2937"/>
+    <circle cx="166" cy="195" r="9" fill="#ffffff"/>
+  </g>
+
+  <!-- 右目（大きく開いた元気な目） -->
+  <g>
+    <ellipse cx="240" cy="200" rx="32" ry="38" fill="#ffffff" stroke="#333333" stroke-width="2"/>
+    <circle cx="240" cy="205" r="22" fill="#1f2937"/>
+    <circle cx="246" cy="195" r="9" fill="#ffffff"/>
+  </g>
+
+  <!-- 眉毛（上昇 - 喜び） -->
+  <g>
+    <path d="M 130 170 Q 160 155 190 170" stroke="#333333" stroke-width="5" fill="none" stroke-linecap="round"/>
+    <path d="M 210 170 Q 240 155 270 170" stroke="#333333" stroke-width="5" fill="none" stroke-linecap="round"/>
+  </g>
+
+  <!-- 鼻 -->
+  <circle cx="200" cy="225" r="5" fill="#f59e0b" opacity="0.6"/>
+
+  <!-- 口（大きな笑み） -->
+  <g>
+    <path d="M 160 260 Q 200 290 240 260"
+          stroke="#f59e0b" stroke-width="7" fill="none" stroke-linecap="round"/>
+    <path d="M 160 260 Q 200 288 240 260"
+          stroke="#fb923c" stroke-width="4" fill="none" stroke-linecap="round"/>
+  </g>
+
+  <!-- 左腕（上げる - ガッツポーズ） -->
+  <g>
+    <line x1="100" y1="180" x2="120" y2="80" stroke="#f59e0b" stroke-width="35" stroke-linecap="round"/>
+    <circle cx="115" cy="70" r="35" fill="#f59e0b" stroke="#d97706" stroke-width="2"/>
+    <circle cx="118" cy="65" r="10" fill="#ffffff" opacity="0.4"/>
+  </g>
+
+  <!-- 右腕（上げる - ガッツポーズ） -->
+  <g>
+    <line x1="300" y1="180" x2="280" y2="80" stroke="#f59e0b" stroke-width="35" stroke-linecap="round"/>
+    <circle cx="285" cy="70" r="35" fill="#f59e0b" stroke="#d97706" stroke-width="2"/>
+    <circle cx="282" cy="65" r="10" fill="#ffffff" opacity="0.4"/>
+  </g>
+
+  <!-- 左足 -->
+  <g>
+    <rect x="150" y="350" width="50" height="50" rx="15" fill="#f59e0b" stroke="#d97706" stroke-width="2"/>
+    <circle cx="165" cy="385" r="5" fill="#ffffff" opacity="0.3"/>
+    <circle cx="180" cy="387" r="5" fill="#ffffff" opacity="0.3"/>
+  </g>
+
+  <!-- 右足 -->
+  <g>
+    <rect x="200" y="350" width="50" height="50" rx="15" fill="#f59e0b" stroke="#d97706" stroke-width="2"/>
+    <circle cx="215" cy="385" r="5" fill="#ffffff" opacity="0.3"/>
+    <circle cx="230" cy="387" r="5" fill="#ffffff" opacity="0.3"/>
+  </g>
+
+  <!-- 装飾: 成功を表す星 -->
+  <g opacity="0.8" filter="url(#glow)">
+    <text x="60" y="80" font-size="40">⭐</text>
+    <text x="330" y="100" font-size="35">✨</text>
+    <text x="320" y="300" font-size="40">🎉</text>
+  </g>
+</svg>
